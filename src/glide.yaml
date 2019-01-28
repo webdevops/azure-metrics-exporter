@@ -1,0 +1,16 @@
+package: azure-metrics-exporter/src
+import:
+- package: github.com/Azure/azure-sdk-for-go
+  subpackages:
+  - profiles/latest/monitor/mgmt/insights
+  - profiles/latest/resources/mgmt/subscriptions
+- package: github.com/Azure/go-autorest
+  subpackages:
+  - autorest
+  - autorest/azure/auth
+- package: github.com/google/logger
+- package: github.com/jessevdk/go-flags
+- package: github.com/prometheus/client_golang
+  subpackages:
+    - prometheus
+    - prometheus/promhttp
