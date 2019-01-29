@@ -18,7 +18,7 @@ import (
 
 const (
 	Author  = "webdevops.io"
-	Version = "0.1.0"
+	Version = "0.2.0"
 )
 
 var (
@@ -27,6 +27,8 @@ var (
 	Verbose         bool
 	Logger          *DaemonLogger
 	AzureAuthorizer autorest.Authorizer
+
+	prometheusCollectTime *prometheus.SummaryVec
 )
 
 var opts struct {
@@ -53,6 +55,7 @@ func main() {
 
 	Logger.Infof("Init Azure connection")
 	initAzureConnection()
+	initMetricCollector()
 
 	Logger.Infof("Starting http server on %s", opts.ServerBind)
 	startHttpServer()
@@ -87,6 +90,20 @@ func initAzureConnection() {
 	}
 }
 
+func initMetricCollector() {
+	prometheusCollectTime = prometheus.NewSummaryVec(
+		prometheus.SummaryOpts{
+			Name: "azurerm_insights_stats_collecttime",
+			Help: "Azure Insights stats collecttime",
+		},
+		[]string{
+			"subscriptionID",
+		},
+	)
+
+	prometheus.MustRegister(prometheusCollectTime)
+}
+
 // start and handle prometheus handler
 func startHttpServer() {
 	http.Handle("/metrics", promhttp.Handler())
@@ -100,6 +117,8 @@ func startHttpServer() {
 
 func probeHandler(w http.ResponseWriter, r *http.Request) {
 	params := r.URL.Query()
+
+	startTime := time.Now()
 
 	// If a timeout is configured via the Prometheus header, add it to the request.
 	var timeoutSeconds float64
@@ -124,7 +143,7 @@ func probeHandler(w http.ResponseWriter, r *http.Request) {
 		Name: "azurerm_insights_metric",
 		Help: "Azure monitor insight metics",
 	}, []string{
-		"resource",
+		"resourceID",
 		"type",
 		"unit",
 		"data",
@@ -137,9 +156,9 @@ func probeHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resource := params.Get("resource")
-	if resource == "" {
-		http.Error(w, "resource parameter is missing", http.StatusBadRequest)
+	target := params.Get("target")
+	if target == "" {
+		http.Error(w, "target parameter is missing", http.StatusBadRequest)
 		return
 	}
 
@@ -159,7 +178,7 @@ func probeHandler(w http.ResponseWriter, r *http.Request) {
 	client := insights.NewMetricsClient(subscription)
 	client.Authorizer = AzureAuthorizer
 
-	result, err := client.List(ctx, resource, timespan, interval, metric, aggregation, nil, "", "", insights.Data)
+	result, err := client.List(ctx, target, timespan, interval, metric, aggregation, nil, "", "", insights.Data)
 
 	if err != nil {
 		Logger.Error(err)
@@ -167,7 +186,7 @@ func probeHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	Logger.Verbosef("subscription[%v] fetched metrics for %v", subscription, resource)
+	Logger.Verbosef("subscription[%v] fetched metrics for %v", subscription, target)
 
 	if result.Value != nil {
 		for _, metric := range *result.Value {
@@ -177,7 +196,7 @@ func probeHandler(w http.ResponseWriter, r *http.Request) {
 						for _, timeseriesData := range *timeseries.Data {
 							if timeseriesData.Total != nil {
 								metricGauge.With(prometheus.Labels{
-									"resource": resource,
+									"resourceID": target,
 									"type":     *metric.Name.Value,
 									"unit":     string(metric.Unit),
 									"data":     "total",
@@ -186,7 +205,7 @@ func probeHandler(w http.ResponseWriter, r *http.Request) {
 
 							if timeseriesData.Minimum != nil {
 								metricGauge.With(prometheus.Labels{
-									"resource": resource,
+									"resourceID": target,
 									"type":     *metric.Name.Value,
 									"unit":     string(metric.Unit),
 									"data":     "minimum",
@@ -195,7 +214,7 @@ func probeHandler(w http.ResponseWriter, r *http.Request) {
 
 							if timeseriesData.Maximum != nil {
 								metricGauge.With(prometheus.Labels{
-									"resource": resource,
+									"resourceID": target,
 									"type":     *metric.Name.Value,
 									"unit":     string(metric.Unit),
 									"data":     "maximum",
@@ -204,7 +223,7 @@ func probeHandler(w http.ResponseWriter, r *http.Request) {
 
 							if timeseriesData.Average != nil {
 								metricGauge.With(prometheus.Labels{
-									"resource": resource,
+									"resourceID": target,
 									"type":     *metric.Name.Value,
 									"unit":     string(metric.Unit),
 									"data":     "average",
@@ -216,6 +235,11 @@ func probeHandler(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 	}
+
+	// global stats counter
+	prometheusCollectTime.With(prometheus.Labels{
+		"subscriptionID": subscription,
+	}).Observe( time.Now().Sub(startTime).Seconds() )
 
 	h := promhttp.HandlerFor(registry, promhttp.HandlerOpts{})
 	h.ServeHTTP(w, r)

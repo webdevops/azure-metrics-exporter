@@ -42,7 +42,7 @@ HTTP Endpoints
 | GET parameter          | Default   | Required | Description                                                          |
 |------------------------|-----------|----------|----------------------------------------------------------------------|
 | `subscription`         |           | **yes**  | Azure Subscription ID                                                |
-| `resource`             |           | **yes**  | Azure Resource URI                                                   |
+| `target`               |           | **yes**  | Azure Resource URI                                                   |
 | `timespan`             | `PT1M`    | no       | Metric timespan                                                      |
 | `interval`             |           | no       | Metric timespan                                                      |
 | `metric`               |           | no       | Metric name                                                          |
