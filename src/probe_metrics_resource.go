@@ -1,12 +1,12 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"net/http"
 	"time"
-	"context"
 )
 
 func probeMetricsResourceHandler(w http.ResponseWriter, r *http.Request) {
@@ -64,9 +64,9 @@ func probeMetricsResourceHandler(w http.ResponseWriter, r *http.Request) {
 	// global stats counter
 	prometheusCollectTime.With(prometheus.Labels{
 		"subscriptionID": subscription,
-		"handler": "/probe",
-		"filter": "",
-	}).Observe( time.Now().Sub(startTime).Seconds() )
+		"handler":        "/probe",
+		"filter":         "",
+	}).Observe(time.Now().Sub(startTime).Seconds())
 
 	h := promhttp.HandlerFor(registry, promhttp.HandlerOpts{})
 	h.ServeHTTP(w, r)

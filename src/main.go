@@ -134,4 +134,3 @@ func initMetricCollector() {
 	)
 	prometheus.MustRegister(prometheusCollectTime)
 }
-

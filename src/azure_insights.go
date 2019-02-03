@@ -1,22 +1,22 @@
 package main
 
 import (
-	"sync"
 	"context"
-	"github.com/Azure/azure-sdk-for-go/services/preview/monitor/mgmt/2018-03-01/insights"
 	"github.com/Azure/azure-sdk-for-go/profiles/latest/resources/mgmt/resources"
+	"github.com/Azure/azure-sdk-for-go/services/preview/monitor/mgmt/2018-03-01/insights"
 	"github.com/prometheus/client_golang/prometheus"
+	"sync"
 )
 
 type AzureInsightMetrics struct {
-	metricsClientCache map[string]*insights.MetricsClient
+	metricsClientCache  map[string]*insights.MetricsClient
 	resourceClientCache map[string]*resources.Client
 
 	clientMutex sync.Mutex
 }
 
 type AzureInsightMetricsResult struct {
-	Result *insights.Response
+	Result     *insights.Response
 	ResourceID *string
 }
 
@@ -52,7 +52,7 @@ func (m *AzureInsightMetrics) ResourcesClient(subscriptionId string) *resources.
 }
 
 func (m *AzureInsightMetrics) ListResources(subscriptionId, filter string) (resources.ListResultIterator, error) {
-	return  m.ResourcesClient(subscriptionId).ListComplete(context.Background(), filter, "", nil)
+	return m.ResourcesClient(subscriptionId).ListComplete(context.Background(), filter, "", nil)
 }
 
 func (m *AzureInsightMetrics) CreatePrometheusMetricsGauge() (gauge *prometheus.GaugeVec) {
