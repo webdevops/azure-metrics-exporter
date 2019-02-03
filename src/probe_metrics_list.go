@@ -10,7 +10,7 @@ import (
 	"context"
 )
 
-func listProbeHandler(w http.ResponseWriter, r *http.Request) {
+func probeMetricsListHandler(w http.ResponseWriter, r *http.Request) {
 	var wg sync.WaitGroup
 	var err error
 	var timeoutSeconds float64
@@ -20,7 +20,7 @@ func listProbeHandler(w http.ResponseWriter, r *http.Request) {
 	startTime := time.Now()
 
 	// If a timeout is configured via the Prometheus header, add it to the request.
-	timeoutSeconds, err = getPrometheusTimeout(r, PROBE_LIST_TIMEOUT_DEFAULT)
+	timeoutSeconds, err = getPrometheusTimeout(r, PROBE_METRICS_LIST_TIMEOUT_DEFAULT)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Failed to parse timeout from Prometheus header: %s", err), http.StatusInternalServerError)
 		return

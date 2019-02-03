@@ -18,14 +18,14 @@ const (
 
 	METRICS_URL = "/metrics"
 
-	PROBE_RESOURCE_URL = "/probe/metrics/resource"
-	PROBE_RESOURCE_TIMEOUT_DEFAULT = 10
+	PROBE_METRICS_RESOURCE_URL             = "/probe/metrics/resource"
+	PROBE_METRICS_RESOURCE_TIMEOUT_DEFAULT = 10
 
-	PROBE_LIST_URL = "/probe/metrics/list"
-	PROBE_LIST_TIMEOUT_DEFAULT = 120
+	PROBE_METRICS_LIST_URL             = "/probe/metrics/list"
+	PROBE_METRICS_LIST_TIMEOUT_DEFAULT = 120
 
-	PROBE_SCRAPE_URL = "/probe/metrics/scrape"
-	PROBE_SCRAPE_TIMEOUT_DEFAULT = 120
+	PROBE_METRICS_SCRAPE_URL             = "/probe/metrics/scrape"
+	PROBE_METRICS_SCRAPE_TIMEOUT_DEFAULT = 120
 )
 
 var (
@@ -105,16 +105,16 @@ func initAzureConnection() {
 func startHttpServer() {
 	http.Handle(METRICS_URL, promhttp.Handler())
 
-	http.HandleFunc(PROBE_RESOURCE_URL, func(w http.ResponseWriter, r *http.Request) {
-		resourceProbeHandler(w, r)
+	http.HandleFunc(PROBE_METRICS_RESOURCE_URL, func(w http.ResponseWriter, r *http.Request) {
+		probeMetricsResourceHandler(w, r)
 	})
 
-	http.HandleFunc(PROBE_LIST_URL, func(w http.ResponseWriter, r *http.Request) {
-		listProbeHandler(w, r)
+	http.HandleFunc(PROBE_METRICS_LIST_URL, func(w http.ResponseWriter, r *http.Request) {
+		probeMetricsListHandler(w, r)
 	})
 
-	http.HandleFunc(PROBE_SCRAPE_URL, func(w http.ResponseWriter, r *http.Request) {
-		scrapeProbeHandler(w, r)
+	http.HandleFunc(PROBE_METRICS_SCRAPE_URL, func(w http.ResponseWriter, r *http.Request) {
+		probeMetricsScrapeHandler(w, r)
 	})
 
 	Logger.Fatal(http.ListenAndServe(opts.ServerBind, nil))
