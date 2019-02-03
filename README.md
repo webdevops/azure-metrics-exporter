@@ -21,22 +21,24 @@ for Azure API authentication (using ENV vars) see https://github.com/Azure/azure
 Metrics
 -------
 
-| Metric                         | Description                                                                         |
-|--------------------------------|-------------------------------------------------------------------------------------|
-| `azurerm_insights_metric`      | General exporter stats                                                              |
+| Metric                             | Description                                                                     |
+|------------------------------------|---------------------------------------------------------------------------------|
+| `azurerm_stats_metric_collecttime` | General exporter stats                                                          |
+| `azurerm_resource_metric`          | Resource metrics exported by probes                                             |
 
 
 HTTP Endpoints
 --------------
 
-
 | Endpoint                       | Description                                                                         |
 |--------------------------------|-------------------------------------------------------------------------------------|
 | `/metrics`                     | Default prometheus golang metrics                                                   |
-| `/probe`                       | Probe metrics (see `azurerm_insights_metric`)                                       |
+| `/probe/resource`              | Probe metrics for one resource (see `azurerm_resource_metric`)                      |
+| `/probe/list`                  | Probe metrics for list of resources (see `azurerm_resource_metric`)                 |
+| `/probe/scrape`                | Probe metrics for list of resources and config on resource by tag name (see `azurerm_resource_metric`) |
 
 
-#### Probe endpoint parameters
+#### /probe/metrics/resource parameters
 
 
 | GET parameter          | Default   | Required | Description                                                          |
@@ -47,3 +49,30 @@ HTTP Endpoints
 | `interval`             |           | no       | Metric timespan                                                      |
 | `metric`               |           | no       | Metric name                                                          |
 | `aggregation`          |           | no       | Metric aggregation (`minimum`, `maximum`, `average`)                 |
+
+
+#### /probe/metrics/list parameters
+
+| GET parameter          | Default   | Required | Description                                                          |
+|------------------------|-----------|----------|----------------------------------------------------------------------|
+| `subscription`         |           | **yes**  | Azure Subscription ID                                                |
+| `filter`               |           | **yes**  | Azure Resource filter (https://docs.microsoft.com/en-us/rest/api/resources/resources/list)                                              |
+| `timespan`             | `PT1M`    | no       | Metric timespan                                                      |
+| `interval`             |           | no       | Metric timespan                                                      |
+| `metric`               |           | no       | Metric name                                                          |
+| `aggregation`          |           | no       | Metric aggregation (`minimum`, `maximum`, `average`)                 |
+
+
+#### /probe/metrics/scrape parameters
+
+| GET parameter          | Default   | Required | Description                                                          |
+|------------------------|-----------|----------|----------------------------------------------------------------------|
+| `subscription`         |           | **yes**  | Azure Subscription ID                                                |
+| `filter`               |           | **yes**  | Azure Resource filter (https://docs.microsoft.com/en-us/rest/api/resources/resources/list)                                              |
+| `metricTagName`        |           | **yes**  | Resource tag name for getting "metric" list                                                                                             |
+| `aggregationTagName`   |           | **yes**  | Resource tag name for getting "aggregation" list                                         |
+| `timespan`             | `PT1M`    | no       | Metric timespan                                                      |
+| `interval`             |           | no       | Metric timespan                                                      |
+| `metric`               |           | no       | Metric name                                                          |
+| `aggregation`          |           | no       | Metric aggregation (`minimum`, `maximum`, `average`)                 |
+
