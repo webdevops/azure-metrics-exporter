@@ -64,7 +64,7 @@ func probeMetricsResourceHandler(w http.ResponseWriter, r *http.Request) {
 	// global stats counter
 	prometheusCollectTime.With(prometheus.Labels{
 		"subscriptionID": subscription,
-		"handler":        "/probe",
+		"handler":        PROBE_METRICS_RESOURCE_URL,
 		"filter":         "",
 	}).Observe(time.Now().Sub(startTime).Seconds())
 

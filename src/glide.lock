@@ -1,14 +1,16 @@
-hash: 41b41b626e62b244220dcccc910db3e4921b264fc5c9e7460a221af3dfff0ee2
-updated: 2019-02-03T15:47:45.946546+01:00
+hash: 3a3d96221ea37f0cc000995dc7d55517fc240a1dfde298f96a9411e3c852bf4d
+updated: 2019-02-07T00:10:27.866964+01:00
 imports:
 - name: contrib.go.opencensus.io/exporter/ocagent
   version: 531677ebdb45d5b9f80378a636aaccfd7cf3b964
 - name: github.com/Azure/azure-sdk-for-go
-  version: fb7488208f72a83bc60e921f94262e5bcb74e03a
+  version: 2ea98fc438b9d78aa2ab32bab44c7f68e506385e
   subpackages:
   - profiles/latest/appinsights/insights
+  - profiles/latest/operationalinsights/operationalinsights
   - profiles/latest/resources/mgmt/resources
   - profiles/latest/resources/mgmt/subscriptions
+  - services/operationalinsights/v1/operationalinsights
   - services/preview/monitor/mgmt/2018-03-01/insights
   - services/resources/mgmt/2018-05-01/resources
   - version
@@ -30,7 +32,7 @@ imports:
   subpackages:
   - quantile
 - name: github.com/census-instrumentation/opencensus-proto
-  version: 29d5a424e7e6413e7dd66993de41829ed0091aa6
+  version: a61e5d0964073f88f72b6e27e7a5e56ee0c58dc9
   subpackages:
   - gen-go/agent/common/v1
   - gen-go/agent/metrics/v1
@@ -43,7 +45,7 @@ imports:
 - name: github.com/dimchansky/utfbom
   version: d2133a1ce379ef6fa992b0514a77146c60db9d1c
 - name: github.com/golang/protobuf
-  version: 347cf4a86c1cb8d262994d8ef5924d4576c5b331
+  version: c823c79ea1570fb5ff454033735a8e68575d1d0f
   subpackages:
   - jsonpb
   - proto
@@ -60,7 +62,7 @@ imports:
 - name: github.com/google/logger
   version: 324a7c096a0d1041e2766b42187908af70e4f723
 - name: github.com/grpc-ecosystem/grpc-gateway
-  version: 1b220ea401fc5adad31a4259514d934f76c74280
+  version: c3923b1034cd4a10cea4dfae173804b19f6f7fe0
   subpackages:
   - internal
   - runtime
@@ -78,7 +80,7 @@ imports:
 - name: github.com/mitchellh/go-homedir
   version: af06845cf3004701891bf4fdb884bfe4920b3727
 - name: github.com/prometheus/client_golang
-  version: 12af604cf208d3105ced825c65231b4ecf00a8cc
+  version: 7190de1ef27a67a600698247a86db923cd5b8127
   subpackages:
   - prometheus
   - prometheus/internal
@@ -94,13 +96,13 @@ imports:
   - internal/bitbucket.org/ww/goautoneg
   - model
 - name: github.com/prometheus/procfs
-  version: 316cf8ccfec56d206735d46333ca162eb374da8b
+  version: 488faf799f863e27e50c516468f76ae8f1da20a5
   subpackages:
   - internal/util
   - nfs
   - xfs
 - name: go.opencensus.io
-  version: 7a32882185281dc6ea972e9b80d6a58448359977
+  version: ed9f155754b50f84f15997a4550ebd54667078e7
   subpackages:
   - exemplar
   - internal
@@ -123,7 +125,7 @@ imports:
   - pkcs12
   - pkcs12/internal/rc2
 - name: golang.org/x/net
-  version: d26f9f9a57f3fab6a695bec0d84433c2c50f8bbf
+  version: 65e2d4e15006aab9813ff8769e768bbf4bb667a0
   subpackages:
   - context
   - http/httpguts
@@ -137,7 +139,7 @@ imports:
   subpackages:
   - semaphore
 - name: golang.org/x/sys
-  version: 7ae0202eb74c2b534255c71b5a15fa4115aabbcc
+  version: 41f3e6584952bb034a481797859f6ab34b6803bd
   subpackages:
   - unix
   - windows
@@ -151,7 +153,7 @@ imports:
   - unicode/bidi
   - unicode/norm
 - name: google.golang.org/api
-  version: 2332327d474b8b265f7d524cac166fe335d821a9
+  version: 772dcae234f481e2e7a21827815551d1384d8bb5
   subpackages:
   - support/bundler
 - name: google.golang.org/genproto

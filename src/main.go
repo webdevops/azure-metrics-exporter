@@ -14,7 +14,7 @@ import (
 
 const (
 	Author  = "webdevops.io"
-	Version = "0.3.0"
+	Version = "0.4.0"
 
 	METRICS_URL = "/metrics"
 
@@ -26,6 +26,9 @@ const (
 
 	PROBE_METRICS_SCRAPE_URL             = "/probe/metrics/scrape"
 	PROBE_METRICS_SCRAPE_TIMEOUT_DEFAULT = 120
+
+	PROBE_LOGANALYTICS_SCRAPE_URL             = "/probe/loganalytics/query"
+	PROBE_LOGANALYTICS_SCRAPE_TIMEOUT_DEFAULT = 120
 )
 
 var (
@@ -37,7 +40,8 @@ var (
 
 	prometheusCollectTime *prometheus.SummaryVec
 
-	azureInsightMetrics *AzureInsightMetrics
+	azureInsightMetrics      *AzureInsightMetrics
+	azureLogAnalyticsMetrics *AzureLogAnalysticsMetrics
 )
 
 var opts struct {
@@ -99,6 +103,7 @@ func initAzureConnection() {
 	}
 
 	azureInsightMetrics = NewAzureInsightMetrics()
+	azureLogAnalyticsMetrics = NewAzureLogAnalysticsMetrics()
 }
 
 // start and handle prometheus handler
@@ -115,6 +120,10 @@ func startHttpServer() {
 
 	http.HandleFunc(PROBE_METRICS_SCRAPE_URL, func(w http.ResponseWriter, r *http.Request) {
 		probeMetricsScrapeHandler(w, r)
+	})
+
+	http.HandleFunc(PROBE_LOGANALYTICS_SCRAPE_URL, func(w http.ResponseWriter, r *http.Request) {
+		probeLogAnalyticsQueryHandler(w, r)
 	})
 
 	Logger.Fatal(http.ListenAndServe(opts.ServerBind, nil))

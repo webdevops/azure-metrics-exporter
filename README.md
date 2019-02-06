@@ -21,10 +21,11 @@ for Azure API authentication (using ENV vars) see https://github.com/Azure/azure
 Metrics
 -------
 
-| Metric                             | Description                                                                     |
-|------------------------------------|---------------------------------------------------------------------------------|
-| `azurerm_stats_metric_collecttime` | General exporter stats                                                          |
-| `azurerm_resource_metric`          | Resource metrics exported by probes                                             |
+| Metric                              | Description                                                                    |
+|-------------------------------------|--------------------------------------------------------------------------------|
+| `azurerm_stats_metric_collecttime`  | General exporter stats                                                         |
+| `azurerm_resource_metric`           | Resource metrics exported by probes                                            |
+| `azurerm_loganalytics_query_result` | LogAnalytics rows exported by probes                                           |
 
 
 HTTP Endpoints
@@ -33,9 +34,10 @@ HTTP Endpoints
 | Endpoint                       | Description                                                                         |
 |--------------------------------|-------------------------------------------------------------------------------------|
 | `/metrics`                     | Default prometheus golang metrics                                                   |
-| `/probe/resource`              | Probe metrics for one resource (see `azurerm_resource_metric`)                      |
-| `/probe/list`                  | Probe metrics for list of resources (see `azurerm_resource_metric`)                 |
-| `/probe/scrape`                | Probe metrics for list of resources and config on resource by tag name (see `azurerm_resource_metric`) |
+| `/probe/metrics/resource`      | Probe metrics for one resource (see `azurerm_resource_metric`)                      |
+| `/probe/metrics/list`          | Probe metrics for list of resources (see `azurerm_resource_metric`)                 |
+| `/probe/metrics/scrape`        | Probe metrics for list of resources and config on resource by tag name (see `azurerm_resource_metric`) |
+| `/probe/loganalytics/query`    | Probe metrics from LogAnalytics query (see `azurerm_loganalytics_query_result`)     |
 
 
 #### /probe/metrics/resource parameters
@@ -76,3 +78,11 @@ HTTP Endpoints
 | `metric`               |           | no       | Metric name                                                          |
 | `aggregation`          |           | no       | Metric aggregation (`minimum`, `maximum`, `average`)                 |
 
+#### /probe/loganalytics/query parameters
+
+
+| GET parameter          | Default   | Required | Description                                                          |
+|------------------------|-----------|----------|----------------------------------------------------------------------|
+| `workspace   `         |           | **yes**  | Azure LogAnalytics workspace ID                                      |
+| `query`                |           | **yes**  | LogAnalytics query                                                   |
+| `timespan`             |           | **yes**  | Query timespan                                                       |

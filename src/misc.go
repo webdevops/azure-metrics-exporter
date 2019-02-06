@@ -39,3 +39,37 @@ func paramsGetRequired(params url.Values, name string) (value string, err error)
 
 	return
 }
+
+func boolToFloat64(b bool) float64 {
+	if b {
+		return 1
+	}
+	return 0
+}
+
+func boolToString(b bool) string {
+	if b {
+		return "true"
+	}
+	return "false"
+}
+
+func intToString(v int) string {
+	return strconv.FormatInt(int64(v), 10)
+}
+
+func int32ToString(v int32) string {
+	return strconv.FormatInt(int64(v), 10)
+}
+
+func int64ToString(v int64) string {
+	return strconv.FormatInt(v, 10)
+}
+
+func float32ToString(v float32) string {
+	return strconv.FormatFloat(float64(v), 'f', 6, 64)
+}
+
+func float64ToString(v float64) string {
+	return strconv.FormatFloat(v, 'f', 6, 64)
+}

@@ -39,6 +39,7 @@ func (m *AzureInsightMetrics) MetricsClient(subscriptionId string) *insights.Met
 
 	return m.metricsClientCache[subscriptionId]
 }
+
 func (m *AzureInsightMetrics) ResourcesClient(subscriptionId string) *resources.Client {
 	if _, ok := m.resourceClientCache[subscriptionId]; !ok {
 		m.clientMutex.Lock()
