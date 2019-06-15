@@ -57,7 +57,7 @@ HTTP Endpoints
 
 | GET parameter          | Default   | Required | Description                                                          |
 |------------------------|-----------|----------|----------------------------------------------------------------------|
-| `subscription`         |           | **yes**  | Azure Subscription ID                                                |
+| `subscription`         |           | **yes**  | Azure Subscription ID (or multiple separate by comma)                |
 | `filter`               |           | **yes**  | Azure Resource filter (https://docs.microsoft.com/en-us/rest/api/resources/resources/list)                                              |
 | `timespan`             | `PT1M`    | no       | Metric timespan                                                      |
 | `interval`             |           | no       | Metric timespan                                                      |
@@ -69,10 +69,10 @@ HTTP Endpoints
 
 | GET parameter          | Default   | Required | Description                                                          |
 |------------------------|-----------|----------|----------------------------------------------------------------------|
-| `subscription`         |           | **yes**  | Azure Subscription ID                                                |
+| `subscription`         |           | **yes**  | Azure Subscription ID  (or multiple separate by comma)               |
 | `filter`               |           | **yes**  | Azure Resource filter (https://docs.microsoft.com/en-us/rest/api/resources/resources/list)                                              |
 | `metricTagName`        |           | **yes**  | Resource tag name for getting "metric" list                                                                                             |
-| `aggregationTagName`   |           | **yes**  | Resource tag name for getting "aggregation" list                                         |
+| `aggregationTagName`   |           | **yes**  | Resource tag name for getting "aggregation" list                     |
 | `timespan`             | `PT1M`    | no       | Metric timespan                                                      |
 | `interval`             |           | no       | Metric timespan                                                      |
 | `metric`               |           | no       | Metric name                                                          |

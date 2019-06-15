@@ -6,6 +6,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"net/http"
+	"strings"
 	"sync"
 	"time"
 )
@@ -14,7 +15,7 @@ func probeMetricsListHandler(w http.ResponseWriter, r *http.Request) {
 	var wg sync.WaitGroup
 	var err error
 	var timeoutSeconds float64
-	var subscription, filter string
+	var subscriptions, filter string
 	params := r.URL.Query()
 
 	startTime := time.Now()
@@ -32,7 +33,7 @@ func probeMetricsListHandler(w http.ResponseWriter, r *http.Request) {
 
 	registry, metricGauge := azureInsightMetrics.CreatePrometheusRegistryAndMetricsGauge()
 
-	if subscription, err = paramsGetRequired(params, "subscription"); err != nil {
+	if subscriptions, err = paramsGetRequired(params, "subscription"); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
@@ -52,42 +53,50 @@ func probeMetricsListHandler(w http.ResponseWriter, r *http.Request) {
 	metric := paramsGetWithDefault(params, "metric", "")
 	aggregation := paramsGetWithDefault(params, "aggregation", "")
 
-	list, err := azureInsightMetrics.ListResources(subscription, filter)
+	for _, subscription := range strings.Split(subscriptions, ",") {
+		subscription = strings.TrimSpace(subscription)
 
-	if err != nil {
-		Logger.Error(err)
-		http.Error(w, err.Error(), http.StatusBadRequest)
-	}
+		go func(subscription string) {
+			// fetch list of resources
+			list, err := azureInsightMetrics.ListResources(subscription, filter)
 
-	for list.NotDone() {
-		val := list.Value()
-
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-			result, err := azureInsightMetrics.FetchMetrics(ctx, subscription, *val.ID, timespan, interval, metric, aggregation)
-
-			if err == nil {
-				Logger.Verbosef("subscription[%v] fetched auto metrics for %v", subscription, *val.ID)
-				result.SetGauge(metricGauge)
-			} else {
+			if err != nil {
 				Logger.Error(err)
+				http.Error(w, err.Error(), http.StatusBadRequest)
 			}
-		}()
 
-		if list.NextWithContext(ctx) != nil {
-			break
-		}
+			for list.NotDone() {
+				val := list.Value()
+
+				wg.Add(1)
+				go func() {
+					defer wg.Done()
+					result, err := azureInsightMetrics.FetchMetrics(ctx, subscription, *val.ID, timespan, interval, metric, aggregation)
+
+					if err == nil {
+						Logger.Verbosef("subscription[%v] fetched auto metrics for %v", subscription, *val.ID)
+						result.SetGauge(metricGauge)
+					} else {
+						Logger.Error(err)
+					}
+				}()
+
+				if list.NextWithContext(ctx) != nil {
+					break
+				}
+			}
+
+			wg.Wait()
+
+			// global stats counter
+			prometheusCollectTime.With(prometheus.Labels{
+				"subscriptionID": subscription,
+				"handler":        PROBE_METRICS_LIST_URL,
+				"filter":         filter,
+			}).Observe(time.Now().Sub(startTime).Seconds())
+
+		} (subscription)
 	}
-
-	wg.Wait()
-
-	// global stats counter
-	prometheusCollectTime.With(prometheus.Labels{
-		"subscriptionID": subscription,
-		"handler":        PROBE_METRICS_LIST_URL,
-		"filter":         filter,
-	}).Observe(time.Now().Sub(startTime).Seconds())
 
 	h := promhttp.HandlerFor(registry, promhttp.HandlerOpts{})
 	h.ServeHTTP(w, r)
