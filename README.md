@@ -86,3 +86,24 @@ HTTP Endpoints
 | `workspace   `         |           | **yes**  | Azure LogAnalytics workspace ID                                      |
 | `query`                |           | **yes**  | LogAnalytics query                                                   |
 | `timespan`             |           | **yes**  | Query timespan                                                       |
+
+
+Prometheus configuration
+------------------------
+
+Basic example for redis metrics collection for all redis instances in one subscription:
+
+```
+- job_name: azure-metrics-redis
+  scrape_interval: 1m
+  metrics_path: /probe/metrics/list
+  params:
+    subscription: ["xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"]
+    filter: ["resourceType eq 'Microsoft.Cache/Redis'"]
+    metric: ["connectedclients,totalcommandsprocessed,cachehits,cachemisses,getcommands,setcommands,operationsPerSecond,evictedkeys,totalkeys,expiredkeys,usedmemory,usedmemorypercentage,usedmemoryRss,serverLoad,cacheWrite,cacheRead,percentProcessorTime,cacheLatency,errors"]
+    interval: [PT1M]
+    aggregation: [average]
+  static_configs:
+  - targets:
+    - 'azure-metrics:8080'
+```
