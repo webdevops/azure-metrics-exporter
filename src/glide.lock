@@ -1,10 +1,10 @@
-hash: 3a3d96221ea37f0cc000995dc7d55517fc240a1dfde298f96a9411e3c852bf4d
-updated: 2019-08-05T22:30:11.538235+02:00
+hash: f3c0bce17e31005f0ff3c8f59cc2a7d881c03fc1ba0970807834821c67d67b27
+updated: 2019-08-06T00:46:26.739487+02:00
 imports:
 - name: contrib.go.opencensus.io/exporter/ocagent
   version: 738c4b15ad40c960255f4369c5f0f4e95fc68341
 - name: github.com/Azure/azure-sdk-for-go
-  version: 5cd3deb00b42ed3b9199524cd8f70b8dd8bec2f0
+  version: a629ae7873bf2a86184a8bc1b65e65e1ab532f57
   subpackages:
   - profiles/latest/appinsights/insights
   - profiles/latest/operationalinsights/operationalinsights
@@ -12,10 +12,10 @@ imports:
   - profiles/latest/resources/mgmt/subscriptions
   - services/operationalinsights/v1/operationalinsights
   - services/preview/monitor/mgmt/2018-03-01/insights
-  - services/resources/mgmt/2019-03-01/resources
+  - services/resources/mgmt/2019-05-01/resources
   - version
 - name: github.com/Azure/go-autorest
-  version: f29a2eccaa178b367df0405778cd85e0af7b4225
+  version: ba1147dc57f993013ef255c128ca1cac8a557409
   subpackages:
   - autorest
   - autorest/adal
@@ -80,7 +80,7 @@ imports:
 - name: github.com/mitchellh/go-homedir
   version: af06845cf3004701891bf4fdb884bfe4920b3727
 - name: github.com/prometheus/client_golang
-  version: 2641b987480bca71fb39738eb8c8b0d577cb1d76
+  version: 170205fb58decfd011f1550d4cfb737230d7ae4f
   subpackages:
   - prometheus
   - prometheus/internal
@@ -99,6 +99,8 @@ imports:
   version: 1de2bc567d78f4ff415fd103412f7e5ec9e8876b
   subpackages:
   - internal/fs
+- name: github.com/remeh/sizedwaitgroup
+  version: 5e7302b12ccef91dce9fde2f5bda6d5c7ea5d2eb
 - name: go.opencensus.io
   version: 75c0cca22312e51bfd4fafdbe9197ae399e18b38
   subpackages:

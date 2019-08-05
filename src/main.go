@@ -52,6 +52,10 @@ var opts struct {
 
 	// server settings
 	ServerBind string `long:"bind" env:"SERVER_BIND"  description:"Server address"  default:":8080"`
+
+	// concurrency settings
+	ConcurrencySubscription         int `long:"concurrency.subscription" env:"CONCURRENCY_SUBSCRIPTION"  description:"Concurrent subscription fetches"  default:"5"`
+	ConcurrencySubscriptionResource int `long:"concurrency.subscription.resource" env:"CONCURRENCY_SUBSCRIPTION_RESOURCE"  description:"Concurrent requests per resource (inside subscription requests)"  default:"10"`
 }
 
 func main() {

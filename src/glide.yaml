@@ -17,6 +17,8 @@ import:
   version: master
 - package: github.com/jessevdk/go-flags
   version: master
+- package: github.com/remeh/sizedwaitgroup
+  version: master
 - package: github.com/prometheus/client_golang
   version: master
   subpackages:

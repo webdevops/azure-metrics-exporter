@@ -12,9 +12,11 @@ Configuration
 
 Normally no configuration is needed but can be customized using environment variables.
 
-| Environment variable              | DefaultValue                | Description                                        |
-|-----------------------------------|-----------------------------|----------------------------------------------------|
-| `SERVER_BIND`                     | `:8080`                     | IP/Port binding                                    |
+| Environment variable                 | DefaultValue                | Description                                                                         |
+|--------------------------------------|-----------------------------|-------------------------------------------------------------------------------------|
+| `SERVER_BIND`                        | `:8080`                     | IP/Port binding                                                                     |
+| `CONCURRENCY_SUBSCRIPTION`           | `5`                         | How many concurrent subscriptions fetches are run at the same time                  |
+| `CONCURRENCY_SUBSCRIPTION_RESOURCE`  | `10`                        | How many concurrent resources (for one subscription) are processed at the same time |
 
 for Azure API authentication (using ENV vars) see https://github.com/Azure/azure-sdk-for-go#authentication
 

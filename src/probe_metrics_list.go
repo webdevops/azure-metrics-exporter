@@ -5,17 +5,18 @@ import (
 	"fmt"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"github.com/remeh/sizedwaitgroup"
 	"net/http"
 	"strings"
-	"sync"
 	"time"
 )
 
 func probeMetricsListHandler(w http.ResponseWriter, r *http.Request) {
-	var wg sync.WaitGroup
 	var err error
 	var timeoutSeconds float64
 	var subscriptions, filter string
+	wg := sizedwaitgroup.New(opts.ConcurrencySubscription)
+
 	params := r.URL.Query()
 
 	startTime := time.Now()
@@ -57,10 +58,10 @@ func probeMetricsListHandler(w http.ResponseWriter, r *http.Request) {
 	for _, subscription := range strings.Split(subscriptions, ",") {
 		subscription = strings.TrimSpace(subscription)
 
-		wg.Add(1)
+		wg.Add()
 		go func(subscription string) {
 			defer wg.Done()
-			var wgResource sync.WaitGroup
+			wgResource := sizedwaitgroup.New(opts.ConcurrencySubscriptionResource)
 
 			// fetch list of resources
 			list, err := azureInsightMetrics.ListResources(subscription, filter)
@@ -73,7 +74,7 @@ func probeMetricsListHandler(w http.ResponseWriter, r *http.Request) {
 			for list.NotDone() {
 				val := list.Value()
 
-				wgResource.Add(1)
+				wgResource.Add()
 				go func() {
 					defer wgResource.Done()
 					result, err := azureInsightMetrics.FetchMetrics(ctx, subscription, *val.ID, timespan, interval, metric, aggregation)
