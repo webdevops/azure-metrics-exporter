@@ -89,8 +89,20 @@ func probeMetricsScrapeHandler(w http.ResponseWriter, r *http.Request) {
 							if err == nil {
 								Logger.Verbosef("subscription[%v] fetched auto metrics for %v", subscription, *val.ID)
 								result.SetGauge(metricGauge)
+								prometheusMetricRequests.With(prometheus.Labels{
+									"subscriptionID": subscription,
+									"handler":        PROBE_METRICS_SCRAPE_URL,
+									"filter":         filter,
+									"result":         "success",
+								}).Inc()
 							} else {
 								Logger.Error(err)
+								prometheusMetricRequests.With(prometheus.Labels{
+									"subscriptionID": subscription,
+									"handler":        PROBE_METRICS_SCRAPE_URL,
+									"filter":         filter,
+									"result":         "error",
+								}).Inc()
 							}
 						}
 					}

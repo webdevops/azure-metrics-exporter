@@ -26,6 +26,7 @@ Metrics
 | Metric                              | Description                                                                    |
 |-------------------------------------|--------------------------------------------------------------------------------|
 | `azurerm_stats_metric_collecttime`  | General exporter stats                                                         |
+| `azurerm_stats_metric_requests`     | Counter of resource metric requests with result (error, success)               |
 | `azurerm_resource_metric`           | Resource metrics exported by probes (can be changed using `name` parameter)    |
 | `azurerm_loganalytics_query_result` | LogAnalytics rows exported by probes                                           |
 

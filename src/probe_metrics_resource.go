@@ -54,12 +54,24 @@ func probeMetricsResourceHandler(w http.ResponseWriter, r *http.Request) {
 	result, err := azureInsightMetrics.FetchMetrics(ctx, subscription, target, timespan, interval, metric, aggregation)
 
 	if err != nil {
+		prometheusMetricRequests.With(prometheus.Labels{
+			"subscriptionID": subscription,
+			"handler":        PROBE_METRICS_RESOURCE_URL,
+			"filter":         "",
+			"result":         "error",
+		}).Inc()
 		Logger.Error(err)
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
 	Logger.Verbosef("subscription[%v] fetched metrics for %v", subscription, target)
+	prometheusMetricRequests.With(prometheus.Labels{
+		"subscriptionID": subscription,
+		"handler":        PROBE_METRICS_RESOURCE_URL,
+		"filter":         "",
+		"result":         "success",
+	}).Inc()
 	result.SetGauge(metricGauge)
 
 	// global stats counter

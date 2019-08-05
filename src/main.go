@@ -40,7 +40,8 @@ var (
 	Logger          *DaemonLogger
 	AzureAuthorizer autorest.Authorizer
 
-	prometheusCollectTime *prometheus.SummaryVec
+	prometheusCollectTime    *prometheus.SummaryVec
+	prometheusMetricRequests *prometheus.CounterVec
 
 	azureInsightMetrics      *AzureInsightMetrics
 	azureLogAnalyticsMetrics *AzureLogAnalysticsMetrics
@@ -147,5 +148,20 @@ func initMetricCollector() {
 			"filter",
 		},
 	)
+
+	prometheusMetricRequests = prometheus.NewCounterVec(
+		prometheus.CounterOpts{
+			Name: "azurerm_stats_metric_requests",
+			Help: "Azure Insights resource requests",
+		},
+		[]string{
+			"subscriptionID",
+			"handler",
+			"filter",
+			"result",
+		},
+	)
+
 	prometheus.MustRegister(prometheusCollectTime)
+	prometheus.MustRegister(prometheusMetricRequests)
 }
