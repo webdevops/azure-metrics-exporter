@@ -11,19 +11,14 @@ WORKDIR /go/src/azure-metrics-exporter/src
 COPY ./src /go/src/azure-metrics-exporter/src
 RUN mkdir /app/ \
     && cp -a /tmp/app/vendor ./vendor/ \
-    && cp -a entrypoint.sh /app/ \
-    && chmod 555 /app/entrypoint.sh \
-    && go build -o /app/azure-metrics-exporter
+    && CGO_ENABLED=0 GOOS=linux go build -o /app/azure-metrics-exporter
 
 #############################################
 # FINAL IMAGE
 #############################################
-FROM alpine
-RUN apk add --no-cache \
-        libc6-compat \
-    	ca-certificates \
-    	wget \
-    	curl
+FROM gcr.io/distroless/static
+
 COPY --from=build /app/ /app/
-USER 1000
-ENTRYPOINT ["/app/entrypoint.sh"]
+USER 65534
+EXPOSE 8080
+ENTRYPOINT ["/app/azure-metrics-exporter"]
