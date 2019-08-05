@@ -31,7 +31,8 @@ func probeMetricsScrapeHandler(w http.ResponseWriter, r *http.Request) {
 	defer cancel()
 	r = r.WithContext(ctx)
 
-	registry, metricGauge := azureInsightMetrics.CreatePrometheusRegistryAndMetricsGauge()
+	metricName := paramsGetWithDefault(params, "name", PROMETHEUS_METRIC_NAME)
+	registry, metricGauge := azureInsightMetrics.CreatePrometheusRegistryAndMetricsGauge(metricName)
 
 	if subscriptions, err = paramsGetRequired(params, "subscription"); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)

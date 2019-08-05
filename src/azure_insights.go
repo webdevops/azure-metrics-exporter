@@ -62,9 +62,9 @@ func (m *AzureInsightMetrics) ListResources(subscriptionId, filter string) (reso
 	return m.ResourcesClient(subscriptionId).ListComplete(context.Background(), filter, "", nil)
 }
 
-func (m *AzureInsightMetrics) CreatePrometheusMetricsGauge() (gauge *prometheus.GaugeVec) {
-	gauge = prometheus.NewGaugeVec(prometheus.GaugeOpts{
-		Name: "azurerm_resource_metric",
+func (m *AzureInsightMetrics) CreatePrometheusMetricsGauge(metricName string) (gauge *prometheus.GaugeVec) {
+	return prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		Name: metricName,
 		Help: "Azure monitor insight metics",
 	}, []string{
 		"resourceID",
@@ -72,13 +72,11 @@ func (m *AzureInsightMetrics) CreatePrometheusMetricsGauge() (gauge *prometheus.
 		"unit",
 		"data",
 	})
-
-	return
 }
 
-func (m *AzureInsightMetrics) CreatePrometheusRegistryAndMetricsGauge() (*prometheus.Registry, *prometheus.GaugeVec) {
+func (m *AzureInsightMetrics) CreatePrometheusRegistryAndMetricsGauge(metricName string) (*prometheus.Registry, *prometheus.GaugeVec) {
 	registry := prometheus.NewRegistry()
-	gauge := azureInsightMetrics.CreatePrometheusMetricsGauge()
+	gauge := azureInsightMetrics.CreatePrometheusMetricsGauge(metricName)
 	registry.MustRegister(gauge)
 
 	return registry, gauge

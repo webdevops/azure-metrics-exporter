@@ -24,7 +24,7 @@ Metrics
 | Metric                              | Description                                                                    |
 |-------------------------------------|--------------------------------------------------------------------------------|
 | `azurerm_stats_metric_collecttime`  | General exporter stats                                                         |
-| `azurerm_resource_metric`           | Resource metrics exported by probes                                            |
+| `azurerm_resource_metric`           | Resource metrics exported by probes (can be changed using `name` parameter)    |
 | `azurerm_loganalytics_query_result` | LogAnalytics rows exported by probes                                           |
 
 
@@ -43,40 +43,43 @@ HTTP Endpoints
 #### /probe/metrics/resource parameters
 
 
-| GET parameter          | Default   | Required | Description                                                          |
-|------------------------|-----------|----------|----------------------------------------------------------------------|
-| `subscription`         |           | **yes**  | Azure Subscription ID                                                |
-| `target`               |           | **yes**  | Azure Resource URI                                                   |
-| `timespan`             | `PT1M`    | no       | Metric timespan                                                      |
-| `interval`             |           | no       | Metric timespan                                                      |
-| `metric`               |           | no       | Metric name                                                          |
-| `aggregation`          |           | no       | Metric aggregation (`minimum`, `maximum`, `average`)                 |
+| GET parameter          | Default                   | Required | Description                                                          |
+|------------------------|---------------------------|----------|----------------------------------------------------------------------|
+| `subscription`         |                           | **yes**  | Azure Subscription ID                                                |
+| `target`               |                           | **yes**  | Azure Resource URI                                                   |
+| `timespan`             | `PT1M`                    | no       | Metric timespan                                                      |
+| `interval`             |                           | no       | Metric timespan                                                      |
+| `metric`               |                           | no       | Metric name                                                          |
+| `aggregation`          |                           | no       | Metric aggregation (`minimum`, `maximum`, `average`)                 |
+| `name`                 | `azurerm_resource_metric` | no       | Prometheus metric name                                               |
 
 
 #### /probe/metrics/list parameters
 
-| GET parameter          | Default   | Required | Description                                                          |
-|------------------------|-----------|----------|----------------------------------------------------------------------|
-| `subscription`         |           | **yes**  | Azure Subscription ID (or multiple separate by comma)                |
-| `filter`               |           | **yes**  | Azure Resource filter (https://docs.microsoft.com/en-us/rest/api/resources/resources/list)                                              |
-| `timespan`             | `PT1M`    | no       | Metric timespan                                                      |
-| `interval`             |           | no       | Metric timespan                                                      |
-| `metric`               |           | no       | Metric name                                                          |
-| `aggregation`          |           | no       | Metric aggregation (`minimum`, `maximum`, `average`)                 |
+| GET parameter          | Default                   | Required | Description                                                          |
+|------------------------|---------------------------|----------|----------------------------------------------------------------------|
+| `subscription`         |                           | **yes**  | Azure Subscription ID (or multiple separate by comma)                |
+| `filter`               |                           | **yes**  | Azure Resource filter (https://docs.microsoft.com/en-us/rest/api/resources/resources/list)                                              |
+| `timespan`             | `PT1M`                    | no       | Metric timespan                                                      |
+| `interval`             |                           | no       | Metric timespan                                                      |
+| `metric`               |                           | no       | Metric name                                                          |
+| `aggregation`          |                           | no       | Metric aggregation (`minimum`, `maximum`, `average`)                 |
+| `name`                 | `azurerm_resource_metric` | no       | Prometheus metric name                                               |
 
 
 #### /probe/metrics/scrape parameters
 
-| GET parameter          | Default   | Required | Description                                                          |
-|------------------------|-----------|----------|----------------------------------------------------------------------|
-| `subscription`         |           | **yes**  | Azure Subscription ID  (or multiple separate by comma)               |
-| `filter`               |           | **yes**  | Azure Resource filter (https://docs.microsoft.com/en-us/rest/api/resources/resources/list)                                              |
-| `metricTagName`        |           | **yes**  | Resource tag name for getting "metric" list                                                                                             |
-| `aggregationTagName`   |           | **yes**  | Resource tag name for getting "aggregation" list                     |
-| `timespan`             | `PT1M`    | no       | Metric timespan                                                      |
-| `interval`             |           | no       | Metric timespan                                                      |
-| `metric`               |           | no       | Metric name                                                          |
-| `aggregation`          |           | no       | Metric aggregation (`minimum`, `maximum`, `average`)                 |
+| GET parameter          | Default                   | Required | Description                                                          |
+|------------------------|---------------------------|----------|----------------------------------------------------------------------|
+| `subscription`         |                           | **yes**  | Azure Subscription ID  (or multiple separate by comma)               |
+| `filter`               |                           | **yes**  | Azure Resource filter (https://docs.microsoft.com/en-us/rest/api/resources/resources/list)                                              |
+| `metricTagName`        |                           | **yes**  | Resource tag name for getting "metric" list                                                                                             |
+| `aggregationTagName`   |                           | **yes**  | Resource tag name for getting "aggregation" list                     |
+| `timespan`             | `PT1M`                    | no       | Metric timespan                                                      |
+| `interval`             |                           | no       | Metric timespan                                                      |
+| `metric`               |                           | no       | Metric name                                                          |
+| `aggregation`          |                           | no       | Metric aggregation (`minimum`, `maximum`, `average`)                 |
+| `name`                 | `azurerm_resource_metric` | no       | Prometheus metric name                                               |
 
 #### /probe/loganalytics/query parameters
 
@@ -98,6 +101,7 @@ Basic example for redis metrics collection for all redis instances in one subscr
   scrape_interval: 1m
   metrics_path: /probe/metrics/list
   params:
+    name: ["my-own-metric-name"]
     subscription: ["xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"]
     filter: ["resourceType eq 'Microsoft.Cache/Redis'"]
     metric: ["connectedclients,totalcommandsprocessed,cachehits,cachemisses,getcommands,setcommands,operationsPerSecond,evictedkeys,totalkeys,expiredkeys,usedmemory,usedmemorypercentage,usedmemoryRss,serverLoad,cacheWrite,cacheRead,percentProcessorTime,cacheLatency,errors"]

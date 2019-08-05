@@ -18,6 +18,8 @@ const (
 
 	METRICS_URL = "/metrics"
 
+	PROMETHEUS_METRIC_NAME = "azurerm_resource_metric"
+
 	PROBE_METRICS_RESOURCE_URL             = "/probe/metrics/resource"
 	PROBE_METRICS_RESOURCE_TIMEOUT_DEFAULT = 10
 
