@@ -68,7 +68,6 @@ func probeMetricsScrapeHandler(w http.ResponseWriter, r *http.Request) {
 			defer wg.Done()
 			var wgResource sync.WaitGroup
 
-
 			list, err := azureInsightMetrics.ListResources(subscription, filter)
 
 			if err != nil {
@@ -110,7 +109,7 @@ func probeMetricsScrapeHandler(w http.ResponseWriter, r *http.Request) {
 				"handler":        PROBE_METRICS_SCRAPE_URL,
 				"filter":         filter,
 			}).Observe(time.Now().Sub(startTime).Seconds())
-		} (subscription)
+		}(subscription)
 	}
 
 	wg.Wait()

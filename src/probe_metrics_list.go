@@ -100,7 +100,7 @@ func probeMetricsListHandler(w http.ResponseWriter, r *http.Request) {
 				"filter":         filter,
 			}).Observe(time.Now().Sub(startTime).Seconds())
 
-		} (subscription)
+		}(subscription)
 	}
 
 	wg.Wait()
