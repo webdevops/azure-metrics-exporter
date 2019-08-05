@@ -56,7 +56,11 @@ func probeMetricsListHandler(w http.ResponseWriter, r *http.Request) {
 	for _, subscription := range strings.Split(subscriptions, ",") {
 		subscription = strings.TrimSpace(subscription)
 
+		wg.Add(1)
 		go func(subscription string) {
+			defer wg.Done()
+			var wgResource sync.WaitGroup
+
 			// fetch list of resources
 			list, err := azureInsightMetrics.ListResources(subscription, filter)
 
@@ -68,9 +72,9 @@ func probeMetricsListHandler(w http.ResponseWriter, r *http.Request) {
 			for list.NotDone() {
 				val := list.Value()
 
-				wg.Add(1)
+				wgResource.Add(1)
 				go func() {
-					defer wg.Done()
+					defer wgResource.Done()
 					result, err := azureInsightMetrics.FetchMetrics(ctx, subscription, *val.ID, timespan, interval, metric, aggregation)
 
 					if err == nil {
@@ -86,7 +90,7 @@ func probeMetricsListHandler(w http.ResponseWriter, r *http.Request) {
 				}
 			}
 
-			wg.Wait()
+			wgResource.Wait()
 
 			// global stats counter
 			prometheusCollectTime.With(prometheus.Labels{
@@ -97,6 +101,8 @@ func probeMetricsListHandler(w http.ResponseWriter, r *http.Request) {
 
 		} (subscription)
 	}
+
+	wg.Wait()
 
 	h := promhttp.HandlerFor(registry, promhttp.HandlerOpts{})
 	h.ServeHTTP(w, r)

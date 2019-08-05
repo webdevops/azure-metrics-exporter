@@ -29,27 +29,33 @@ func NewAzureInsightMetrics() *AzureInsightMetrics {
 }
 
 func (m *AzureInsightMetrics) MetricsClient(subscriptionId string) *insights.MetricsClient {
+	m.clientMutex.Lock()
+
 	if _, ok := m.metricsClientCache[subscriptionId]; !ok {
-		m.clientMutex.Lock()
 		client := insights.NewMetricsClient(subscriptionId)
 		client.Authorizer = AzureAuthorizer
 		m.metricsClientCache[subscriptionId] = &client
-		m.clientMutex.Unlock()
 	}
 
-	return m.metricsClientCache[subscriptionId]
+	client := m.metricsClientCache[subscriptionId]
+	m.clientMutex.Unlock()
+
+	return client
 }
 
 func (m *AzureInsightMetrics) ResourcesClient(subscriptionId string) *resources.Client {
+	m.clientMutex.Lock()
+
 	if _, ok := m.resourceClientCache[subscriptionId]; !ok {
-		m.clientMutex.Lock()
 		client := resources.NewClient(subscriptionId)
 		client.Authorizer = AzureAuthorizer
 		m.resourceClientCache[subscriptionId] = &client
-		m.clientMutex.Unlock()
 	}
 
-	return m.resourceClientCache[subscriptionId]
+	client := m.resourceClientCache[subscriptionId]
+	m.clientMutex.Unlock()
+
+	return client
 }
 
 func (m *AzureInsightMetrics) ListResources(subscriptionId, filter string) (resources.ListResultIterator, error) {
