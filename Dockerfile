@@ -1,24 +1,22 @@
-FROM golang:1.12 as build
+FROM golang:1.13 as build
 
-# golang deps
-WORKDIR /tmp/app/
-COPY ./src/glide.yaml /tmp/app/
-COPY ./src/glide.lock /tmp/app/
-RUN curl https://glide.sh/get | sh \
-    && glide install
+WORKDIR /go/src/github.com/webdevops/azure-metrics-exporter
 
-WORKDIR /go/src/azure-metrics-exporter/src
-COPY ./src /go/src/azure-metrics-exporter/src
-RUN mkdir /app/ \
-    && cp -a /tmp/app/vendor ./vendor/ \
-    && CGO_ENABLED=0 GOOS=linux go build -o /app/azure-metrics-exporter
+# Get deps (cached)
+COPY ./go.mod /go/src/github.com/webdevops/azure-metrics-exporter
+COPY ./go.sum /go/src/github.com/webdevops/azure-metrics-exporter
+RUN go mod download
+
+# Compile
+COPY ./ /go/src/github.com/webdevops/azure-metrics-exporter
+RUN CGO_ENABLED=0 GOOS=linux go build -a -ldflags '-extldflags "-static"' -o /azure-metrics-exporter \
+    && chmod +x /azure-metrics-exporter
+RUN /azure-metrics-exporter --help
 
 #############################################
 # FINAL IMAGE
 #############################################
 FROM gcr.io/distroless/static
-
-COPY --from=build /app/ /app/
-USER 65534
-EXPOSE 8080
-ENTRYPOINT ["/app/azure-metrics-exporter"]
+COPY --from=build /azure-metrics-exporter /
+USER 1000
+ENTRYPOINT ["/azure-metrics-exporter"]
