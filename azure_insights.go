@@ -137,6 +137,15 @@ func (r *AzureInsightMetricsResult) SetGauge(gauge *prometheus.GaugeVec) {
 									"data":       "average",
 								}).Set(*timeseriesData.Average)
 							}
+
+							if timeseriesData.Count != nil {
+								gauge.With(prometheus.Labels{
+									"resourceID": *r.ResourceID,
+									"type":       *metric.Name.Value,
+									"unit":       string(metric.Unit),
+									"data":       "count",
+								}).Set(*timeseriesData.Count)
+							}
 						}
 					}
 				}
