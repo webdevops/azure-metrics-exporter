@@ -14,7 +14,7 @@ import (
 
 const (
 	Author  = "webdevops.io"
-	Version = "0.6.0"
+	Version = "0.7.0"
 
 	METRICS_URL = "/metrics"
 
