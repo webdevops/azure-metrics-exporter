@@ -114,3 +114,5 @@ Basic example for redis metrics collection for all redis instances in one subscr
   - targets:
     - 'azure-metrics:8080'
 ```
+
+The [List of supported metrics](https://docs.microsoft.com/en-us/azure/azure-monitor/platform/metrics-supported) is available in the Microsoft Azure docs.
