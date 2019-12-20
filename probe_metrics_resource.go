@@ -75,7 +75,7 @@ func probeMetricsResourceHandler(w http.ResponseWriter, r *http.Request) {
 		"filter":         "",
 		"result":         "success",
 	}).Inc()
-	result.SetGauge(metricGauge)
+	result.SetGauge(metricGauge, aggregation)
 
 	// global stats counter
 	prometheusCollectTime.With(prometheus.Labels{

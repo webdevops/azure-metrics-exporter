@@ -71,6 +71,7 @@ func (m *AzureInsightMetrics) CreatePrometheusMetricsGauge(metricName string) (g
 		"type",
 		"unit",
 		"data",
+		"aggregation",
 	})
 }
 
@@ -95,7 +96,7 @@ func (m *AzureInsightMetrics) FetchMetrics(ctx context.Context, subscriptionId, 
 	return ret, err
 }
 
-func (r *AzureInsightMetricsResult) SetGauge(gauge *prometheus.GaugeVec) {
+func (r *AzureInsightMetricsResult) SetGauge(gauge *prometheus.GaugeVec, aggregation string) {
 	if r.Result.Value != nil {
 		for _, metric := range *r.Result.Value {
 			if metric.Timeseries != nil {
@@ -108,6 +109,7 @@ func (r *AzureInsightMetricsResult) SetGauge(gauge *prometheus.GaugeVec) {
 									"type":       *metric.Name.Value,
 									"unit":       string(metric.Unit),
 									"data":       "total",
+									"aggregation": aggregation,
 								}).Set(*timeseriesData.Total)
 							}
 
@@ -117,6 +119,7 @@ func (r *AzureInsightMetricsResult) SetGauge(gauge *prometheus.GaugeVec) {
 									"type":       *metric.Name.Value,
 									"unit":       string(metric.Unit),
 									"data":       "minimum",
+									"aggregation": aggregation,
 								}).Set(*timeseriesData.Minimum)
 							}
 
@@ -126,6 +129,7 @@ func (r *AzureInsightMetricsResult) SetGauge(gauge *prometheus.GaugeVec) {
 									"type":       *metric.Name.Value,
 									"unit":       string(metric.Unit),
 									"data":       "maximum",
+									"aggregation": aggregation,
 								}).Set(*timeseriesData.Maximum)
 							}
 
@@ -135,6 +139,7 @@ func (r *AzureInsightMetricsResult) SetGauge(gauge *prometheus.GaugeVec) {
 									"type":       *metric.Name.Value,
 									"unit":       string(metric.Unit),
 									"data":       "average",
+									"aggregation": aggregation,
 								}).Set(*timeseriesData.Average)
 							}
 
@@ -144,6 +149,7 @@ func (r *AzureInsightMetricsResult) SetGauge(gauge *prometheus.GaugeVec) {
 									"type":       *metric.Name.Value,
 									"unit":       string(metric.Unit),
 									"data":       "count",
+									"aggregation": aggregation,
 								}).Set(*timeseriesData.Count)
 							}
 						}

@@ -93,7 +93,7 @@ func probeMetricsScrapeHandler(w http.ResponseWriter, r *http.Request) {
 
 							if err == nil {
 								Logger.Verbosef("subscription[%v] fetched auto metrics for %v", subscription, *val.ID)
-								result.SetGauge(metricGauge)
+								result.SetGauge(metricGauge, aggregation)
 								prometheusMetricRequests.With(prometheus.Labels{
 									"subscriptionID": subscription,
 									"handler":        PROBE_METRICS_SCRAPE_URL,
