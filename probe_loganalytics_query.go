@@ -21,6 +21,7 @@ func probeLogAnalyticsQueryHandler(w http.ResponseWriter, r *http.Request) {
 	// If a timeout is configured via the Prometheus header, add it to the request.
 	timeoutSeconds, err = getPrometheusTimeout(r, PROBE_LOGANALYTICS_SCRAPE_TIMEOUT_DEFAULT)
 	if err != nil {
+		Logger.Error(err)
 		http.Error(w, fmt.Sprintf("Failed to parse timeout from Prometheus header: %s", err), http.StatusInternalServerError)
 		return
 	}
@@ -30,16 +31,19 @@ func probeLogAnalyticsQueryHandler(w http.ResponseWriter, r *http.Request) {
 	r = r.WithContext(ctx)
 
 	if workspace, err = paramsGetRequired(params, "workspace"); err != nil {
+		Logger.Error(err)
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
 	if query, err = paramsGetRequired(params, "query"); err != nil {
+		Logger.Error(err)
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
 	if timespan, err = paramsGetRequired(params, "timespan"); err != nil {
+		Logger.Error(err)
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}

@@ -20,6 +20,7 @@ func probeMetricsResourceHandler(w http.ResponseWriter, r *http.Request) {
 	// If a timeout is configured via the Prometheus header, add it to the request.
 	timeoutSeconds, err = getPrometheusTimeout(r, PROBE_METRICS_RESOURCE_TIMEOUT_DEFAULT)
 	if err != nil {
+		Logger.Error(err)
 		http.Error(w, fmt.Sprintf("Failed to parse timeout from Prometheus header: %s", err), http.StatusInternalServerError)
 		return
 	}
@@ -32,11 +33,13 @@ func probeMetricsResourceHandler(w http.ResponseWriter, r *http.Request) {
 	registry, metricGauge := azureInsightMetrics.CreatePrometheusRegistryAndMetricsGauge(metricName)
 
 	if subscription, err = paramsGetRequired(params, "subscription"); err != nil {
+		Logger.Error(err)
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
 	if target, err = paramsGetRequired(params, "target"); err != nil {
+		Logger.Error(err)
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}

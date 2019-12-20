@@ -23,6 +23,7 @@ func probeMetricsScrapeHandler(w http.ResponseWriter, r *http.Request) {
 	// If a timeout is configured via the Prometheus header, add it to the request.
 	timeoutSeconds, err = getPrometheusTimeout(r, PROBE_METRICS_SCRAPE_TIMEOUT_DEFAULT)
 	if err != nil {
+		Logger.Error(err)
 		http.Error(w, fmt.Sprintf("Failed to parse timeout from Prometheus header: %s", err), http.StatusInternalServerError)
 		return
 	}
@@ -35,11 +36,13 @@ func probeMetricsScrapeHandler(w http.ResponseWriter, r *http.Request) {
 	registry, metricGauge := azureInsightMetrics.CreatePrometheusRegistryAndMetricsGauge(metricName)
 
 	if subscriptions, err = paramsGetRequired(params, "subscription"); err != nil {
+		Logger.Error(err)
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
 	if filter, err = paramsGetRequired(params, "filter"); err != nil {
+		Logger.Error(err)
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
@@ -52,10 +55,12 @@ func probeMetricsScrapeHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if metricTagName, err = paramsGetRequired(params, "metricTagName"); err != nil {
+		Logger.Error(err)
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 	if aggregationTagName, err = paramsGetRequired(params, "aggregationTagName"); err != nil {
+		Logger.Error(err)
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
