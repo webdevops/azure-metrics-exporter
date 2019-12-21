@@ -7,17 +7,13 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/remeh/sizedwaitgroup"
 	"net/http"
-	"strings"
 	"time"
 )
 
 func probeMetricsListHandler(w http.ResponseWriter, r *http.Request) {
 	var err error
 	var timeoutSeconds float64
-	var subscriptions, filter string
 	wg := sizedwaitgroup.New(opts.ConcurrencySubscription)
-
-	params := r.URL.Query()
 
 	startTime := time.Now()
 
@@ -33,45 +29,30 @@ func probeMetricsListHandler(w http.ResponseWriter, r *http.Request) {
 	defer cancel()
 	r = r.WithContext(ctx)
 
-	metricName := paramsGetWithDefault(params, "name", PROMETHEUS_METRIC_NAME)
-	registry, metricGauge := azureInsightMetrics.CreatePrometheusRegistryAndMetricsGauge(metricName)
-
-	if subscriptions, err = paramsGetRequired(params, "subscription"); err != nil {
+	var settings RequestMetricSettings
+	if val, err := NewRequestMetricSettings(r); err == nil {
+		settings = val
+	} else {
 		Logger.Error(err)
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	if filter, err = paramsGetRequired(params, "filter"); err != nil {
-		Logger.Error(err)
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
+	registry, metricGauge := azureInsightMetrics.CreatePrometheusRegistryAndMetricsGauge(settings.Name)
 
-	timespan := paramsGetWithDefault(params, "timespan", "PT1M")
-
-	var interval *string
-	if val := params.Get("interval"); val != "" {
-		interval = &val
-	}
-
-	metric := paramsGetWithDefault(params, "metric", "")
-	aggregation := paramsGetWithDefault(params, "aggregation", "")
-
-	for _, subscription := range strings.Split(subscriptions, ",") {
-		subscription = strings.TrimSpace(subscription)
-
+	for _, subscription := range settings.Subscriptions {
 		wg.Add()
 		go func(subscription string) {
 			defer wg.Done()
 			wgResource := sizedwaitgroup.New(opts.ConcurrencySubscriptionResource)
 
 			// fetch list of resources
-			list, err := azureInsightMetrics.ListResources(subscription, filter)
+			list, err := azureInsightMetrics.ListResources(subscription, settings.Filter)
 
 			if err != nil {
 				Logger.Error(err)
 				http.Error(w, err.Error(), http.StatusBadRequest)
+				return
 			}
 
 			for list.NotDone() {
@@ -80,23 +61,24 @@ func probeMetricsListHandler(w http.ResponseWriter, r *http.Request) {
 				wgResource.Add()
 				go func() {
 					defer wgResource.Done()
-					result, err := azureInsightMetrics.FetchMetrics(ctx, subscription, *val.ID, timespan, interval, metric, aggregation)
+					result, err := azureInsightMetrics.FetchMetrics(ctx, subscription, *val.ID, settings)
 
 					if err == nil {
 						Logger.Verbosef("subscription[%v] fetched auto metrics for %v", subscription, *val.ID)
-						result.SetGauge(metricGauge, aggregation)
+						result.SetGauge(metricGauge, settings)
 						prometheusMetricRequests.With(prometheus.Labels{
 							"subscriptionID": subscription,
 							"handler":        PROBE_METRICS_LIST_URL,
-							"filter":         filter,
+							"filter":         settings.Filter,
 							"result":         "success",
 						}).Inc()
 					} else {
-						Logger.Error(err)
+						Logger.Verbosef("subscription[%v] failed fetching metrics for %v", subscription, *val.ID)
+						Logger.Warningln(err)
 						prometheusMetricRequests.With(prometheus.Labels{
 							"subscriptionID": subscription,
 							"handler":        PROBE_METRICS_LIST_URL,
-							"filter":         filter,
+							"filter":         settings.Filter,
 							"result":         "error",
 						}).Inc()
 					}
@@ -113,7 +95,7 @@ func probeMetricsListHandler(w http.ResponseWriter, r *http.Request) {
 			prometheusCollectTime.With(prometheus.Labels{
 				"subscriptionID": subscription,
 				"handler":        PROBE_METRICS_LIST_URL,
-				"filter":         filter,
+				"filter":         settings.Filter,
 			}).Observe(time.Now().Sub(startTime).Seconds())
 
 		}(subscription)

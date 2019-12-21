@@ -70,7 +70,6 @@ func (m *AzureInsightMetrics) CreatePrometheusMetricsGauge(metricName string) (g
 		"resourceID",
 		"type",
 		"unit",
-		"data",
 		"aggregation",
 	})
 }
@@ -83,10 +82,10 @@ func (m *AzureInsightMetrics) CreatePrometheusRegistryAndMetricsGauge(metricName
 	return registry, gauge
 }
 
-func (m *AzureInsightMetrics) FetchMetrics(ctx context.Context, subscriptionId, resourceID, timespan string, interval *string, metric, aggregation string) (AzureInsightMetricsResult, error) {
+func (m *AzureInsightMetrics) FetchMetrics(ctx context.Context, subscriptionId, resourceID string, settings RequestMetricSettings) (AzureInsightMetricsResult, error) {
 	ret := AzureInsightMetricsResult{}
 
-	result, err := m.MetricsClient(subscriptionId).List(ctx, resourceID, timespan, interval, metric, aggregation, nil, "", "", insights.Data, "")
+	result, err := m.MetricsClient(subscriptionId).List(ctx, resourceID, settings.Timespan, settings.Interval, settings.Metric, settings.Aggregation, nil, "", "", insights.Data, "")
 
 	if err == nil {
 		ret.Result = &result
@@ -96,7 +95,7 @@ func (m *AzureInsightMetrics) FetchMetrics(ctx context.Context, subscriptionId, 
 	return ret, err
 }
 
-func (r *AzureInsightMetricsResult) SetGauge(gauge *prometheus.GaugeVec, aggregation string) {
+func (r *AzureInsightMetricsResult) SetGauge(gauge *prometheus.GaugeVec, settings RequestMetricSettings) {
 	if r.Result.Value != nil {
 		for _, metric := range *r.Result.Value {
 			if metric.Timeseries != nil {
@@ -105,51 +104,46 @@ func (r *AzureInsightMetricsResult) SetGauge(gauge *prometheus.GaugeVec, aggrega
 						for _, timeseriesData := range *timeseries.Data {
 							if timeseriesData.Total != nil {
 								gauge.With(prometheus.Labels{
-									"resourceID": *r.ResourceID,
-									"type":       *metric.Name.Value,
-									"unit":       string(metric.Unit),
-									"data":       "total",
-									"aggregation": aggregation,
+									"resourceID":  *r.ResourceID,
+									"type":        *metric.Name.Value,
+									"unit":        string(metric.Unit),
+									"aggregation": "total",
 								}).Set(*timeseriesData.Total)
 							}
 
 							if timeseriesData.Minimum != nil {
 								gauge.With(prometheus.Labels{
-									"resourceID": *r.ResourceID,
-									"type":       *metric.Name.Value,
-									"unit":       string(metric.Unit),
-									"data":       "minimum",
-									"aggregation": aggregation,
+									"resourceID":  *r.ResourceID,
+									"type":        *metric.Name.Value,
+									"unit":        string(metric.Unit),
+									"aggregation": "minimum",
 								}).Set(*timeseriesData.Minimum)
 							}
 
 							if timeseriesData.Maximum != nil {
 								gauge.With(prometheus.Labels{
-									"resourceID": *r.ResourceID,
-									"type":       *metric.Name.Value,
-									"unit":       string(metric.Unit),
-									"data":       "maximum",
-									"aggregation": aggregation,
+									"resourceID":  *r.ResourceID,
+									"type":        *metric.Name.Value,
+									"unit":        string(metric.Unit),
+									"aggregation": "maximum",
 								}).Set(*timeseriesData.Maximum)
 							}
 
 							if timeseriesData.Average != nil {
 								gauge.With(prometheus.Labels{
-									"resourceID": *r.ResourceID,
-									"type":       *metric.Name.Value,
-									"unit":       string(metric.Unit),
-									"data":       "average",
-									"aggregation": aggregation,
+									"resourceID":  *r.ResourceID,
+									"type":        *metric.Name.Value,
+									"unit":        string(metric.Unit),
+									"aggregation": "average",
 								}).Set(*timeseriesData.Average)
 							}
 
 							if timeseriesData.Count != nil {
 								gauge.With(prometheus.Labels{
-									"resourceID": *r.ResourceID,
-									"type":       *metric.Name.Value,
-									"unit":       string(metric.Unit),
-									"data":       "count",
-									"aggregation": aggregation,
+									"resourceID":  *r.ResourceID,
+									"type":        *metric.Name.Value,
+									"unit":        string(metric.Unit),
+									"aggregation": "count",
 								}).Set(*timeseriesData.Count)
 							}
 						}

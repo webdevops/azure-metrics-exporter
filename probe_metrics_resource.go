@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -12,8 +13,6 @@ import (
 func probeMetricsResourceHandler(w http.ResponseWriter, r *http.Request) {
 	var err error
 	var timeoutSeconds float64
-	var subscription, target string
-	params := r.URL.Query()
 
 	startTime := time.Now()
 
@@ -29,53 +28,54 @@ func probeMetricsResourceHandler(w http.ResponseWriter, r *http.Request) {
 	defer cancel()
 	r = r.WithContext(ctx)
 
-	metricName := paramsGetWithDefault(params, "name", PROMETHEUS_METRIC_NAME)
-	registry, metricGauge := azureInsightMetrics.CreatePrometheusRegistryAndMetricsGauge(metricName)
-
-	if subscription, err = paramsGetRequired(params, "subscription"); err != nil {
+	var settings RequestMetricSettings
+	if val, err := NewRequestMetricSettings(r); err == nil {
+		settings = val
+	} else {
 		Logger.Error(err)
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	if target, err = paramsGetRequired(params, "target"); err != nil {
+	if len(settings.Subscriptions) != 1 {
+		err := errors.New("Invalid subscription, one subscription needs to be specified")
+		Logger.Error(err)
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	subscription := settings.Subscriptions[0]
+
+	if settings.Target != "" {
+		err := errors.New("Invalid target or target empty")
 		Logger.Error(err)
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	timespan := paramsGetWithDefault(params, "timespan", "PT1M")
+	registry, metricGauge := azureInsightMetrics.CreatePrometheusRegistryAndMetricsGauge(settings.Name)
 
-	var interval *string
-	if val := params.Get("interval"); val != "" {
-		interval = &val
-	}
-
-	metric := paramsGetWithDefault(params, "metric", "")
-	aggregation := paramsGetWithDefault(params, "aggregation", "")
-
-	result, err := azureInsightMetrics.FetchMetrics(ctx, subscription, target, timespan, interval, metric, aggregation)
+	result, err := azureInsightMetrics.FetchMetrics(ctx, subscription, settings.Target, settings)
 
 	if err != nil {
+		Logger.Warningln(err)
 		prometheusMetricRequests.With(prometheus.Labels{
 			"subscriptionID": subscription,
 			"handler":        PROBE_METRICS_RESOURCE_URL,
 			"filter":         "",
 			"result":         "error",
 		}).Inc()
-		Logger.Error(err)
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	Logger.Verbosef("subscription[%v] fetched metrics for %v", subscription, target)
+	Logger.Verbosef("subscription[%v] fetched metrics for %v", subscription, settings.Target)
 	prometheusMetricRequests.With(prometheus.Labels{
 		"subscriptionID": subscription,
 		"handler":        PROBE_METRICS_RESOURCE_URL,
 		"filter":         "",
 		"result":         "success",
 	}).Inc()
-	result.SetGauge(metricGauge, aggregation)
+	result.SetGauge(metricGauge, settings)
 
 	// global stats counter
 	prometheusCollectTime.With(prometheus.Labels{

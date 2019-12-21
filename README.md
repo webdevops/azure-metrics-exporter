@@ -53,7 +53,7 @@ HTTP Endpoints
 | `timespan`             | `PT1M`                    | no       | Metric timespan                                                      |
 | `interval`             |                           | no       | Metric timespan                                                      |
 | `metric`               |                           | no       | Metric name                                                          |
-| `aggregation`          |                           | no       | Metric aggregation (`minimum`, `maximum`, `average`)                 |
+| `aggregation`          |                           | no       | Metric aggregation (`minimum`, `maximum`, `average`, `total`, `count`, multiple possible separated with `,`) |
 | `name`                 | `azurerm_resource_metric` | no       | Prometheus metric name                                               |
 
 
@@ -66,7 +66,7 @@ HTTP Endpoints
 | `timespan`             | `PT1M`                    | no       | Metric timespan                                                      |
 | `interval`             |                           | no       | Metric timespan                                                      |
 | `metric`               |                           | no       | Metric name                                                          |
-| `aggregation`          |                           | no       | Metric aggregation (`minimum`, `maximum`, `average`)                 |
+| `aggregation`          |                           | no       | Metric aggregation (`minimum`, `maximum`, `average`, `total`, `count`, multiple possible separated with `,`) |
 | `name`                 | `azurerm_resource_metric` | no       | Prometheus metric name                                               |
 
 
@@ -81,7 +81,7 @@ HTTP Endpoints
 | `timespan`             | `PT1M`                    | no       | Metric timespan                                                      |
 | `interval`             |                           | no       | Metric timespan                                                      |
 | `metric`               |                           | no       | Metric name                                                          |
-| `aggregation`          |                           | no       | Metric aggregation (`minimum`, `maximum`, `average`)                 |
+| `aggregation`          |                           | no       | Metric aggregation (`minimum`, `maximum`, `average`, `total`, multiple possible separated with `,`)        |
 | `name`                 | `azurerm_resource_metric` | no       | Prometheus metric name                                               |
 
 #### /probe/loganalytics/query parameters
@@ -109,7 +109,7 @@ Basic example for redis metrics collection for all redis instances in one subscr
     filter: ["resourceType eq 'Microsoft.Cache/Redis'"]
     metric: ["connectedclients,totalcommandsprocessed,cachehits,cachemisses,getcommands,setcommands,operationsPerSecond,evictedkeys,totalkeys,expiredkeys,usedmemory,usedmemorypercentage,usedmemoryRss,serverLoad,cacheWrite,cacheRead,percentProcessorTime,cacheLatency,errors"]
     interval: [PT1M]
-    aggregation: [average]
+    aggregation: ["average,total"]
   static_configs:
   - targets:
     - 'azure-metrics:8080'
