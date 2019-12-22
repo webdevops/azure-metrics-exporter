@@ -71,6 +71,9 @@ func (m *AzureInsightMetrics) CreatePrometheusMetricsGauge(metricName string) (g
 		"metric",
 		"unit",
 		"aggregation",
+		// deprecated
+		"type",
+		"data",
 	})
 }
 
@@ -108,6 +111,9 @@ func (r *AzureInsightMetricsResult) SetGauge(gauge *prometheus.GaugeVec, setting
 									"metric":      *metric.Name.Value,
 									"unit":        string(metric.Unit),
 									"aggregation": "total",
+									// deprecated
+									"type":*metric.Name.Value,
+									"data": "total",
 								}).Set(*timeseriesData.Total)
 							}
 
@@ -117,6 +123,9 @@ func (r *AzureInsightMetricsResult) SetGauge(gauge *prometheus.GaugeVec, setting
 									"metric":      *metric.Name.Value,
 									"unit":        string(metric.Unit),
 									"aggregation": "minimum",
+									// deprecated
+									"type":*metric.Name.Value,
+									"data": "minimum",
 								}).Set(*timeseriesData.Minimum)
 							}
 
@@ -126,6 +135,9 @@ func (r *AzureInsightMetricsResult) SetGauge(gauge *prometheus.GaugeVec, setting
 									"metric":      *metric.Name.Value,
 									"unit":        string(metric.Unit),
 									"aggregation": "maximum",
+									// deprecated
+									"type":*metric.Name.Value,
+									"data": "maximum",
 								}).Set(*timeseriesData.Maximum)
 							}
 
@@ -135,6 +147,9 @@ func (r *AzureInsightMetricsResult) SetGauge(gauge *prometheus.GaugeVec, setting
 									"metric":      *metric.Name.Value,
 									"unit":        string(metric.Unit),
 									"aggregation": "average",
+									// deprecated
+									"type":*metric.Name.Value,
+									"data": "average",
 								}).Set(*timeseriesData.Average)
 							}
 
@@ -144,6 +159,9 @@ func (r *AzureInsightMetricsResult) SetGauge(gauge *prometheus.GaugeVec, setting
 									"metric":      *metric.Name.Value,
 									"unit":        string(metric.Unit),
 									"aggregation": "count",
+									// deprecated
+									"type":*metric.Name.Value,
+									"data": "count",
 								}).Set(*timeseriesData.Count)
 							}
 						}
