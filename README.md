@@ -108,7 +108,7 @@ Basic example for redis metrics collection for all redis instances in one subscr
     subscription: ["xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"]
     filter: ["resourceType eq 'Microsoft.Cache/Redis'"]
     metric: ["connectedclients,totalcommandsprocessed,cachehits,cachemisses,getcommands,setcommands,operationsPerSecond,evictedkeys,totalkeys,expiredkeys,usedmemory,usedmemorypercentage,usedmemoryRss,serverLoad,cacheWrite,cacheRead,percentProcessorTime,cacheLatency,errors"]
-    interval: [PT1M]
+    interval: ["PT1M"]
     aggregation: ["average,total"]
   static_configs:
   - targets:
