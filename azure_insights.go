@@ -68,7 +68,7 @@ func (m *AzureInsightMetrics) CreatePrometheusMetricsGauge(metricName string) (g
 		Help: "Azure monitor insight metics",
 	}, []string{
 		"resourceID",
-		"type",
+		"metric",
 		"unit",
 		"aggregation",
 	})
@@ -105,7 +105,7 @@ func (r *AzureInsightMetricsResult) SetGauge(gauge *prometheus.GaugeVec, setting
 							if timeseriesData.Total != nil {
 								gauge.With(prometheus.Labels{
 									"resourceID":  *r.ResourceID,
-									"type":        *metric.Name.Value,
+									"metric":      *metric.Name.Value,
 									"unit":        string(metric.Unit),
 									"aggregation": "total",
 								}).Set(*timeseriesData.Total)
@@ -114,7 +114,7 @@ func (r *AzureInsightMetricsResult) SetGauge(gauge *prometheus.GaugeVec, setting
 							if timeseriesData.Minimum != nil {
 								gauge.With(prometheus.Labels{
 									"resourceID":  *r.ResourceID,
-									"type":        *metric.Name.Value,
+									"metric":      *metric.Name.Value,
 									"unit":        string(metric.Unit),
 									"aggregation": "minimum",
 								}).Set(*timeseriesData.Minimum)
@@ -123,7 +123,7 @@ func (r *AzureInsightMetricsResult) SetGauge(gauge *prometheus.GaugeVec, setting
 							if timeseriesData.Maximum != nil {
 								gauge.With(prometheus.Labels{
 									"resourceID":  *r.ResourceID,
-									"type":        *metric.Name.Value,
+									"metric":      *metric.Name.Value,
 									"unit":        string(metric.Unit),
 									"aggregation": "maximum",
 								}).Set(*timeseriesData.Maximum)
@@ -132,7 +132,7 @@ func (r *AzureInsightMetricsResult) SetGauge(gauge *prometheus.GaugeVec, setting
 							if timeseriesData.Average != nil {
 								gauge.With(prometheus.Labels{
 									"resourceID":  *r.ResourceID,
-									"type":        *metric.Name.Value,
+									"metric":      *metric.Name.Value,
 									"unit":        string(metric.Unit),
 									"aggregation": "average",
 								}).Set(*timeseriesData.Average)
@@ -141,7 +141,7 @@ func (r *AzureInsightMetricsResult) SetGauge(gauge *prometheus.GaugeVec, setting
 							if timeseriesData.Count != nil {
 								gauge.With(prometheus.Labels{
 									"resourceID":  *r.ResourceID,
-									"type":        *metric.Name.Value,
+									"metric":      *metric.Name.Value,
 									"unit":        string(metric.Unit),
 									"aggregation": "count",
 								}).Set(*timeseriesData.Count)
