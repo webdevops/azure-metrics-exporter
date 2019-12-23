@@ -5,6 +5,7 @@ import (
 	"github.com/Azure/azure-sdk-for-go/profiles/latest/resources/mgmt/resources"
 	"github.com/Azure/azure-sdk-for-go/services/preview/monitor/mgmt/2018-03-01/insights"
 	"github.com/prometheus/client_golang/prometheus"
+	"strings"
 	"sync"
 )
 
@@ -89,7 +90,19 @@ func (m *AzureInsightMetrics) CreatePrometheusRegistryAndMetricsGauge(metricName
 func (m *AzureInsightMetrics) FetchMetrics(ctx context.Context, subscriptionId, resourceID string, settings RequestMetricSettings) (AzureInsightMetricsResult, error) {
 	ret := AzureInsightMetricsResult{}
 
-	result, err := m.MetricsClient(subscriptionId).List(ctx, resourceID, settings.Timespan, settings.Interval, settings.Metric, settings.Aggregation, settings.MetricTop, settings.MetricOrderBy, settings.MetricFilter, insights.Data, "")
+	result, err := m.MetricsClient(subscriptionId).List(
+		ctx,
+		resourceID,
+		settings.Timespan,
+		settings.Interval,
+		strings.Join(settings.Metric, ","),
+		strings.Join(settings.Aggregation, ","),
+		settings.MetricTop,
+		settings.MetricOrderBy,
+		settings.MetricFilter,
+		insights.Data,
+		"",
+	)
 
 	if err == nil {
 		ret.Result = &result
@@ -113,7 +126,7 @@ func (r *AzureInsightMetricsResult) SetGauge(gauge *prometheus.GaugeVec, setting
 							// get dimension name (optional)
 							dimensionName := ""
 							if timeseries.Metadatavalues != nil {
-								if len(*timeseries.Metadatavalues) -1 >= dataIndex {
+								if len(*timeseries.Metadatavalues)-1 >= dataIndex {
 									dimensionName = *(*timeseries.Metadatavalues)[dataIndex].Value
 								}
 							}

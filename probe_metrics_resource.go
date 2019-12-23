@@ -45,7 +45,7 @@ func probeMetricsResourceHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	subscription := settings.Subscriptions[0]
 
-	if settings.Target != "" {
+	if len(settings.Target) == 0 {
 		err := errors.New("Invalid target or target empty")
 		Logger.Error(err)
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -54,29 +54,31 @@ func probeMetricsResourceHandler(w http.ResponseWriter, r *http.Request) {
 
 	registry, metricGauge := azureInsightMetrics.CreatePrometheusRegistryAndMetricsGauge(settings.Name)
 
-	result, err := azureInsightMetrics.FetchMetrics(ctx, subscription, settings.Target, settings)
+	for _, target := range settings.Target {
+		result, err := azureInsightMetrics.FetchMetrics(ctx, subscription, target, settings)
 
-	if err != nil {
-		err = buildErrorMessageForMetrics(err, settings)
-		Logger.Warningln(err)
+		if err != nil {
+			err = buildErrorMessageForMetrics(err, settings)
+			Logger.Warningln(err)
+			prometheusMetricRequests.With(prometheus.Labels{
+				"subscriptionID": subscription,
+				"handler":        PROBE_METRICS_RESOURCE_URL,
+				"filter":         "",
+				"result":         "error",
+			}).Inc()
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+
+		Logger.Verbosef("subscription[%v] fetched metrics for %v", subscription, target)
 		prometheusMetricRequests.With(prometheus.Labels{
 			"subscriptionID": subscription,
 			"handler":        PROBE_METRICS_RESOURCE_URL,
 			"filter":         "",
-			"result":         "error",
+			"result":         "success",
 		}).Inc()
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
+		result.SetGauge(metricGauge, settings)
 	}
-
-	Logger.Verbosef("subscription[%v] fetched metrics for %v", subscription, settings.Target)
-	prometheusMetricRequests.With(prometheus.Labels{
-		"subscriptionID": subscription,
-		"handler":        PROBE_METRICS_RESOURCE_URL,
-		"filter":         "",
-		"result":         "success",
-	}).Inc()
-	result.SetGauge(metricGauge, settings)
 
 	// global stats counter
 	prometheusCollectTime.With(prometheus.Labels{

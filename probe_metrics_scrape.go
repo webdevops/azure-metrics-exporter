@@ -75,8 +75,8 @@ func probeMetricsScrapeHandler(w http.ResponseWriter, r *http.Request) {
 
 					if metric, ok := val.Tags[metricTagName]; ok && metric != nil {
 						if aggregation, ok := val.Tags[aggregationTagName]; ok && aggregation != nil {
-							settings.Metric = *metric
-							settings.Aggregation = *aggregation
+							settings.SetMetrics(*metric)
+							settings.SetAggregations(*aggregation)
 
 							result, err := azureInsightMetrics.FetchMetrics(ctx, subscription, *val.ID, settings)
 

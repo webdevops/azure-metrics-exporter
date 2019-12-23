@@ -8,6 +8,8 @@ Azure Insights metrics exporter
 Prometheus exporter for Azure Insights metrics (on demand).
 Supports metrics fetching from all resource with one scrape (automatic service discovery) and also supports dimensions.
 
+Configuration (except Azure connection) of this exporter is made entirely in Prometheus instead of a seperate configuration file, see examples below.
+
 Configuration
 -------------
 
@@ -47,51 +49,56 @@ HTTP Endpoints
 #### /probe/metrics/resource parameters
 
 
-| GET parameter          | Default                   | Required | Description                                                          |
-|------------------------|---------------------------|----------|----------------------------------------------------------------------|
-| `subscription`         |                           | **yes**  | Azure Subscription ID                                                |
-| `target`               |                           | **yes**  | Azure Resource URI                                                   |
-| `timespan`             | `PT1M`                    | no       | Metric timespan                                                      |
-| `interval`             |                           | no       | Metric timespan                                                      |
-| `metric`               |                           | no       | Metric name                                                          |
-| `aggregation`          |                           | no       | Metric aggregation (`minimum`, `maximum`, `average`, `total`, `count`, multiple possible separated with `,`) |
-| `name`                 | `azurerm_resource_metric` | no       | Prometheus metric name                                               |
-| `metricFilter`         |                           | no       | Prometheus metric filter (dimension support)                         |
-| `metricTop`            |                           | no       | Prometheus metric dimension count (dimension support)                |
-| `metricOrderBy`        |                           | no       | Prometheus metric order by (dimension support)                       |
+| GET parameter          | Default                   | Required | Multiple | Description                                                          |
+|------------------------|---------------------------|----------|----------|----------------------------------------------------------------------|
+| `subscription`         |                           | **yes**  | **yes**  | Azure Subscription ID                                                |
+| `target`               |                           | **yes**  | **yes**  | Azure Resource URI                                                   |
+| `timespan`             | `PT1M`                    | no       | no       | Metric timespan                                                      |
+| `interval`             |                           | no       | no       | Metric timespan                                                      |
+| `metric`               |                           | no       | **yes**  | Metric name                                                          |
+| `aggregation`          |                           | no       | **yes**  | Metric aggregation (`minimum`, `maximum`, `average`, `total`, `count`, multiple possible separated with `,`) |
+| `name`                 | `azurerm_resource_metric` | no       | no       | Prometheus metric name                                               |
+| `metricFilter`         |                           | no       | no       | Prometheus metric filter (dimension support)                         |
+| `metricTop`            |                           | no       | no       | Prometheus metric dimension count (dimension support)                |
+| `metricOrderBy`        |                           | no       | no       | Prometheus metric order by (dimension support)                       |
+
+*Hint: Multiple values can be specified multiple times or with a comma in a single value.*
 
 #### /probe/metrics/list parameters
 
-| GET parameter          | Default                   | Required | Description                                                          |
-|------------------------|---------------------------|----------|----------------------------------------------------------------------|
-| `subscription`         |                           | **yes**  | Azure Subscription ID (or multiple separate by comma)                |
-| `filter`               |                           | **yes**  | Azure Resource filter (https://docs.microsoft.com/en-us/rest/api/resources/resources/list)                                              |
-| `timespan`             | `PT1M`                    | no       | Metric timespan                                                      |
-| `interval`             |                           | no       | Metric timespan                                                      |
-| `metric`               |                           | no       | Metric name                                                          |
-| `aggregation`          |                           | no       | Metric aggregation (`minimum`, `maximum`, `average`, `total`, `count`, multiple possible separated with `,`) |
-| `name`                 | `azurerm_resource_metric` | no       | Prometheus metric name                                               |
-| `metricFilter`         |                           | no       | Prometheus metric filter (dimension support)                         |
-| `metricTop`            |                           | no       | Prometheus metric dimension count (dimension support)                |
-| `metricOrderBy`        |                           | no       | Prometheus metric order by (dimension support)                       |
+| GET parameter          | Default                   | Required | Multiple | Description                                                          |
+|------------------------|---------------------------|----------|----------|----------------------------------------------------------------------|
+| `subscription`         |                           | **yes**  | **yes**  | Azure Subscription ID (or multiple separate by comma)                |
+| `filter`               |                           | **yes**  | no       | Azure Resource filter (https://docs.microsoft.com/en-us/rest/api/resources/resources/list)                                              |
+| `timespan`             | `PT1M`                    | no       | no       | Metric timespan                                                      |
+| `interval`             |                           | no       | no       | Metric timespan                                                      |
+| `metric`               |                           | no       | **yes**  | Metric name                                                          |
+| `aggregation`          |                           | no       | **yes**  | Metric aggregation (`minimum`, `maximum`, `average`, `total`, `count`, multiple possible separated with `,`) |
+| `name`                 | `azurerm_resource_metric` | no       | no       | Prometheus metric name                                               |
+| `metricFilter`         |                           | no       | no       | Prometheus metric filter (dimension support)                         |
+| `metricTop`            |                           | no       | no       | Prometheus metric dimension count (dimension support)                |
+| `metricOrderBy`        |                           | no       | no       | Prometheus metric order by (dimension support)                       |
 
+*Hint: Multiple values can be specified multiple times or with a comma in a single value.*
 
 #### /probe/metrics/scrape parameters
 
-| GET parameter          | Default                   | Required | Description                                                          |
-|------------------------|---------------------------|----------|----------------------------------------------------------------------|
-| `subscription`         |                           | **yes**  | Azure Subscription ID  (or multiple separate by comma)               |
-| `filter`               |                           | **yes**  | Azure Resource filter (https://docs.microsoft.com/en-us/rest/api/resources/resources/list)                                              |
-| `metricTagName`        |                           | **yes**  | Resource tag name for getting "metric" list                                                                                             |
-| `aggregationTagName`   |                           | **yes**  | Resource tag name for getting "aggregation" list                     |
-| `timespan`             | `PT1M`                    | no       | Metric timespan                                                      |
-| `interval`             |                           | no       | Metric timespan                                                      |
-| `metric`               |                           | no       | Metric name                                                          |
-| `aggregation`          |                           | no       | Metric aggregation (`minimum`, `maximum`, `average`, `total`, multiple possible separated with `,`)        |
-| `name`                 | `azurerm_resource_metric` | no       | Prometheus metric name                                               |
-| `metricFilter`         |                           | no       | Prometheus metric filter (dimension support)                         |
-| `metricTop`            |                           | no       | Prometheus metric dimension count (integer, dimension support)       |
-| `metricOrderBy`        |                           | no       | Prometheus metric order by (dimension support)                       |
+| GET parameter          | Default                   | Required | Multiple | Description                                                          |
+|------------------------|---------------------------|----------|----------|----------------------------------------------------------------------|
+| `subscription`         |                           | **yes**  | **yes**  | Azure Subscription ID  (or multiple separate by comma)               |
+| `filter`               |                           | **yes**  | no       | Azure Resource filter (https://docs.microsoft.com/en-us/rest/api/resources/resources/list)                                              |
+| `metricTagName`        |                           | **yes**  | no       | Resource tag name for getting "metric" list                                                                                             |
+| `aggregationTagName`   |                           | **yes**  | no       | Resource tag name for getting "aggregation" list                     |
+| `timespan`             | `PT1M`                    | no       | no       | Metric timespan                                                      |
+| `interval`             |                           | no       | no       | Metric timespan                                                      |
+| `metric`               |                           | no       | **yes**  | Metric name                                                          |
+| `aggregation`          |                           | no       | **yes**  | Metric aggregation (`minimum`, `maximum`, `average`, `total`, multiple possible separated with `,`)        |
+| `name`                 | `azurerm_resource_metric` | no       | no       | Prometheus metric name                                               |
+| `metricFilter`         |                           | no       | no       | Prometheus metric filter (dimension support)                         |
+| `metricTop`            |                           | no       | no       | Prometheus metric dimension count (integer, dimension support)       |
+| `metricOrderBy`        |                           | no       | no       | Prometheus metric order by (dimension support)                       |
+
+*Hint: Multiple values can be specified multiple times or with a comma in a single value.*
 
 #### /probe/loganalytics/query parameters
 
@@ -113,12 +120,34 @@ Azure Redis metrics
   scrape_interval: 1m
   metrics_path: /probe/metrics/list
   params:
-    name:         ["my_own_metric_name"]
-    subscription: ["xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"]
-    filter:       ["resourceType eq 'Microsoft.Cache/Redis'"]
-    metric:       ["connectedclients,totalcommandsprocessed,cachehits,cachemisses,getcommands,setcommands,operationsPerSecond,evictedkeys,totalkeys,expiredkeys,usedmemory,usedmemorypercentage,usedmemoryRss,serverLoad,cacheWrite,cacheRead,percentProcessorTime,cacheLatency,errors"]
-    interval:     ["PT1M"]
-    aggregation:  ["average,total"]
+    name: ["my_own_metric_name"]
+    subscription: 
+    - xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+    filter: ["resourceType eq 'Microsoft.Cache/Redis'"]
+    metric:       
+    - connectedclients
+    - totalcommandsprocessed
+    - cachehits
+    - cachemisses
+    - getcommands
+    - setcommands
+    - operationsPerSecond
+    - evictedkeys
+    - totalkeys
+    - expiredkeys
+    - usedmemory
+    - usedmemorypercentage
+    - usedmemoryRss
+    - serverLoad
+    - cacheWrite
+    - cacheRead
+    - percentProcessorTime
+    - cacheLatency
+    - errors
+    interval: ["PT1M"]
+    aggregation:  
+    - average
+    - total
   static_configs:
   - targets: ["azure-metrics:8080"]
 ```
@@ -129,12 +158,25 @@ Virtual Gateway metrics
   scrape_interval: 1m
   metrics_path: /probe/metrics/list
   params:
-    name:         ["my_own_metric_name"]
-    subscription: ["xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"]
-    filter:       ["resourceType eq 'Microsoft.Network/virtualNetworkGateways'"]
-    metric:       ["AverageBandwidth,P2SBandwidth,P2SConnectionCount,TunnelAverageBandwidth,TunnelEgressBytes,TunnelIngressBytes,TunnelEgressPackets,TunnelIngressPackets,TunnelEgressPacketDropTSMismatch,TunnelIngressPacketDropTSMismatch"]
-    interval:     ["PT5M"]
-    aggregation:  ["average,total"]
+    name: ["my_own_metric_name"]
+    subscription: 
+    - xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+    filter: ["resourceType eq 'Microsoft.Network/virtualNetworkGateways'"]
+    metric:       
+    - AverageBandwidth
+    - P2SBandwidth
+    - P2SConnectionCount
+    - TunnelAverageBandwidth
+    - TunnelEgressBytes
+    - TunnelIngressBytes
+    - TunnelEgressPackets
+    - TunnelIngressPackets
+    - TunnelEgressPacketDropTSMismatch
+    - TunnelIngressPacketDropTSMismatch
+    interval: ["PT5M"]
+    aggregation:
+    - average
+    - total
   static_configs:
   - targets: ["azure-metrics:8080"]
 ```
@@ -145,15 +187,25 @@ Virtual Gateway connection metrics (dimension support)
   scrape_interval: 1m
   metrics_path: /probe/metrics/list
   params:
-    name:         ["my_own_metric_name"]
-    subscription: ["xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"]
-    filter:       ["resourceType eq 'Microsoft.Network/virtualNetworkGateways'"]
-    metric:       ["TunnelAverageBandwidth,TunnelEgressBytes,TunnelIngressBytes,TunnelEgressPackets,TunnelIngressPackets,TunnelEgressPacketDropTSMismatch,TunnelIngressPacketDropTSMismatch"]
-    interval:     ["PT5M"]
-    aggregation:  ["average,total"]
+    name: ["my_own_metric_name"]
+    subscription:
+    - xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+    filter: ["resourceType eq 'Microsoft.Network/virtualNetworkGateways'"]
+    metric:
+    - TunnelAverageBandwidth
+    - TunnelEgressBytes
+    - TunnelIngressBytes
+    - TunnelEgressPackets
+    - TunnelIngressPackets
+    - TunnelEgressPacketDropTSMismatch
+    - TunnelIngressPacketDropTSMismatch
+    interval: ["PT5M"]
+    aggregation:  
+    - average
+    - total
     # by connection (dimension support)
     metricFilter: ["ConnectionName eq '*'"]
-    metricTop:    ["10"]
+    metricTop: ["10"]
   static_configs:
   - targets: ["azure-metrics:8080"]
 ```

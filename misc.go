@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
+	"strings"
 )
 
 func getPrometheusTimeout(r *http.Request, defaultTimeout float64) (timeout float64, err error) {
@@ -35,6 +36,27 @@ func paramsGetRequired(params url.Values, name string) (value string, err error)
 	value = params.Get(name)
 	if value == "" {
 		err = errors.New(fmt.Sprintf("%v parameter is missing", name))
+	}
+
+	return
+}
+
+func paramsGetList(params url.Values, name string) (list []string, err error) {
+	for _, v := range params[name] {
+		sublist := strings.Split(v, ",")
+		for _, item := range sublist {
+			list = append(list, item)
+		}
+	}
+	return
+}
+
+func paramsGetListRequired(params url.Values, name string) (list []string, err error) {
+	list, err = paramsGetList(params, name)
+
+	if len(list) == 0 {
+		err = errors.New(fmt.Sprintf("%v parameter is missing", name))
+		return
 	}
 
 	return

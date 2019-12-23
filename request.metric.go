@@ -13,9 +13,9 @@ type (
 		Filter        string
 		Timespan      string
 		Interval      *string
-		Metric        string
-		Aggregation   string
-		Target        string
+		Metric        []string
+		Aggregation   []string
+		Target        []string
 
 		// needed for dimension support
 		MetricTop     *int32
@@ -32,8 +32,7 @@ func NewRequestMetricSettings(r *http.Request) (RequestMetricSettings, error) {
 	ret.Name = paramsGetWithDefault(params, "name", PROMETHEUS_METRIC_NAME)
 
 	// param subscription
-	if subscriptionList, err := paramsGetRequired(params, "subscription"); err == nil {
-		subscriptionList := strings.Split(subscriptionList, ",")
+	if subscriptionList, err := paramsGetListRequired(params, "subscription"); err == nil {
 		for _, subscription := range subscriptionList {
 			subscription = strings.TrimSpace(subscription)
 			ret.Subscriptions = append(ret.Subscriptions, subscription)
@@ -58,13 +57,25 @@ func NewRequestMetricSettings(r *http.Request) (RequestMetricSettings, error) {
 	}
 
 	// param metric
-	ret.Metric = paramsGetWithDefault(params, "metric", "")
+	if val, err := paramsGetList(params, "metric"); err == nil {
+		ret.Metric = val
+	} else {
+		return ret, err
+	}
 
 	// param aggregation
-	ret.Aggregation = paramsGetWithDefault(params, "aggregation", "")
+	if val, err := paramsGetList(params, "aggregation"); err == nil {
+		ret.Aggregation = val
+	} else {
+		return ret, err
+	}
 
 	// param target
-	ret.Target = paramsGetWithDefault(params, "target", "")
+	if val, err := paramsGetList(params, "target"); err == nil {
+		ret.Target = val
+	} else {
+		return ret, err
+	}
 
 	// param metricTop
 	if val := params.Get("metricTop"); val != "" {
@@ -83,4 +94,12 @@ func NewRequestMetricSettings(r *http.Request) (RequestMetricSettings, error) {
 	ret.MetricOrderBy = paramsGetWithDefault(params, "metricOrderBy", "")
 
 	return ret, nil
+}
+
+func (s *RequestMetricSettings) SetMetrics(val string) {
+	s.Metric = strings.Split(val, ",")
+}
+
+func (s *RequestMetricSettings) SetAggregations(val string) {
+	s.Aggregation = strings.Split(val, ",")
 }
