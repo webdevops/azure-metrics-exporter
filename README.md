@@ -3,7 +3,7 @@ Azure Insights metrics exporter
 
 [![license](https://img.shields.io/github/license/webdevops/azure-metrics-exporter.svg)](https://github.com/webdevops/azure-metrics-exporter/blob/master/LICENSE)
 [![Docker](https://img.shields.io/badge/docker-webdevops%2Fazure--metrics--exporter-blue.svg?longCache=true&style=flat&logo=docker)](https://hub.docker.com/r/webdevops/azure-metrics-exporter/)
-[![Docker Build Status](https://img.shields.io/docker/build/webdevops/azure-metrics-exporter.svg)](https://hub.docker.com/r/webdevops/azure-metrics-exporter/)
+[![Docker Build Status](https://img.shields.io/docker/cloud/build/webdevops/azure-metrics-exporter)](https://hub.docker.com/r/webdevops/azure-metrics-exporter/)
 
 Prometheus exporter for Azure Insights metrics (on demand).
 Supports metrics fetching from all resource with one scrape (automatic service discovery) and also supports dimensions.
