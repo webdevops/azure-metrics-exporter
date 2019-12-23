@@ -69,6 +69,7 @@ func (m *AzureInsightMetrics) CreatePrometheusMetricsGauge(metricName string) (g
 	}, []string{
 		"resourceID",
 		"metric",
+		"dimension",
 		"unit",
 		"aggregation",
 		// deprecated
@@ -88,7 +89,7 @@ func (m *AzureInsightMetrics) CreatePrometheusRegistryAndMetricsGauge(metricName
 func (m *AzureInsightMetrics) FetchMetrics(ctx context.Context, subscriptionId, resourceID string, settings RequestMetricSettings) (AzureInsightMetricsResult, error) {
 	ret := AzureInsightMetricsResult{}
 
-	result, err := m.MetricsClient(subscriptionId).List(ctx, resourceID, settings.Timespan, settings.Interval, settings.Metric, settings.Aggregation, nil, "", "", insights.Data, "")
+	result, err := m.MetricsClient(subscriptionId).List(ctx, resourceID, settings.Timespan, settings.Interval, settings.Metric, settings.Aggregation, settings.MetricTop, settings.MetricOrderBy, settings.MetricFilter, insights.Data, "")
 
 	if err == nil {
 		ret.Result = &result
@@ -100,19 +101,32 @@ func (m *AzureInsightMetrics) FetchMetrics(ctx context.Context, subscriptionId, 
 
 func (r *AzureInsightMetricsResult) SetGauge(gauge *prometheus.GaugeVec, settings RequestMetricSettings) {
 	if r.Result.Value != nil {
+		// DEBUGGING
+		//data,_ := json.Marshal(r.Result)
+		//fmt.Println(string(data))
+
 		for _, metric := range *r.Result.Value {
 			if metric.Timeseries != nil {
 				for _, timeseries := range *metric.Timeseries {
 					if timeseries.Data != nil {
-						for _, timeseriesData := range *timeseries.Data {
+						for dataIndex, timeseriesData := range *timeseries.Data {
+							// get dimension name (optional)
+							dimensionName := ""
+							if timeseries.Metadatavalues != nil {
+								if len(*timeseries.Metadatavalues) -1 >= dataIndex {
+									dimensionName = *(*timeseries.Metadatavalues)[dataIndex].Value
+								}
+							}
+
 							if timeseriesData.Total != nil {
 								gauge.With(prometheus.Labels{
 									"resourceID":  *r.ResourceID,
 									"metric":      *metric.Name.Value,
+									"dimension":   dimensionName,
 									"unit":        string(metric.Unit),
 									"aggregation": "total",
 									// deprecated
-									"type":*metric.Name.Value,
+									"type": *metric.Name.Value,
 									"data": "total",
 								}).Set(*timeseriesData.Total)
 							}
@@ -121,10 +135,11 @@ func (r *AzureInsightMetricsResult) SetGauge(gauge *prometheus.GaugeVec, setting
 								gauge.With(prometheus.Labels{
 									"resourceID":  *r.ResourceID,
 									"metric":      *metric.Name.Value,
+									"dimension":   dimensionName,
 									"unit":        string(metric.Unit),
 									"aggregation": "minimum",
 									// deprecated
-									"type":*metric.Name.Value,
+									"type": *metric.Name.Value,
 									"data": "minimum",
 								}).Set(*timeseriesData.Minimum)
 							}
@@ -133,10 +148,11 @@ func (r *AzureInsightMetricsResult) SetGauge(gauge *prometheus.GaugeVec, setting
 								gauge.With(prometheus.Labels{
 									"resourceID":  *r.ResourceID,
 									"metric":      *metric.Name.Value,
+									"dimension":   dimensionName,
 									"unit":        string(metric.Unit),
 									"aggregation": "maximum",
 									// deprecated
-									"type":*metric.Name.Value,
+									"type": *metric.Name.Value,
 									"data": "maximum",
 								}).Set(*timeseriesData.Maximum)
 							}
@@ -145,10 +161,11 @@ func (r *AzureInsightMetricsResult) SetGauge(gauge *prometheus.GaugeVec, setting
 								gauge.With(prometheus.Labels{
 									"resourceID":  *r.ResourceID,
 									"metric":      *metric.Name.Value,
+									"dimension":   dimensionName,
 									"unit":        string(metric.Unit),
 									"aggregation": "average",
 									// deprecated
-									"type":*metric.Name.Value,
+									"type": *metric.Name.Value,
 									"data": "average",
 								}).Set(*timeseriesData.Average)
 							}
@@ -157,10 +174,11 @@ func (r *AzureInsightMetricsResult) SetGauge(gauge *prometheus.GaugeVec, setting
 								gauge.With(prometheus.Labels{
 									"resourceID":  *r.ResourceID,
 									"metric":      *metric.Name.Value,
+									"dimension":   dimensionName,
 									"unit":        string(metric.Unit),
 									"aggregation": "count",
 									// deprecated
-									"type":*metric.Name.Value,
+									"type": *metric.Name.Value,
 									"data": "count",
 								}).Set(*timeseriesData.Count)
 							}

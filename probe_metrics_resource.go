@@ -57,6 +57,7 @@ func probeMetricsResourceHandler(w http.ResponseWriter, r *http.Request) {
 	result, err := azureInsightMetrics.FetchMetrics(ctx, subscription, settings.Target, settings)
 
 	if err != nil {
+		err = buildErrorMessageForMetrics(err, settings)
 		Logger.Warningln(err)
 		prometheusMetricRequests.With(prometheus.Labels{
 			"subscriptionID": subscription,

@@ -2,6 +2,7 @@ package main
 
 import (
 	"net/http"
+	"strconv"
 	"strings"
 )
 
@@ -15,6 +16,11 @@ type (
 		Metric        string
 		Aggregation   string
 		Target        string
+
+		// needed for dimension support
+		MetricTop     *int32
+		MetricFilter  string
+		MetricOrderBy string
 	}
 )
 
@@ -59,6 +65,22 @@ func NewRequestMetricSettings(r *http.Request) (RequestMetricSettings, error) {
 
 	// param target
 	ret.Target = paramsGetWithDefault(params, "target", "")
+
+	// param metricTop
+	if val := params.Get("metricTop"); val != "" {
+		valInt64, err := strconv.ParseInt(val, 10, 32)
+		if err != nil {
+			return ret, err
+		}
+		valInt32 := int32(valInt64)
+		ret.MetricTop = &valInt32
+	}
+
+	// param metricFilter
+	ret.MetricFilter = paramsGetWithDefault(params, "metricFilter", "")
+
+	// param metricOrderBy
+	ret.MetricOrderBy = paramsGetWithDefault(params, "metricOrderBy", "")
 
 	return ret, nil
 }

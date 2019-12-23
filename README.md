@@ -5,7 +5,8 @@ Azure Insights metrics exporter
 [![Docker](https://img.shields.io/badge/docker-webdevops%2Fazure--metrics--exporter-blue.svg?longCache=true&style=flat&logo=docker)](https://hub.docker.com/r/webdevops/azure-metrics-exporter/)
 [![Docker Build Status](https://img.shields.io/docker/build/webdevops/azure-metrics-exporter.svg)](https://hub.docker.com/r/webdevops/azure-metrics-exporter/)
 
-Prometheus exporter for Azure Insights metrics (on demand)
+Prometheus exporter for Azure Insights metrics (on demand).
+Supports metrics fetching from all resource with one scrape (automatic service discovery) and also supports dimensions.
 
 Configuration
 -------------
@@ -55,7 +56,9 @@ HTTP Endpoints
 | `metric`               |                           | no       | Metric name                                                          |
 | `aggregation`          |                           | no       | Metric aggregation (`minimum`, `maximum`, `average`, `total`, `count`, multiple possible separated with `,`) |
 | `name`                 | `azurerm_resource_metric` | no       | Prometheus metric name                                               |
-
+| `metricFilter`         |                           | no       | Prometheus metric filter (dimension support)                         |
+| `metricTop`            |                           | no       | Prometheus metric dimension count (dimension support)                |
+| `metricOrderBy`        |                           | no       | Prometheus metric order by (dimension support)                       |
 
 #### /probe/metrics/list parameters
 
@@ -68,6 +71,9 @@ HTTP Endpoints
 | `metric`               |                           | no       | Metric name                                                          |
 | `aggregation`          |                           | no       | Metric aggregation (`minimum`, `maximum`, `average`, `total`, `count`, multiple possible separated with `,`) |
 | `name`                 | `azurerm_resource_metric` | no       | Prometheus metric name                                               |
+| `metricFilter`         |                           | no       | Prometheus metric filter (dimension support)                         |
+| `metricTop`            |                           | no       | Prometheus metric dimension count (dimension support)                |
+| `metricOrderBy`        |                           | no       | Prometheus metric order by (dimension support)                       |
 
 
 #### /probe/metrics/scrape parameters
@@ -83,6 +89,9 @@ HTTP Endpoints
 | `metric`               |                           | no       | Metric name                                                          |
 | `aggregation`          |                           | no       | Metric aggregation (`minimum`, `maximum`, `average`, `total`, multiple possible separated with `,`)        |
 | `name`                 | `azurerm_resource_metric` | no       | Prometheus metric name                                               |
+| `metricFilter`         |                           | no       | Prometheus metric filter (dimension support)                         |
+| `metricTop`            |                           | no       | Prometheus metric dimension count (integer, dimension support)       |
+| `metricOrderBy`        |                           | no       | Prometheus metric order by (dimension support)                       |
 
 #### /probe/loganalytics/query parameters
 
@@ -97,22 +106,58 @@ HTTP Endpoints
 Prometheus configuration
 ------------------------
 
-Basic example for redis metrics collection for all redis instances in one subscription:
+Azure Redis metrics
 
-```
+```yaml
 - job_name: azure-metrics-redis
   scrape_interval: 1m
   metrics_path: /probe/metrics/list
   params:
-    name: ["my-own-metric-name"]
+    name:         ["my_own_metric_name"]
     subscription: ["xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"]
-    filter: ["resourceType eq 'Microsoft.Cache/Redis'"]
-    metric: ["connectedclients,totalcommandsprocessed,cachehits,cachemisses,getcommands,setcommands,operationsPerSecond,evictedkeys,totalkeys,expiredkeys,usedmemory,usedmemorypercentage,usedmemoryRss,serverLoad,cacheWrite,cacheRead,percentProcessorTime,cacheLatency,errors"]
-    interval: ["PT1M"]
-    aggregation: ["average,total"]
+    filter:       ["resourceType eq 'Microsoft.Cache/Redis'"]
+    metric:       ["connectedclients,totalcommandsprocessed,cachehits,cachemisses,getcommands,setcommands,operationsPerSecond,evictedkeys,totalkeys,expiredkeys,usedmemory,usedmemorypercentage,usedmemoryRss,serverLoad,cacheWrite,cacheRead,percentProcessorTime,cacheLatency,errors"]
+    interval:     ["PT1M"]
+    aggregation:  ["average,total"]
   static_configs:
-  - targets:
-    - 'azure-metrics:8080'
+  - targets: ["azure-metrics:8080"]
 ```
+
+Virtual Gateway metrics
+```yaml
+- job_name: azure-metrics-virtualNetworkGateways
+  scrape_interval: 1m
+  metrics_path: /probe/metrics/list
+  params:
+    name:         ["my_own_metric_name"]
+    subscription: ["xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"]
+    filter:       ["resourceType eq 'Microsoft.Network/virtualNetworkGateways'"]
+    metric:       ["AverageBandwidth,P2SBandwidth,P2SConnectionCount,TunnelAverageBandwidth,TunnelEgressBytes,TunnelIngressBytes,TunnelEgressPackets,TunnelIngressPackets,TunnelEgressPacketDropTSMismatch,TunnelIngressPacketDropTSMismatch"]
+    interval:     ["PT5M"]
+    aggregation:  ["average,total"]
+  static_configs:
+  - targets: ["azure-metrics:8080"]
+```
+
+Virtual Gateway connection metrics (dimension support)
+```yaml
+- job_name: azure-metrics-virtualNetworkGateways-connections
+  scrape_interval: 1m
+  metrics_path: /probe/metrics/list
+  params:
+    name:         ["my_own_metric_name"]
+    subscription: ["xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"]
+    filter:       ["resourceType eq 'Microsoft.Network/virtualNetworkGateways'"]
+    metric:       ["TunnelAverageBandwidth,TunnelEgressBytes,TunnelIngressBytes,TunnelEgressPackets,TunnelIngressPackets,TunnelEgressPacketDropTSMismatch,TunnelIngressPacketDropTSMismatch"]
+    interval:     ["PT5M"]
+    aggregation:  ["average,total"]
+    # by connection (dimension support)
+    metricFilter: ["ConnectionName eq '*'"]
+    metricTop:    ["10"]
+  static_configs:
+  - targets: ["azure-metrics:8080"]
+```
+
+In these examples all metrics are published with metric name `my_own_metric_name`.
 
 The [List of supported metrics](https://docs.microsoft.com/en-us/azure/azure-monitor/platform/metrics-supported) is available in the Microsoft Azure docs.

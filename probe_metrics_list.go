@@ -50,6 +50,7 @@ func probeMetricsListHandler(w http.ResponseWriter, r *http.Request) {
 			list, err := azureInsightMetrics.ListResources(subscription, settings.Filter)
 
 			if err != nil {
+				err = buildErrorMessageForMetrics(err, settings)
 				Logger.Error(err)
 				http.Error(w, err.Error(), http.StatusBadRequest)
 				return
@@ -64,7 +65,7 @@ func probeMetricsListHandler(w http.ResponseWriter, r *http.Request) {
 					result, err := azureInsightMetrics.FetchMetrics(ctx, subscription, *val.ID, settings)
 
 					if err == nil {
-						Logger.Verbosef("subscription[%v] fetched auto metrics for %v", subscription, *val.ID)
+						Logger.Verbosef("name[%v]subscription[%v] fetched auto metrics for %v", settings.Name, subscription, *val.ID)
 						result.SetGauge(metricGauge, settings)
 						prometheusMetricRequests.With(prometheus.Labels{
 							"subscriptionID": subscription,
@@ -73,8 +74,10 @@ func probeMetricsListHandler(w http.ResponseWriter, r *http.Request) {
 							"result":         "success",
 						}).Inc()
 					} else {
-						Logger.Verbosef("subscription[%v] failed fetching metrics for %v", subscription, *val.ID)
+						err = buildErrorMessageForMetrics(err, settings)
+						Logger.Verbosef("name[%v]subscription[%v] failed fetching metrics for %v", settings.Name, subscription, *val.ID)
 						Logger.Warningln(err)
+
 						prometheusMetricRequests.With(prometheus.Labels{
 							"subscriptionID": subscription,
 							"handler":        PROBE_METRICS_LIST_URL,
