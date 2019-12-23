@@ -7,9 +7,25 @@ import (
 )
 
 func buildErrorMessageForMetrics(err error, settings RequestMetricSettings) error {
-	settingLine := []string{
-		fmt.Sprintf("name[%v]", settings.Name),
-		fmt.Sprintf("filter[%v]", settings.Filter),
+	settingLine := []string{}
+
+	if settings.Name != "" {
+		settingLine = append(
+			settingLine,
+			fmt.Sprintf("name[%v]", settings.Name),
+		)
 	}
-	return errors.New(fmt.Sprintf("%v: %v", strings.Join(settingLine, " "), err))
+
+	if settings.Filter != "" {
+		settingLine = append(
+			settingLine,
+			fmt.Sprintf("filter[%v]", settings.Filter),
+		)
+	}
+
+	if len(settingLine) >= 1 {
+		err = errors.New(fmt.Sprintf("%v: %v", strings.Join(settingLine, " "), err))
+	}
+
+	return err
 }

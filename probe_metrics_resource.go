@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -29,25 +28,21 @@ func probeMetricsResourceHandler(w http.ResponseWriter, r *http.Request) {
 	r = r.WithContext(ctx)
 
 	var settings RequestMetricSettings
-	if val, err := NewRequestMetricSettings(r); err == nil {
-		settings = val
-	} else {
-		Logger.Error(err)
+	if settings, err = NewRequestMetricSettings(r); err != nil {
+		Logger.Errorln(buildErrorMessageForMetrics(err, settings))
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
 	if len(settings.Subscriptions) != 1 {
-		err := errors.New("Invalid subscription, one subscription needs to be specified")
-		Logger.Error(err)
+		Logger.Errorln(buildErrorMessageForMetrics(err, settings))
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 	subscription := settings.Subscriptions[0]
 
 	if len(settings.Target) == 0 {
-		err := errors.New("Invalid target or target empty")
-		Logger.Error(err)
+		Logger.Errorln(buildErrorMessageForMetrics(err, settings))
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
@@ -58,8 +53,7 @@ func probeMetricsResourceHandler(w http.ResponseWriter, r *http.Request) {
 		result, err := azureInsightMetrics.FetchMetrics(ctx, subscription, target, settings)
 
 		if err != nil {
-			err = buildErrorMessageForMetrics(err, settings)
-			Logger.Warningln(err)
+			Logger.Warningln(buildErrorMessageForMetrics(err, settings))
 			prometheusMetricRequests.With(prometheus.Labels{
 				"subscriptionID": subscription,
 				"handler":        PROBE_METRICS_RESOURCE_URL,
@@ -67,7 +61,7 @@ func probeMetricsResourceHandler(w http.ResponseWriter, r *http.Request) {
 				"result":         "error",
 			}).Inc()
 			http.Error(w, err.Error(), http.StatusBadRequest)
-			return
+			continue
 		}
 
 		Logger.Verbosef("subscription[%v] fetched metrics for %v", subscription, target)

@@ -30,10 +30,8 @@ func probeMetricsListHandler(w http.ResponseWriter, r *http.Request) {
 	r = r.WithContext(ctx)
 
 	var settings RequestMetricSettings
-	if val, err := NewRequestMetricSettings(r); err == nil {
-		settings = val
-	} else {
-		Logger.Error(err)
+	if settings, err = NewRequestMetricSettings(r); err != nil {
+		Logger.Errorln(buildErrorMessageForMetrics(err, settings))
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
@@ -50,8 +48,7 @@ func probeMetricsListHandler(w http.ResponseWriter, r *http.Request) {
 			list, err := azureInsightMetrics.ListResources(subscription, settings.Filter)
 
 			if err != nil {
-				err = buildErrorMessageForMetrics(err, settings)
-				Logger.Error(err)
+				Logger.Errorln(buildErrorMessageForMetrics(err, settings))
 				http.Error(w, err.Error(), http.StatusBadRequest)
 				return
 			}
@@ -74,9 +71,8 @@ func probeMetricsListHandler(w http.ResponseWriter, r *http.Request) {
 							"result":         "success",
 						}).Inc()
 					} else {
-						err = buildErrorMessageForMetrics(err, settings)
 						Logger.Verbosef("name[%v]subscription[%v] failed fetching metrics for %v", settings.Name, subscription, *val.ID)
-						Logger.Warningln(err)
+						Logger.Warningln(buildErrorMessageForMetrics(err, settings))
 
 						prometheusMetricRequests.With(prometheus.Labels{
 							"subscriptionID": subscription,

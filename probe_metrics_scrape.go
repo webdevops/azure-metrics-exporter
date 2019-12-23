@@ -32,22 +32,20 @@ func probeMetricsScrapeHandler(w http.ResponseWriter, r *http.Request) {
 	r = r.WithContext(ctx)
 
 	var settings RequestMetricSettings
-	if val, err := NewRequestMetricSettings(r); err == nil {
-		settings = val
-	} else {
-		Logger.Error(err)
+	if settings, err = NewRequestMetricSettings(r); err != nil {
+		Logger.Errorln(buildErrorMessageForMetrics(err, settings))
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 	registry, metricGauge := azureInsightMetrics.CreatePrometheusRegistryAndMetricsGauge(settings.Name)
 
 	if metricTagName, err = paramsGetRequired(params, "metricTagName"); err != nil {
-		Logger.Error(err)
+		Logger.Errorln(buildErrorMessageForMetrics(err, settings))
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 	if aggregationTagName, err = paramsGetRequired(params, "aggregationTagName"); err != nil {
-		Logger.Error(err)
+		Logger.Errorln(buildErrorMessageForMetrics(err, settings))
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
@@ -61,7 +59,7 @@ func probeMetricsScrapeHandler(w http.ResponseWriter, r *http.Request) {
 			list, err := azureInsightMetrics.ListResources(subscription, settings.Filter)
 
 			if err != nil {
-				Logger.Error(err)
+				Logger.Errorln(buildErrorMessageForMetrics(err, settings))
 				http.Error(w, err.Error(), http.StatusBadRequest)
 				return
 			}
@@ -90,7 +88,7 @@ func probeMetricsScrapeHandler(w http.ResponseWriter, r *http.Request) {
 									"result":         "success",
 								}).Inc()
 							} else {
-								Logger.Warningln(err)
+								Logger.Warningln(buildErrorMessageForMetrics(err, settings))
 								prometheusMetricRequests.With(prometheus.Labels{
 									"subscriptionID": subscription,
 									"handler":        PROBE_METRICS_SCRAPE_URL,
