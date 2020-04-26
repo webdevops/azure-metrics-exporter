@@ -9,14 +9,14 @@ RUN go mod download
 
 # Compile
 COPY ./ /go/src/github.com/webdevops/azure-metrics-exporter
-RUN CGO_ENABLED=0 GOOS=linux go build -a -ldflags '-extldflags "-static"' -o /azure-metrics-exporter \
-    && chmod +x /azure-metrics-exporter
-RUN /azure-metrics-exporter --help
+RUN make lint
+RUN make build
+RUN ./azure-metrics-exporter --help
 
 #############################################
 # FINAL IMAGE
 #############################################
 FROM gcr.io/distroless/static
-COPY --from=build /azure-metrics-exporter /
+COPY --from=build /go/src/github.com/webdevops/azure-metrics-exporter/azure-metrics-exporter /
 USER 1000
 ENTRYPOINT ["/azure-metrics-exporter"]
