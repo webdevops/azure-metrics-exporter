@@ -175,6 +175,7 @@ Virtual Gateway metrics
     - TunnelEgressPacketDropTSMismatch
     - TunnelIngressPacketDropTSMismatch
     interval: ["PT5M"]
+    timespan: ["PT5M"]
     aggregation:
     - average
     - total
@@ -201,6 +202,7 @@ Virtual Gateway connection metrics (dimension support)
     - TunnelEgressPacketDropTSMismatch
     - TunnelIngressPacketDropTSMismatch
     interval: ["PT5M"]
+    timespan: ["PT5M"]
     aggregation:  
     - average
     - total
