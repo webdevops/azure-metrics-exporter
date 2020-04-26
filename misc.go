@@ -80,10 +80,6 @@ func intToString(v int) string {
 	return strconv.FormatInt(int64(v), 10)
 }
 
-func int32ToString(v int32) string {
-	return strconv.FormatInt(int64(v), 10)
-}
-
 func int64ToString(v int64) string {
 	return strconv.FormatInt(v, 10)
 }
