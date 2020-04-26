@@ -73,6 +73,8 @@ func (m *AzureInsightMetrics) CreatePrometheusMetricsGauge(metricName string) (g
 		"dimension",
 		"unit",
 		"aggregation",
+		"interval",
+		"timespan",
 	})
 }
 
@@ -131,50 +133,60 @@ func (r *AzureInsightMetricsResult) SetGauge(gauge *prometheus.GaugeVec, setting
 							if timeseriesData.Total != nil {
 								gauge.With(prometheus.Labels{
 									"resourceID":  *r.ResourceID,
-									"metric":      *metric.Name.Value,
+									"metric":      stringPtrToString(metric.Name.Value),
 									"dimension":   dimensionName,
 									"unit":        string(metric.Unit),
 									"aggregation": "total",
+									"interval":    stringPtrToString(settings.Interval),
+									"timespan":    settings.Timespan,
 								}).Set(*timeseriesData.Total)
 							}
 
 							if timeseriesData.Minimum != nil {
 								gauge.With(prometheus.Labels{
 									"resourceID":  *r.ResourceID,
-									"metric":      *metric.Name.Value,
+									"metric":      stringPtrToString(metric.Name.Value),
 									"dimension":   dimensionName,
 									"unit":        string(metric.Unit),
 									"aggregation": "minimum",
+									"interval":    stringPtrToString(settings.Interval),
+									"timespan":    settings.Timespan,
 								}).Set(*timeseriesData.Minimum)
 							}
 
 							if timeseriesData.Maximum != nil {
 								gauge.With(prometheus.Labels{
 									"resourceID":  *r.ResourceID,
-									"metric":      *metric.Name.Value,
+									"metric":      stringPtrToString(metric.Name.Value),
 									"dimension":   dimensionName,
 									"unit":        string(metric.Unit),
 									"aggregation": "maximum",
+									"interval":    stringPtrToString(settings.Interval),
+									"timespan":    settings.Timespan,
 								}).Set(*timeseriesData.Maximum)
 							}
 
 							if timeseriesData.Average != nil {
 								gauge.With(prometheus.Labels{
 									"resourceID":  *r.ResourceID,
-									"metric":      *metric.Name.Value,
+									"metric":      stringPtrToString(metric.Name.Value),
 									"dimension":   dimensionName,
 									"unit":        string(metric.Unit),
 									"aggregation": "average",
+									"interval":    stringPtrToString(settings.Interval),
+									"timespan":    settings.Timespan,
 								}).Set(*timeseriesData.Average)
 							}
 
 							if timeseriesData.Count != nil {
 								gauge.With(prometheus.Labels{
 									"resourceID":  *r.ResourceID,
-									"metric":      *metric.Name.Value,
+									"metric":      stringPtrToString(metric.Name.Value),
 									"dimension":   dimensionName,
 									"unit":        string(metric.Unit),
 									"aggregation": "count",
+									"interval":    stringPtrToString(settings.Interval),
+									"timespan":    settings.Timespan,
 								}).Set(*timeseriesData.Count)
 							}
 						}

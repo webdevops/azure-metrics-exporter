@@ -95,3 +95,11 @@ func float32ToString(v float32) string {
 func float64ToString(v float64) string {
 	return strconv.FormatFloat(v, 'f', 6, 64)
 }
+
+func stringPtrToString(v *string) string {
+	if v == nil {
+		return ""
+	}
+
+	return *v
+}
