@@ -145,6 +145,7 @@ Azure Redis metrics
     - cacheLatency
     - errors
     interval: ["PT1M"]
+    timespan: ["PT1M"]
     aggregation:  
     - average
     - total
