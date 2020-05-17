@@ -71,7 +71,8 @@ func probeLogAnalyticsQueryHandler(w http.ResponseWriter, r *http.Request) {
 
 	queryInfoGauge.With(prometheus.Labels{}).Set(boolToFloat64(result.Result != nil))
 
-	metricsList := prometheusCommon.MetricList{}
+	metricsList := prometheusCommon.NewMetricsList()
+	metricsList.SetCache(metricsCache)
 
 	if result.Result != nil {
 		metricLabels := []string{"table"}

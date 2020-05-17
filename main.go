@@ -5,12 +5,13 @@ import (
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure/auth"
 	"github.com/jessevdk/go-flags"
-	"github.com/muesli/cache2go"
+	"github.com/patrickmn/go-cache"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"log"
 	"net/http"
 	"os"
+	"time"
 )
 
 const (
@@ -45,7 +46,7 @@ var (
 	azureInsightMetrics      *AzureInsightMetrics
 	azureLogAnalyticsMetrics *AzureLogAnalysticsMetrics
 
-	cache *cache2go.CacheTable
+	metricsCache *cache.Cache
 
 	// Git version information
 	gitCommit = "<unknown>"
@@ -78,7 +79,7 @@ func main() {
 	Verbose = len(opts.Verbose) >= 1
 
 	Logger.Infof("Init Azure Insights Monitor exporter v%s (%s; by %v)", gitTag, gitCommit, Author)
-	cache = cache2go.Cache("metrics")
+	metricsCache = cache.New(1 * time.Minute, 1 * time.Minute)
 
 	Logger.Infof("Init Azure connection")
 	initAzureConnection()

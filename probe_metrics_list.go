@@ -39,12 +39,13 @@ func probeMetricsListHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	registry, metricGauge := azureInsightMetrics.CreatePrometheusRegistryAndMetricsGauge(settings.Name)
-	metricsList := prometheusCommon.MetricList{}
+	metricsList := prometheusCommon.NewMetricsList()
+	metricsList.SetCache(metricsCache)
 
 	cacheKey := fmt.Sprintf("probeMetricsListHandler::%x", sha256.Sum256([]byte(r.URL.String())))
 	loadedFromCache := false
 	if settings.Cache != nil {
-		loadedFromCache = metricsList.LoadFromCache(cache, cacheKey)
+		loadedFromCache = metricsList.LoadFromCache(cacheKey)
 	}
 
 	if !loadedFromCache {
@@ -73,7 +74,7 @@ func probeMetricsListHandler(w http.ResponseWriter, r *http.Request) {
 
 						if err == nil {
 							Logger.Verbosef("name[%v]subscription[%v] fetched auto metrics for %v", settings.Name, subscription, *val.ID)
-							result.SetGauge(&metricsList, settings)
+							result.SetGauge(metricsList, settings)
 							prometheusMetricRequests.With(prometheus.Labels{
 								"subscriptionID": subscription,
 								"handler":        PROBE_METRICS_LIST_URL,
@@ -114,8 +115,16 @@ func probeMetricsListHandler(w http.ResponseWriter, r *http.Request) {
 
 		// enable caching if enabled
 		if settings.Cache != nil {
-			metricsList.StoreToCache(cache, cacheKey, *settings.Cache)
+			w.Header().Add("X-metrics-cached", (*settings.Cache).String())
+			metricsList.StoreToCache(cacheKey, *settings.Cache)
 		}
+	} else {
+		prometheusMetricRequests.With(prometheus.Labels{
+			"subscriptionID": "",
+			"handler":        PROBE_METRICS_LIST_URL,
+			"filter":         settings.Filter,
+			"result":         "cached",
+		}).Inc()
 	}
 
 	metricsList.GaugeSet(metricGauge)
