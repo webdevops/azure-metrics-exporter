@@ -1,9 +1,12 @@
 package main
 
 import (
+	"fmt"
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
+	iso8601 "github.com/ChannelMeter/iso8601duration"
 )
 
 type (
@@ -21,6 +24,9 @@ type (
 		MetricTop     *int32
 		MetricFilter  string
 		MetricOrderBy string
+
+		// cache
+		Cache *time.Duration
 	}
 )
 
@@ -92,6 +98,29 @@ func NewRequestMetricSettings(r *http.Request) (RequestMetricSettings, error) {
 
 	// param metricOrderBy
 	ret.MetricOrderBy = paramsGetWithDefault(params, "metricOrderBy", "")
+
+	// param cache (timespan as default)
+	if opts.Cache {
+		cacheDefaultDuration, err := iso8601.FromString(ret.Timespan)
+		cacheDefaultDurationString := ""
+		if err == nil {
+			cacheDefaultDurationString = cacheDefaultDuration.ToDuration().String()
+		}
+
+		// get value from query (with default from timespan)
+		cacheDurationString := paramsGetWithDefault(params, "cache", cacheDefaultDurationString)
+		// only enable caching if value is set
+		if cacheDurationString != "" {
+			if val, err := time.ParseDuration(cacheDurationString); err == nil {
+				cacheDurationString = fmt.Sprintf("%vs", val.Seconds() - 10)
+				val, _ = time.ParseDuration(cacheDurationString)
+				ret.Cache = &val
+			} else {
+				fmt.Println(err.Error())
+				return ret, err
+			}
+		}
+	}
 
 	return ret, nil
 }

@@ -5,6 +5,7 @@ import (
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure/auth"
 	"github.com/jessevdk/go-flags"
+	"github.com/muesli/cache2go"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"log"
@@ -44,6 +45,8 @@ var (
 
 	azureInsightMetrics      *AzureInsightMetrics
 	azureLogAnalyticsMetrics *AzureLogAnalysticsMetrics
+
+	cache *cache2go.CacheTable
 )
 
 var opts struct {
@@ -54,8 +57,9 @@ var opts struct {
 	ServerBind string `long:"bind" env:"SERVER_BIND"  description:"Server address"  default:":8080"`
 
 	// concurrency settings
-	ConcurrencySubscription         int `long:"concurrency.subscription" env:"CONCURRENCY_SUBSCRIPTION"  description:"Concurrent subscription fetches"  default:"5"`
-	ConcurrencySubscriptionResource int `long:"concurrency.subscription.resource" env:"CONCURRENCY_SUBSCRIPTION_RESOURCE"  description:"Concurrent requests per resource (inside subscription requests)"  default:"10"`
+	ConcurrencySubscription         int  `long:"concurrency.subscription"          env:"CONCURRENCY_SUBSCRIPTION"           description:"Concurrent subscription fetches"                                  default:"5"`
+	ConcurrencySubscriptionResource int  `long:"concurrency.subscription.resource" env:"CONCURRENCY_SUBSCRIPTION_RESOURCE"  description:"Concurrent requests per resource (inside subscription requests)"  default:"10"`
+	Cache                           bool `long:"enable-caching"                    env:"ENABLE_CACHING"                     description:"Enable internal caching"`
 }
 
 func main() {
@@ -71,6 +75,7 @@ func main() {
 	Verbose = len(opts.Verbose) >= 1
 
 	Logger.Infof("Init Azure Insights Monitor exporter v%s (written by %v)", Version, Author)
+	cache = cache2go.Cache("metrics")
 
 	Logger.Infof("Init Azure connection")
 	initAzureConnection()

@@ -15,11 +15,20 @@ Configuration
 
 Normally no configuration is needed but can be customized using environment variables.
 
-| Environment variable                 | DefaultValue                | Description                                                                         |
-|--------------------------------------|-----------------------------|-------------------------------------------------------------------------------------|
-| `SERVER_BIND`                        | `:8080`                     | IP/Port binding                                                                     |
-| `CONCURRENCY_SUBSCRIPTION`           | `5`                         | How many concurrent subscriptions fetches are run at the same time                  |
-| `CONCURRENCY_SUBSCRIPTION_RESOURCE`  | `10`                        | How many concurrent resources (for one subscription) are processed at the same time |
+```
+Usage:
+  azure-metrics-exporter [OPTIONS]
+
+Application Options:
+  -v, --verbose                            Verbose mode [$VERBOSE]
+      --bind=                              Server address (default: :8080) [$SERVER_BIND]
+      --concurrency.subscription=          Concurrent subscription fetches (default: 5) [$CONCURRENCY_SUBSCRIPTION]
+      --concurrency.subscription.resource= Concurrent requests per resource (inside subscription requests) (default: 10) [$CONCURRENCY_SUBSCRIPTION_RESOURCE]
+      --enable-caching                     Enable internal caching [$ENABLE_CACHING]
+
+Help Options:
+  -h, --help                               Show this help message
+```
 
 for Azure API authentication (using ENV vars) see https://github.com/Azure/azure-sdk-for-go#authentication
 
@@ -61,6 +70,7 @@ HTTP Endpoints
 | `metricFilter`         |                           | no       | no       | Prometheus metric filter (dimension support)                         |
 | `metricTop`            |                           | no       | no       | Prometheus metric dimension count (dimension support)                |
 | `metricOrderBy`        |                           | no       | no       | Prometheus metric order by (dimension support)                       |
+| `cache`                | (same as timespan)        | no       | no       | Use of internal metrics caching                                      |
 
 *Hint: Multiple values can be specified multiple times or with a comma in a single value.*
 
@@ -78,6 +88,7 @@ HTTP Endpoints
 | `metricFilter`         |                           | no       | no       | Prometheus metric filter (dimension support)                         |
 | `metricTop`            |                           | no       | no       | Prometheus metric dimension count (dimension support)                |
 | `metricOrderBy`        |                           | no       | no       | Prometheus metric order by (dimension support)                       |
+| `cache`                | (same as timespan)        | no       | no       | Use of internal metrics caching                                      |
 
 *Hint: Multiple values can be specified multiple times or with a comma in a single value.*
 
@@ -97,6 +108,7 @@ HTTP Endpoints
 | `metricFilter`         |                           | no       | no       | Prometheus metric filter (dimension support)                         |
 | `metricTop`            |                           | no       | no       | Prometheus metric dimension count (integer, dimension support)       |
 | `metricOrderBy`        |                           | no       | no       | Prometheus metric order by (dimension support)                       |
+| `cache`                | (same as timespan)        | no       | no       | Use of internal metrics caching                                      |
 
 *Hint: Multiple values can be specified multiple times or with a comma in a single value.*
 

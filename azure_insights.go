@@ -111,7 +111,7 @@ func (m *AzureInsightMetrics) FetchMetrics(ctx context.Context, subscriptionId, 
 	return ret, err
 }
 
-func (r *AzureInsightMetricsResult) SetGauge(gauge *prometheus.GaugeVec, settings RequestMetricSettings) {
+func (r *AzureInsightMetricsResult) SetGauge(gauge *MetricCollectorList, settings RequestMetricSettings) {
 	if r.Result.Value != nil {
 		// DEBUGGING
 		//data,_ := json.Marshal(r.Result)
@@ -131,7 +131,7 @@ func (r *AzureInsightMetricsResult) SetGauge(gauge *prometheus.GaugeVec, setting
 							}
 
 							if timeseriesData.Total != nil {
-								gauge.With(prometheus.Labels{
+								gauge.Add(prometheus.Labels{
 									"resourceID":  *r.ResourceID,
 									"metric":      stringPtrToString(metric.Name.Value),
 									"dimension":   dimensionName,
@@ -139,11 +139,11 @@ func (r *AzureInsightMetricsResult) SetGauge(gauge *prometheus.GaugeVec, setting
 									"aggregation": "total",
 									"interval":    stringPtrToString(settings.Interval),
 									"timespan":    settings.Timespan,
-								}).Set(*timeseriesData.Total)
+								}, *timeseriesData.Total)
 							}
 
 							if timeseriesData.Minimum != nil {
-								gauge.With(prometheus.Labels{
+								gauge.Add(prometheus.Labels{
 									"resourceID":  *r.ResourceID,
 									"metric":      stringPtrToString(metric.Name.Value),
 									"dimension":   dimensionName,
@@ -151,11 +151,11 @@ func (r *AzureInsightMetricsResult) SetGauge(gauge *prometheus.GaugeVec, setting
 									"aggregation": "minimum",
 									"interval":    stringPtrToString(settings.Interval),
 									"timespan":    settings.Timespan,
-								}).Set(*timeseriesData.Minimum)
+								}, *timeseriesData.Minimum)
 							}
 
 							if timeseriesData.Maximum != nil {
-								gauge.With(prometheus.Labels{
+								gauge.Add(prometheus.Labels{
 									"resourceID":  *r.ResourceID,
 									"metric":      stringPtrToString(metric.Name.Value),
 									"dimension":   dimensionName,
@@ -163,11 +163,11 @@ func (r *AzureInsightMetricsResult) SetGauge(gauge *prometheus.GaugeVec, setting
 									"aggregation": "maximum",
 									"interval":    stringPtrToString(settings.Interval),
 									"timespan":    settings.Timespan,
-								}).Set(*timeseriesData.Maximum)
+								}, *timeseriesData.Maximum)
 							}
 
 							if timeseriesData.Average != nil {
-								gauge.With(prometheus.Labels{
+								gauge.Add(prometheus.Labels{
 									"resourceID":  *r.ResourceID,
 									"metric":      stringPtrToString(metric.Name.Value),
 									"dimension":   dimensionName,
@@ -175,11 +175,11 @@ func (r *AzureInsightMetricsResult) SetGauge(gauge *prometheus.GaugeVec, setting
 									"aggregation": "average",
 									"interval":    stringPtrToString(settings.Interval),
 									"timespan":    settings.Timespan,
-								}).Set(*timeseriesData.Average)
+								}, *timeseriesData.Average)
 							}
 
 							if timeseriesData.Count != nil {
-								gauge.With(prometheus.Labels{
+								gauge.Add(prometheus.Labels{
 									"resourceID":  *r.ResourceID,
 									"metric":      stringPtrToString(metric.Name.Value),
 									"dimension":   dimensionName,
@@ -187,7 +187,7 @@ func (r *AzureInsightMetricsResult) SetGauge(gauge *prometheus.GaugeVec, setting
 									"aggregation": "count",
 									"interval":    stringPtrToString(settings.Interval),
 									"timespan":    settings.Timespan,
-								}).Set(*timeseriesData.Count)
+								}, *timeseriesData.Count)
 							}
 						}
 					}
