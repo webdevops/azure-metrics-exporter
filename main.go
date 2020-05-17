@@ -79,7 +79,7 @@ func main() {
 	Verbose = len(opts.Verbose) >= 1
 
 	Logger.Infof("Init Azure Insights Monitor exporter v%s (%s; by %v)", gitTag, gitCommit, Author)
-	metricsCache = cache.New(1 * time.Minute, 1 * time.Minute)
+	metricsCache = cache.New(1*time.Minute, 1*time.Minute)
 
 	Logger.Infof("Init Azure connection")
 	initAzureConnection()
