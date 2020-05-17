@@ -2,11 +2,11 @@ package main
 
 import (
 	"fmt"
+	iso8601 "github.com/ChannelMeter/iso8601duration"
 	"net/http"
 	"strconv"
 	"strings"
 	"time"
-	iso8601 "github.com/ChannelMeter/iso8601duration"
 )
 
 type (
@@ -112,7 +112,7 @@ func NewRequestMetricSettings(r *http.Request) (RequestMetricSettings, error) {
 		// only enable caching if value is set
 		if cacheDurationString != "" {
 			if val, err := time.ParseDuration(cacheDurationString); err == nil {
-				cacheDurationString = fmt.Sprintf("%vs", val.Seconds() - 10)
+				cacheDurationString = fmt.Sprintf("%vs", val.Seconds()-10)
 				val, _ = time.ParseDuration(cacheDurationString)
 				ret.Cache = &val
 			} else {

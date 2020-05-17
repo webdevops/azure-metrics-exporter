@@ -7,7 +7,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/remeh/sizedwaitgroup"
-    prometheusCommon "github.com/webdevops/go-prometheus-common"
+	prometheusCommon "github.com/webdevops/go-prometheus-common"
 	"net/http"
 	"time"
 )

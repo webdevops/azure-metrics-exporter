@@ -139,7 +139,6 @@ func probeLogAnalyticsQueryHandler(w http.ResponseWriter, r *http.Request) {
 		metricsList.GaugeSet(logRowGauge)
 	}
 
-
 	// global stats counter
 	prometheusCollectTime.With(prometheus.Labels{
 		"subscriptionID": "",

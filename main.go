@@ -14,7 +14,7 @@ import (
 )
 
 const (
-	Author  = "webdevops.io"
+	Author = "webdevops.io"
 
 	METRICS_URL = "/metrics"
 
@@ -49,7 +49,7 @@ var (
 
 	// Git version information
 	gitCommit = "<unknown>"
-	gitTag = "<unknown>"
+	gitTag    = "<unknown>"
 )
 
 var opts struct {
