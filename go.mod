@@ -24,7 +24,7 @@ require (
 	github.com/shopspring/decimal v0.0.0-20191130220710-360f2bc03045 // indirect
 	github.com/spf13/cobra v0.0.5 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
-	github.com/webdevops/go-prometheus-common v0.0.0-20200517205919-4c3d3e6ac46d
+	github.com/webdevops/go-prometheus-common v0.0.0-20200517221015-8ea6cdfd62aa
 	golang.org/x/crypto v0.0.0-20200423211502-4bdfaf469ed5 // indirect
 	golang.org/x/tools v0.0.0-20191220234730-f13409bbebaf // indirect
 )
