@@ -15,7 +15,6 @@ import (
 
 const (
 	Author  = "webdevops.io"
-	Version = "20.4.0"
 
 	METRICS_URL = "/metrics"
 
@@ -47,6 +46,10 @@ var (
 	azureLogAnalyticsMetrics *AzureLogAnalysticsMetrics
 
 	cache *cache2go.CacheTable
+
+	// Git version information
+	gitCommit = "<unknown>"
+	gitTag = "<unknown>"
 )
 
 var opts struct {
@@ -74,7 +77,7 @@ func main() {
 	// set verbosity
 	Verbose = len(opts.Verbose) >= 1
 
-	Logger.Infof("Init Azure Insights Monitor exporter v%s (written by %v)", Version, Author)
+	Logger.Infof("Init Azure Insights Monitor exporter v%s (%s; by %v)", gitTag, gitCommit, Author)
 	cache = cache2go.Cache("metrics")
 
 	Logger.Infof("Init Azure connection")

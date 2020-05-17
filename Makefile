@@ -1,7 +1,9 @@
 .PHONY: all build clean image check vendor dependencies
 
 NAME				:= azure-metrics-exporter
-TAG					:= $(shell git rev-parse --short HEAD)
+GIT_TAG				:= $(shell git describe --dirty --tags --always)
+GIT_COMMIT			:= $(shell git rev-parse --short HEAD)
+LDFLAGS             := -X "main.gitTag=$(GIT_TAG)" -X "main.gitCommit=$(GIT_COMMIT)" -extldflags "-static"
 
 PKGS				:= $(shell go list ./... | grep -v -E '/vendor/|/test')
 FIRST_GOPATH		:= $(firstword $(subst :, ,$(shell go env GOPATH)))
@@ -14,7 +16,7 @@ clean:
 	git clean -Xfd .
 
 build:
-	CGO_ENABLED=0 GOOS=linux go build -a -ldflags '-extldflags "-static"' -o $(NAME) .
+	CGO_ENABLED=0 go build -a -ldflags '$(LDFLAGS)' -o $(NAME) .
 
 vendor:
 	go mod tidy
