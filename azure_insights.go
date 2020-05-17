@@ -5,6 +5,7 @@ import (
 	"github.com/Azure/azure-sdk-for-go/profiles/latest/resources/mgmt/resources"
 	"github.com/Azure/azure-sdk-for-go/services/preview/monitor/mgmt/2018-03-01/insights"
 	"github.com/prometheus/client_golang/prometheus"
+	prometheusCommon "github.com/webdevops/go-prometheus-common"
 	"strings"
 	"sync"
 )
@@ -111,7 +112,7 @@ func (m *AzureInsightMetrics) FetchMetrics(ctx context.Context, subscriptionId, 
 	return ret, err
 }
 
-func (r *AzureInsightMetricsResult) SetGauge(gauge *MetricCollectorList, settings RequestMetricSettings) {
+func (r *AzureInsightMetricsResult) SetGauge(gauge *prometheusCommon.MetricList, settings RequestMetricSettings) {
 	if r.Result.Value != nil {
 		// DEBUGGING
 		//data,_ := json.Marshal(r.Result)

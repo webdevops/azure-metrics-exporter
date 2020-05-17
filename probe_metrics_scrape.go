@@ -7,6 +7,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/remeh/sizedwaitgroup"
+	prometheusCommon "github.com/webdevops/go-prometheus-common"
 	"net/http"
 	"time"
 )
@@ -51,10 +52,15 @@ func probeMetricsScrapeHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	metricsList := MetricCollectorList{}
+	metricsList := prometheusCommon.MetricList{}
 
 	cacheKey := fmt.Sprintf("probeMetricsListHandler::%x", sha256.Sum256([]byte(r.URL.String())))
-	if cacheVal, err := cache.Value(cacheKey); err != nil {
+	loadedFromCache := false
+	if settings.Cache != nil {
+		loadedFromCache = metricsList.LoadFromCache(cache, cacheKey)
+	}
+
+	if !loadedFromCache {
 		for _, subscription := range settings.Subscriptions {
 			wg.Add()
 			go func(subscription string) {
@@ -124,11 +130,8 @@ func probeMetricsScrapeHandler(w http.ResponseWriter, r *http.Request) {
 
 		// enable caching if enabled
 		if settings.Cache != nil {
-			cache.Add(cacheKey, *settings.Cache, metricsList.list)
+			metricsList.StoreToCache(cache, cacheKey, *settings.Cache)
 		}
-	} else {
-		// use from cache
-		metricsList.list = cacheVal.Data().([]MetricCollectorRow)
 	}
 
 	metricsList.GaugeSet(metricGauge)

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	prometheusCommon "github.com/webdevops/go-prometheus-common"
 	"net/http"
 	"time"
 )
@@ -50,10 +51,15 @@ func probeMetricsResourceHandler(w http.ResponseWriter, r *http.Request) {
 
 	registry, metricGauge := azureInsightMetrics.CreatePrometheusRegistryAndMetricsGauge(settings.Name)
 
-	metricsList := MetricCollectorList{}
+	metricsList := prometheusCommon.MetricList{}
 
 	cacheKey := fmt.Sprintf("probeMetricsResourceHandler::%x", sha256.Sum256([]byte(r.URL.String())))
-	if cacheVal, err := cache.Value(cacheKey); err != nil {
+	loadedFromCache := false
+	if settings.Cache != nil {
+		loadedFromCache = metricsList.LoadFromCache(cache, cacheKey)
+	}
+
+	if !loadedFromCache {
 		for _, target := range settings.Target {
 			result, err := azureInsightMetrics.FetchMetrics(ctx, subscription, target, settings)
 
@@ -81,11 +87,8 @@ func probeMetricsResourceHandler(w http.ResponseWriter, r *http.Request) {
 
 		// enable caching if enabled
 		if settings.Cache != nil {
-			cache.Add(cacheKey, *settings.Cache, metricsList.list)
+			metricsList.StoreToCache(cache, cacheKey, *settings.Cache)
 		}
-	} else {
-		// use from cache
-		metricsList.list = cacheVal.Data().([]MetricCollectorRow)
 	}
 
 	metricsList.GaugeSet(metricGauge)

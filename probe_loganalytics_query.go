@@ -6,6 +6,7 @@ import (
 	"github.com/Azure/azure-sdk-for-go/services/operationalinsights/v1/operationalinsights"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	prometheusCommon "github.com/webdevops/go-prometheus-common"
 	"net/http"
 	"time"
 )
@@ -70,6 +71,8 @@ func probeLogAnalyticsQueryHandler(w http.ResponseWriter, r *http.Request) {
 
 	queryInfoGauge.With(prometheus.Labels{}).Set(boolToFloat64(result.Result != nil))
 
+	metricsList := prometheusCommon.MetricList{}
+
 	if result.Result != nil {
 		metricLabels := []string{"table"}
 
@@ -128,11 +131,14 @@ func probeLogAnalyticsQueryHandler(w http.ResponseWriter, r *http.Request) {
 						rowLabels[*column.Name] = labelValue
 					}
 
-					logRowGauge.With(rowLabels).Set(1)
+					metricsList.AddInfo(rowLabels)
 				}
 			}
 		}
+
+		metricsList.GaugeSet(logRowGauge)
 	}
+
 
 	// global stats counter
 	prometheusCollectTime.With(prometheus.Labels{
