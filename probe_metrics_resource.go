@@ -61,6 +61,7 @@ func probeMetricsResourceHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if !loadedFromCache {
+		w.Header().Add("X-metrics-cached", "false")
 		for _, target := range settings.Target {
 			result, err := azureInsightMetrics.FetchMetrics(ctx, subscription, target, settings)
 
@@ -88,10 +89,10 @@ func probeMetricsResourceHandler(w http.ResponseWriter, r *http.Request) {
 
 		// enable caching if enabled
 		if settings.Cache != nil {
-			w.Header().Add("X-metrics-cached", (*settings.Cache).String())
 			metricsList.StoreToCache(cacheKey, *settings.Cache)
 		}
 	} else {
+		w.Header().Add("X-metrics-cached", "true")
 		prometheusMetricRequests.With(prometheus.Labels{
 			"subscriptionID": "",
 			"handler":        PROBE_METRICS_RESOURCE_URL,
