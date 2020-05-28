@@ -123,6 +123,18 @@ func NewRequestMetricSettings(r *http.Request) (RequestMetricSettings, error) {
 	return ret, nil
 }
 
+func (s *RequestMetricSettings) CacheDuration(requestTime time.Time) (ret *time.Duration) {
+	if s.Cache != nil {
+		bufferDuration := time.Duration(2 * time.Second)
+		cachedUntilTime := requestTime.Add(*s.Cache).Add(-bufferDuration)
+		cacheDuration := cachedUntilTime.Sub(time.Now())
+		if cacheDuration.Seconds() > 0 {
+			ret = &cacheDuration
+		}
+	}
+	return
+}
+
 func (s *RequestMetricSettings) SetMetrics(val string) {
 	s.Metric = strings.Split(val, ",")
 }

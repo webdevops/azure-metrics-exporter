@@ -131,8 +131,9 @@ func probeMetricsScrapeHandler(w http.ResponseWriter, r *http.Request) {
 		wg.Wait()
 
 		// enable caching if enabled
-		if settings.Cache != nil {
-			metricsList.StoreToCache(cacheKey, *settings.Cache)
+		if cacheDuration := settings.CacheDuration(startTime); cacheDuration != nil {
+			metricsList.StoreToCache(cacheKey, *cacheDuration)
+			w.Header().Add("X-metrics-cached-until", time.Now().Add(*cacheDuration).Format(time.RFC3339))
 		}
 	} else {
 		w.Header().Add("X-metrics-cached", "true")
