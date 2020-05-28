@@ -115,9 +115,7 @@ func probeMetricsListHandler(w http.ResponseWriter, r *http.Request) {
 		wg.Wait()
 
 		// enable caching if enabled
-		fmt.Println(settings.CacheDuration(startTime))
 		if cacheDuration := settings.CacheDuration(startTime); cacheDuration != nil {
-			fmt.Println(settings.CacheDuration(startTime).String())
 			metricsList.StoreToCache(cacheKey, *cacheDuration)
 			w.Header().Add("X-metrics-cached-until", time.Now().Add(*cacheDuration).Format(time.RFC3339))
 		}

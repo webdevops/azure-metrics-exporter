@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	iso8601 "github.com/ChannelMeter/iso8601duration"
 	"net/http"
 	"strconv"
@@ -114,7 +113,7 @@ func NewRequestMetricSettings(r *http.Request) (RequestMetricSettings, error) {
 			if val, err := time.ParseDuration(cacheDurationString); err == nil {
 				ret.Cache = &val
 			} else {
-				fmt.Println(err.Error())
+				Logger.Error(err.Error())
 				return ret, err
 			}
 		}
