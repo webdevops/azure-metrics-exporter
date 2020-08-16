@@ -21,7 +21,7 @@ func probeMetricsListHandler(w http.ResponseWriter, r *http.Request) {
 	startTime := time.Now()
 
 	// If a timeout is configured via the Prometheus header, add it to the request.
-	timeoutSeconds, err = getPrometheusTimeout(r, PROBE_METRICS_LIST_TIMEOUT_DEFAULT)
+	timeoutSeconds, err = getPrometheusTimeout(r, ProbeMetricsListTimeoutDefault)
 	if err != nil {
 		log.Error(err)
 		http.Error(w, fmt.Sprintf("Failed to parse timeout from Prometheus header: %s", err), http.StatusInternalServerError)
@@ -79,7 +79,7 @@ func probeMetricsListHandler(w http.ResponseWriter, r *http.Request) {
 							result.SetGauge(metricsList, settings)
 							prometheusMetricRequests.With(prometheus.Labels{
 								"subscriptionID": subscription,
-								"handler":        PROBE_METRICS_LIST_URL,
+								"handler":        ProbeMetricsListUrl,
 								"filter":         settings.Filter,
 								"result":         "success",
 							}).Inc()
@@ -89,7 +89,7 @@ func probeMetricsListHandler(w http.ResponseWriter, r *http.Request) {
 
 							prometheusMetricRequests.With(prometheus.Labels{
 								"subscriptionID": subscription,
-								"handler":        PROBE_METRICS_LIST_URL,
+								"handler":        ProbeMetricsListUrl,
 								"filter":         settings.Filter,
 								"result":         "error",
 							}).Inc()
@@ -106,7 +106,7 @@ func probeMetricsListHandler(w http.ResponseWriter, r *http.Request) {
 				// global stats counter
 				prometheusCollectTime.With(prometheus.Labels{
 					"subscriptionID": subscription,
-					"handler":        PROBE_METRICS_LIST_URL,
+					"handler":        ProbeMetricsListUrl,
 					"filter":         settings.Filter,
 				}).Observe(time.Now().Sub(startTime).Seconds())
 
@@ -124,7 +124,7 @@ func probeMetricsListHandler(w http.ResponseWriter, r *http.Request) {
 		w.Header().Add("X-metrics-cached", "true")
 		prometheusMetricRequests.With(prometheus.Labels{
 			"subscriptionID": "",
-			"handler":        PROBE_METRICS_LIST_URL,
+			"handler":        ProbeMetricsListUrl,
 			"filter":         settings.Filter,
 			"result":         "cached",
 		}).Inc()

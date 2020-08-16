@@ -21,7 +21,7 @@ func probeLogAnalyticsQueryHandler(w http.ResponseWriter, r *http.Request) {
 	startTime := time.Now()
 
 	// If a timeout is configured via the Prometheus header, add it to the request.
-	timeoutSeconds, err = getPrometheusTimeout(r, PROBE_LOGANALYTICS_SCRAPE_TIMEOUT_DEFAULT)
+	timeoutSeconds, err = getPrometheusTimeout(r, ProbeLoganalyticsScrapeTimeoutDefault)
 	if err != nil {
 		log.Error(err)
 		http.Error(w, fmt.Sprintf("Failed to parse timeout from Prometheus header: %s", err), http.StatusInternalServerError)
@@ -144,7 +144,7 @@ func probeLogAnalyticsQueryHandler(w http.ResponseWriter, r *http.Request) {
 	// global stats counter
 	prometheusCollectTime.With(prometheus.Labels{
 		"subscriptionID": "",
-		"handler":        PROBE_LOGANALYTICS_SCRAPE_URL,
+		"handler":        ProbeLoganalyticsScrapeUrl,
 		"filter":         query,
 	}).Observe(time.Now().Sub(startTime).Seconds())
 

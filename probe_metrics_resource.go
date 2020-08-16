@@ -19,7 +19,7 @@ func probeMetricsResourceHandler(w http.ResponseWriter, r *http.Request) {
 	startTime := time.Now()
 
 	// If a timeout is configured via the Prometheus header, add it to the request.
-	timeoutSeconds, err = getPrometheusTimeout(r, PROBE_METRICS_RESOURCE_TIMEOUT_DEFAULT)
+	timeoutSeconds, err = getPrometheusTimeout(r, ProbeMetricsResourceTimeoutDefault)
 	if err != nil {
 		log.Error(err)
 		http.Error(w, fmt.Sprintf("Failed to parse timeout from Prometheus header: %s", err), http.StatusInternalServerError)
@@ -70,7 +70,7 @@ func probeMetricsResourceHandler(w http.ResponseWriter, r *http.Request) {
 				log.Warningln(buildErrorMessageForMetrics(err, settings))
 				prometheusMetricRequests.With(prometheus.Labels{
 					"subscriptionID": subscription,
-					"handler":        PROBE_METRICS_RESOURCE_URL,
+					"handler":        ProbeMetricsResourceUrl,
 					"filter":         "",
 					"result":         "error",
 				}).Inc()
@@ -81,7 +81,7 @@ func probeMetricsResourceHandler(w http.ResponseWriter, r *http.Request) {
 			log.Debugf("subscription[%v] fetched metrics for %v", subscription, target)
 			prometheusMetricRequests.With(prometheus.Labels{
 				"subscriptionID": subscription,
-				"handler":        PROBE_METRICS_RESOURCE_URL,
+				"handler":        ProbeMetricsResourceUrl,
 				"filter":         "",
 				"result":         "success",
 			}).Inc()
@@ -97,7 +97,7 @@ func probeMetricsResourceHandler(w http.ResponseWriter, r *http.Request) {
 		w.Header().Add("X-metrics-cached", "true")
 		prometheusMetricRequests.With(prometheus.Labels{
 			"subscriptionID": "",
-			"handler":        PROBE_METRICS_RESOURCE_URL,
+			"handler":        ProbeMetricsResourceUrl,
 			"filter":         settings.Filter,
 			"result":         "cached",
 		}).Inc()
@@ -108,7 +108,7 @@ func probeMetricsResourceHandler(w http.ResponseWriter, r *http.Request) {
 	// global stats counter
 	prometheusCollectTime.With(prometheus.Labels{
 		"subscriptionID": subscription,
-		"handler":        PROBE_METRICS_RESOURCE_URL,
+		"handler":        ProbeMetricsResourceUrl,
 		"filter":         "",
 	}).Observe(time.Now().Sub(startTime).Seconds())
 

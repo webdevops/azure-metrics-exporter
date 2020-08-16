@@ -1,7 +1,6 @@
 package main
 
 import (
-	"errors"
 	"fmt"
 	"strings"
 )
@@ -24,7 +23,7 @@ func buildErrorMessageForMetrics(err error, settings RequestMetricSettings) erro
 	}
 
 	if len(settingLine) >= 1 {
-		err = errors.New(fmt.Sprintf("%v: %v", strings.Join(settingLine, " "), err))
+		err = fmt.Errorf("%v: %v", strings.Join(settingLine, " "), err)
 	}
 
 	return err

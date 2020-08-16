@@ -21,21 +21,21 @@ import (
 const (
 	Author = "webdevops.io"
 
-	METRICS_URL = "/metrics"
+	MetricsUrl = "/metrics"
 
 	PROMETHEUS_METRIC_NAME = "azurerm_resource_metric"
 
-	PROBE_METRICS_RESOURCE_URL             = "/probe/metrics/resource"
-	PROBE_METRICS_RESOURCE_TIMEOUT_DEFAULT = 10
+	ProbeMetricsResourceUrl            = "/probe/metrics/resource"
+	ProbeMetricsResourceTimeoutDefault = 10
 
-	PROBE_METRICS_LIST_URL             = "/probe/metrics/list"
-	PROBE_METRICS_LIST_TIMEOUT_DEFAULT = 120
+	ProbeMetricsListUrl            = "/probe/metrics/list"
+	ProbeMetricsListTimeoutDefault = 120
 
-	PROBE_METRICS_SCRAPE_URL             = "/probe/metrics/scrape"
-	PROBE_METRICS_SCRAPE_TIMEOUT_DEFAULT = 120
+	ProbeMetricsScrapeUrl            = "/probe/metrics/scrape"
+	ProbeMetricsScrapeTimeoutDefault = 120
 
-	PROBE_LOGANALYTICS_SCRAPE_URL             = "/probe/loganalytics/query"
-	PROBE_LOGANALYTICS_SCRAPE_TIMEOUT_DEFAULT = 120
+	ProbeLoganalyticsScrapeUrl            = "/probe/loganalytics/query"
+	ProbeLoganalyticsScrapeTimeoutDefault = 120
 )
 
 var (
@@ -137,21 +137,21 @@ func initAzureConnection() {
 
 // start and handle prometheus handler
 func startHttpServer() {
-	http.Handle(METRICS_URL, promhttp.Handler())
+	http.Handle(MetricsUrl, promhttp.Handler())
 
-	http.HandleFunc(PROBE_METRICS_RESOURCE_URL, func(w http.ResponseWriter, r *http.Request) {
+	http.HandleFunc(ProbeMetricsResourceUrl, func(w http.ResponseWriter, r *http.Request) {
 		probeMetricsResourceHandler(w, r)
 	})
 
-	http.HandleFunc(PROBE_METRICS_LIST_URL, func(w http.ResponseWriter, r *http.Request) {
+	http.HandleFunc(ProbeMetricsListUrl, func(w http.ResponseWriter, r *http.Request) {
 		probeMetricsListHandler(w, r)
 	})
 
-	http.HandleFunc(PROBE_METRICS_SCRAPE_URL, func(w http.ResponseWriter, r *http.Request) {
+	http.HandleFunc(ProbeMetricsScrapeUrl, func(w http.ResponseWriter, r *http.Request) {
 		probeMetricsScrapeHandler(w, r)
 	})
 
-	http.HandleFunc(PROBE_LOGANALYTICS_SCRAPE_URL, func(w http.ResponseWriter, r *http.Request) {
+	http.HandleFunc(ProbeLoganalyticsScrapeUrl, func(w http.ResponseWriter, r *http.Request) {
 		probeLogAnalyticsQueryHandler(w, r)
 	})
 
