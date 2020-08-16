@@ -14,7 +14,6 @@ require (
 	github.com/google/logger v1.1.0
 	github.com/jessevdk/go-flags v1.4.1-0.20181221193153-c0795c8afcf4
 	github.com/matttproud/golang_protobuf_extensions v1.0.2-0.20181231171920-c182affec369 // indirect
-	github.com/muesli/cache2go v0.0.0-20200423001931-a100c5aac93f // indirect
 	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/prometheus/client_golang v1.6.0
 	github.com/remeh/sizedwaitgroup v1.0.0
