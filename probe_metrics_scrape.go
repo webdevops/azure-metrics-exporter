@@ -7,6 +7,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/remeh/sizedwaitgroup"
+	log "github.com/sirupsen/logrus"
 	prometheusCommon "github.com/webdevops/go-prometheus-common"
 	"net/http"
 	"time"
@@ -24,7 +25,7 @@ func probeMetricsScrapeHandler(w http.ResponseWriter, r *http.Request) {
 	// If a timeout is configured via the Prometheus header, add it to the request.
 	timeoutSeconds, err = getPrometheusTimeout(r, PROBE_METRICS_SCRAPE_TIMEOUT_DEFAULT)
 	if err != nil {
-		Logger.Error(err)
+		log.Error(err)
 		http.Error(w, fmt.Sprintf("Failed to parse timeout from Prometheus header: %s", err), http.StatusInternalServerError)
 		return
 	}
@@ -35,19 +36,19 @@ func probeMetricsScrapeHandler(w http.ResponseWriter, r *http.Request) {
 
 	var settings RequestMetricSettings
 	if settings, err = NewRequestMetricSettings(r); err != nil {
-		Logger.Errorln(buildErrorMessageForMetrics(err, settings))
+		log.Errorln(buildErrorMessageForMetrics(err, settings))
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 	registry, metricGauge := azureInsightMetrics.CreatePrometheusRegistryAndMetricsGauge(settings.Name)
 
 	if metricTagName, err = paramsGetRequired(params, "metricTagName"); err != nil {
-		Logger.Errorln(buildErrorMessageForMetrics(err, settings))
+		log.Errorln(buildErrorMessageForMetrics(err, settings))
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 	if aggregationTagName, err = paramsGetRequired(params, "aggregationTagName"); err != nil {
-		Logger.Errorln(buildErrorMessageForMetrics(err, settings))
+		log.Errorln(buildErrorMessageForMetrics(err, settings))
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
@@ -72,7 +73,7 @@ func probeMetricsScrapeHandler(w http.ResponseWriter, r *http.Request) {
 				list, err := azureInsightMetrics.ListResources(subscription, settings.Filter)
 
 				if err != nil {
-					Logger.Errorln(buildErrorMessageForMetrics(err, settings))
+					log.Errorln(buildErrorMessageForMetrics(err, settings))
 					http.Error(w, err.Error(), http.StatusBadRequest)
 					return
 				}
@@ -92,7 +93,7 @@ func probeMetricsScrapeHandler(w http.ResponseWriter, r *http.Request) {
 								result, err := azureInsightMetrics.FetchMetrics(ctx, subscription, *val.ID, settings)
 
 								if err == nil {
-									Logger.Verbosef("subscription[%v] fetched auto metrics for %v", subscription, *val.ID)
+									log.Debugf("subscription[%v] fetched auto metrics for %v", subscription, *val.ID)
 									result.SetGauge(metricsList, settings)
 									prometheusMetricRequests.With(prometheus.Labels{
 										"subscriptionID": subscription,
@@ -101,7 +102,7 @@ func probeMetricsScrapeHandler(w http.ResponseWriter, r *http.Request) {
 										"result":         "success",
 									}).Inc()
 								} else {
-									Logger.Warningln(buildErrorMessageForMetrics(err, settings))
+									log.Warningln(buildErrorMessageForMetrics(err, settings))
 									prometheusMetricRequests.With(prometheus.Labels{
 										"subscriptionID": subscription,
 										"handler":        PROBE_METRICS_SCRAPE_URL,

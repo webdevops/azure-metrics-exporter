@@ -7,6 +7,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/remeh/sizedwaitgroup"
+	log "github.com/sirupsen/logrus"
 	prometheusCommon "github.com/webdevops/go-prometheus-common"
 	"net/http"
 	"time"
@@ -22,7 +23,7 @@ func probeMetricsListHandler(w http.ResponseWriter, r *http.Request) {
 	// If a timeout is configured via the Prometheus header, add it to the request.
 	timeoutSeconds, err = getPrometheusTimeout(r, PROBE_METRICS_LIST_TIMEOUT_DEFAULT)
 	if err != nil {
-		Logger.Error(err)
+		log.Error(err)
 		http.Error(w, fmt.Sprintf("Failed to parse timeout from Prometheus header: %s", err), http.StatusInternalServerError)
 		return
 	}
@@ -33,7 +34,7 @@ func probeMetricsListHandler(w http.ResponseWriter, r *http.Request) {
 
 	var settings RequestMetricSettings
 	if settings, err = NewRequestMetricSettings(r); err != nil {
-		Logger.Errorln(buildErrorMessageForMetrics(err, settings))
+		log.Errorln(buildErrorMessageForMetrics(err, settings))
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
@@ -60,7 +61,7 @@ func probeMetricsListHandler(w http.ResponseWriter, r *http.Request) {
 				list, err := azureInsightMetrics.ListResources(subscription, settings.Filter)
 
 				if err != nil {
-					Logger.Errorln(buildErrorMessageForMetrics(err, settings))
+					log.Errorln(buildErrorMessageForMetrics(err, settings))
 					http.Error(w, err.Error(), http.StatusBadRequest)
 					return
 				}
@@ -74,7 +75,7 @@ func probeMetricsListHandler(w http.ResponseWriter, r *http.Request) {
 						result, err := azureInsightMetrics.FetchMetrics(ctx, subscription, *val.ID, settings)
 
 						if err == nil {
-							Logger.Verbosef("name[%v]subscription[%v] fetched auto metrics for %v", settings.Name, subscription, *val.ID)
+							log.Debugf("name[%v]subscription[%v] fetched auto metrics for %v", settings.Name, subscription, *val.ID)
 							result.SetGauge(metricsList, settings)
 							prometheusMetricRequests.With(prometheus.Labels{
 								"subscriptionID": subscription,
@@ -83,8 +84,8 @@ func probeMetricsListHandler(w http.ResponseWriter, r *http.Request) {
 								"result":         "success",
 							}).Inc()
 						} else {
-							Logger.Verbosef("name[%v]subscription[%v] failed fetching metrics for %v", settings.Name, subscription, *val.ID)
-							Logger.Warningln(buildErrorMessageForMetrics(err, settings))
+							log.Debugf("name[%v]subscription[%v] failed fetching metrics for %v", settings.Name, subscription, *val.ID)
+							log.Warningln(buildErrorMessageForMetrics(err, settings))
 
 							prometheusMetricRequests.With(prometheus.Labels{
 								"subscriptionID": subscription,

@@ -18,6 +18,7 @@ RUN ./azure-metrics-exporter --help
 # FINAL IMAGE
 #############################################
 FROM gcr.io/distroless/static
+ENV LOG_JSON=1
 COPY --from=build /go/src/github.com/webdevops/azure-metrics-exporter/azure-metrics-exporter /
 USER 1000
 ENTRYPOINT ["/azure-metrics-exporter"]

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	log "github.com/sirupsen/logrus"
 	prometheusCommon "github.com/webdevops/go-prometheus-common"
 	"net/http"
 	"time"
@@ -20,7 +21,7 @@ func probeMetricsResourceHandler(w http.ResponseWriter, r *http.Request) {
 	// If a timeout is configured via the Prometheus header, add it to the request.
 	timeoutSeconds, err = getPrometheusTimeout(r, PROBE_METRICS_RESOURCE_TIMEOUT_DEFAULT)
 	if err != nil {
-		Logger.Error(err)
+		log.Error(err)
 		http.Error(w, fmt.Sprintf("Failed to parse timeout from Prometheus header: %s", err), http.StatusInternalServerError)
 		return
 	}
@@ -31,20 +32,20 @@ func probeMetricsResourceHandler(w http.ResponseWriter, r *http.Request) {
 
 	var settings RequestMetricSettings
 	if settings, err = NewRequestMetricSettings(r); err != nil {
-		Logger.Errorln(buildErrorMessageForMetrics(err, settings))
+		log.Errorln(buildErrorMessageForMetrics(err, settings))
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
 	if len(settings.Subscriptions) != 1 {
-		Logger.Errorln(buildErrorMessageForMetrics(err, settings))
+		log.Errorln(buildErrorMessageForMetrics(err, settings))
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 	subscription := settings.Subscriptions[0]
 
 	if len(settings.Target) == 0 {
-		Logger.Errorln(buildErrorMessageForMetrics(err, settings))
+		log.Errorln(buildErrorMessageForMetrics(err, settings))
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
@@ -66,7 +67,7 @@ func probeMetricsResourceHandler(w http.ResponseWriter, r *http.Request) {
 			result, err := azureInsightMetrics.FetchMetrics(ctx, subscription, target, settings)
 
 			if err != nil {
-				Logger.Warningln(buildErrorMessageForMetrics(err, settings))
+				log.Warningln(buildErrorMessageForMetrics(err, settings))
 				prometheusMetricRequests.With(prometheus.Labels{
 					"subscriptionID": subscription,
 					"handler":        PROBE_METRICS_RESOURCE_URL,
@@ -77,7 +78,7 @@ func probeMetricsResourceHandler(w http.ResponseWriter, r *http.Request) {
 				continue
 			}
 
-			Logger.Verbosef("subscription[%v] fetched metrics for %v", subscription, target)
+			log.Debugf("subscription[%v] fetched metrics for %v", subscription, target)
 			prometheusMetricRequests.With(prometheus.Labels{
 				"subscriptionID": subscription,
 				"handler":        PROBE_METRICS_RESOURCE_URL,

@@ -11,12 +11,12 @@ require (
 	github.com/Azure/go-autorest/autorest/validation v0.2.0 // indirect
 	github.com/ChannelMeter/iso8601duration v0.0.0-20150204201828-8da3af7a2a61
 	github.com/channelmeter/iso8601duration v0.0.0-20150204201828-8da3af7a2a61 // indirect
-	github.com/google/logger v1.1.0
 	github.com/jessevdk/go-flags v1.4.1-0.20181221193153-c0795c8afcf4
 	github.com/matttproud/golang_protobuf_extensions v1.0.2-0.20181231171920-c182affec369 // indirect
 	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/prometheus/client_golang v1.6.0
 	github.com/remeh/sizedwaitgroup v1.0.0
+	github.com/sirupsen/logrus v1.6.0
 	github.com/webdevops/go-prometheus-common v0.0.0-20200517230514-f93e162ec0a6
 	golang.org/x/crypto v0.0.0-20200510223506-06a226fb4e37 // indirect
 )

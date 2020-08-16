@@ -8,9 +8,13 @@ import (
 	"github.com/patrickmn/go-cache"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
-	"log"
+	log "github.com/sirupsen/logrus"
+	"github.com/webdevops/azure-metrics-exporter/config"
 	"net/http"
 	"os"
+	"path"
+	"runtime"
+	"strings"
 	"time"
 )
 
@@ -35,9 +39,9 @@ const (
 )
 
 var (
-	argparser       *flags.Parser
-	Verbose         bool
-	Logger          *DaemonLogger
+	argparser *flags.Parser
+	opts      config.Opts
+
 	AzureAuthorizer autorest.Authorizer
 
 	prometheusCollectTime    *prometheus.SummaryVec
@@ -53,39 +57,18 @@ var (
 	gitTag    = "<unknown>"
 )
 
-var opts struct {
-	// general settings
-	Verbose []bool `long:"verbose" short:"v" env:"VERBOSE"      description:"Verbose mode"`
-
-	// server settings
-	ServerBind string `long:"bind" env:"SERVER_BIND"  description:"Server address"  default:":8080"`
-
-	// concurrency settings
-	ConcurrencySubscription         int  `long:"concurrency.subscription"          env:"CONCURRENCY_SUBSCRIPTION"           description:"Concurrent subscription fetches"                                  default:"5"`
-	ConcurrencySubscriptionResource int  `long:"concurrency.subscription.resource" env:"CONCURRENCY_SUBSCRIPTION_RESOURCE"  description:"Concurrent requests per resource (inside subscription requests)"  default:"10"`
-	Cache                           bool `long:"enable-caching"                    env:"ENABLE_CACHING"                     description:"Enable internal caching"`
-}
-
 func main() {
 	initArgparser()
 
-	// set verbosity
-	Verbose = len(opts.Verbose) >= 1
-
-	Logger = NewLogger(log.Lshortfile, Verbose)
-	defer Logger.Close()
-
-	// set verbosity
-	Verbose = len(opts.Verbose) >= 1
-
-	Logger.Infof("Init Azure Insights Monitor exporter v%s (%s; by %v)", gitTag, gitCommit, Author)
+	log.Infof("starting azure-metrics-exporter v%s (%s; %s; by %v)", gitTag, gitCommit, runtime.Version(), Author)
+	log.Info(string(opts.GetJson()))
 	metricsCache = cache.New(1*time.Minute, 1*time.Minute)
 
-	Logger.Infof("Init Azure connection")
+	log.Infof("init Azure connection")
 	initAzureConnection()
 	initMetricCollector()
 
-	Logger.Infof("Starting http server on %s", opts.ServerBind)
+	log.Infof("starting http server on %s", opts.ServerBind)
 	startHttpServer()
 }
 
@@ -104,6 +87,37 @@ func initArgparser() {
 			argparser.WriteHelp(os.Stdout)
 			os.Exit(1)
 		}
+	}
+
+	// verbose level
+	if opts.Logger.Verbose {
+		log.SetLevel(log.DebugLevel)
+	}
+
+	// debug level
+	if opts.Logger.Debug {
+		log.SetReportCaller(true)
+		log.SetLevel(log.TraceLevel)
+		log.SetFormatter(&log.TextFormatter{
+			CallerPrettyfier: func(f *runtime.Frame) (string, string) {
+				s := strings.Split(f.Function, ".")
+				funcName := s[len(s)-1]
+				return funcName, fmt.Sprintf("%s:%d", path.Base(f.File), f.Line)
+			},
+		})
+	}
+
+	// json log format
+	if opts.Logger.LogJson {
+		log.SetReportCaller(true)
+		log.SetFormatter(&log.JSONFormatter{
+			DisableTimestamp: true,
+			CallerPrettyfier: func(f *runtime.Frame) (string, string) {
+				s := strings.Split(f.Function, ".")
+				funcName := s[len(s)-1]
+				return funcName, fmt.Sprintf("%s:%d", path.Base(f.File), f.Line)
+			},
+		})
 	}
 }
 
@@ -141,7 +155,7 @@ func startHttpServer() {
 		probeLogAnalyticsQueryHandler(w, r)
 	})
 
-	Logger.Fatal(http.ListenAndServe(opts.ServerBind, nil))
+	log.Fatal(http.ListenAndServe(opts.ServerBind, nil))
 }
 
 func initMetricCollector() {
