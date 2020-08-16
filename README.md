@@ -23,6 +23,7 @@ Application Options:
       --debug                              debug mode [$DEBUG]
   -v, --verbose                            verbose mode [$VERBOSE]
       --log.json                           Switch log output to json format [$LOG_JSON]
+      --azure-environment=                 Azure environment name (default: AZUREPUBLICCLOUD) [$AZURE_ENVIRONMENT]
       --concurrency.subscription=          Concurrent subscription fetches (default: 5) [$CONCURRENCY_SUBSCRIPTION]
       --concurrency.subscription.resource= Concurrent requests per resource (inside subscription requests) (default:
                                            10) [$CONCURRENCY_SUBSCRIPTION_RESOURCE]
