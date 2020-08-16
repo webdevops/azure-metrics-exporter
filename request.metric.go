@@ -100,7 +100,7 @@ func NewRequestMetricSettings(r *http.Request) (RequestMetricSettings, error) {
 	ret.MetricOrderBy = paramsGetWithDefault(params, "metricOrderBy", "")
 
 	// param cache (timespan as default)
-	if opts.Cache {
+	if opts.Prober.Cache {
 		cacheDefaultDuration, err := iso8601.FromString(ret.Timespan)
 		cacheDefaultDurationString := ""
 		if err == nil {

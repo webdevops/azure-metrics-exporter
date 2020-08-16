@@ -70,7 +70,7 @@ func probeMetricsResourceHandler(w http.ResponseWriter, r *http.Request) {
 
 			resourceLogger := contextLogger.WithFields(log.Fields{
 				"azureSubscription": subscription,
-				"azureResource": target,
+				"azureResource":     target,
 			})
 
 			if err != nil {

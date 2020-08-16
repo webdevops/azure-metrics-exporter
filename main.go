@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"github.com/Azure/go-autorest/autorest"
+	"github.com/Azure/go-autorest/autorest/azure"
 	"github.com/Azure/go-autorest/autorest/azure/auth"
 	"github.com/jessevdk/go-flags"
 	"github.com/patrickmn/go-cache"
@@ -42,7 +43,8 @@ var (
 	argparser *flags.Parser
 	opts      config.Opts
 
-	AzureAuthorizer autorest.Authorizer
+	AzureEnvironment azure.Environment
+	AzureAuthorizer  autorest.Authorizer
 
 	prometheusCollectTime    *prometheus.SummaryVec
 	prometheusMetricRequests *prometheus.CounterVec
@@ -125,10 +127,15 @@ func initArgparser() {
 func initAzureConnection() {
 	var err error
 
+	AzureEnvironment, err = azure.EnvironmentFromName(*opts.Azure.Environment)
+	if err != nil {
+		log.Panic(err)
+	}
+
 	// setup azure authorizer
 	AzureAuthorizer, err = auth.NewAuthorizerFromEnvironment()
 	if err != nil {
-		panic(err)
+		log.Panic(err)
 	}
 
 	azureInsightMetrics = NewAzureInsightMetrics()

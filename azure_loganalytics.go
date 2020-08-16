@@ -24,13 +24,13 @@ func NewAzureLogAnalysticsMetrics() *AzureLogAnalysticsMetrics {
 func (m *AzureLogAnalysticsMetrics) QueryClient() *operationalinsights.QueryClient {
 	if m.client == nil {
 		m.clientMutex.Lock()
-		keyvaultAuth, err := auth.NewAuthorizerFromEnvironmentWithResource("https://api.loganalytics.io")
+		authorizer, err := auth.NewAuthorizerFromEnvironmentWithResource(AzureEnvironment.ResourceIdentifiers.OperationalInsights)
 		if err != nil {
 			panic(err)
 		}
 
 		client := operationalinsights.NewQueryClient()
-		client.Authorizer = keyvaultAuth
+		client.Authorizer = authorizer
 		m.client = &client
 		m.clientMutex.Unlock()
 	}

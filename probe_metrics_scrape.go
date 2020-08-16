@@ -17,7 +17,7 @@ func probeMetricsScrapeHandler(w http.ResponseWriter, r *http.Request) {
 	var err error
 	var timeoutSeconds float64
 	var metricTagName, aggregationTagName string
-	wg := sizedwaitgroup.New(opts.ConcurrencySubscription)
+	wg := sizedwaitgroup.New(opts.Prober.ConcurrencySubscription)
 	params := r.URL.Query()
 
 	startTime := time.Now()
@@ -70,10 +70,9 @@ func probeMetricsScrapeHandler(w http.ResponseWriter, r *http.Request) {
 			wg.Add()
 			go func(subscription string) {
 				defer wg.Done()
-				wgResource := sizedwaitgroup.New(opts.ConcurrencySubscriptionResource)
+				wgResource := sizedwaitgroup.New(opts.Prober.ConcurrencySubscriptionResource)
 
 				list, err := azureInsightMetrics.ListResources(subscription, settings.Filter)
-
 
 				if err != nil {
 					contextLogger.Errorln(err)
@@ -86,7 +85,7 @@ func probeMetricsScrapeHandler(w http.ResponseWriter, r *http.Request) {
 
 					resourceLogger := contextLogger.WithFields(log.Fields{
 						"azureSubscription": subscription,
-						"azureResource": *val.ID,
+						"azureResource":     *val.ID,
 					})
 
 					wgResource.Add()

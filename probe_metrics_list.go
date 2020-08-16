@@ -16,7 +16,7 @@ import (
 func probeMetricsListHandler(w http.ResponseWriter, r *http.Request) {
 	var err error
 	var timeoutSeconds float64
-	wg := sizedwaitgroup.New(opts.ConcurrencySubscription)
+	wg := sizedwaitgroup.New(opts.Prober.ConcurrencySubscription)
 
 	startTime := time.Now()
 
@@ -57,7 +57,7 @@ func probeMetricsListHandler(w http.ResponseWriter, r *http.Request) {
 			wg.Add()
 			go func(subscription string) {
 				defer wg.Done()
-				wgResource := sizedwaitgroup.New(opts.ConcurrencySubscriptionResource)
+				wgResource := sizedwaitgroup.New(opts.Prober.ConcurrencySubscriptionResource)
 
 				// fetch list of resources
 				list, err := azureInsightMetrics.ListResources(subscription, settings.Filter)
@@ -78,7 +78,7 @@ func probeMetricsListHandler(w http.ResponseWriter, r *http.Request) {
 
 						resourceLogger := contextLogger.WithFields(log.Fields{
 							"azureSubscription": subscription,
-							"azureResource": *val.ID,
+							"azureResource":     *val.ID,
 						})
 
 						if err == nil {

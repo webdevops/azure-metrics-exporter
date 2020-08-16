@@ -20,7 +20,7 @@ func probeLogAnalyticsQueryHandler(w http.ResponseWriter, r *http.Request) {
 	startTime := time.Now()
 
 	contextLogger := buildContextLoggerFromRequest(r)
-	
+
 	// If a timeout is configured via the Prometheus header, add it to the request.
 	timeoutSeconds, err = getPrometheusTimeout(r, ProbeLoganalyticsScrapeTimeoutDefault)
 	if err != nil {
