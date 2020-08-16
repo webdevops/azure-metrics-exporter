@@ -2,7 +2,7 @@ Azure Insights metrics exporter
 ===============================
 
 [![license](https://img.shields.io/github/license/webdevops/azure-metrics-exporter.svg)](https://github.com/webdevops/azure-metrics-exporter/blob/master/LICENSE)
-[![Docker](https://img.shields.io/badge/docker-webdevops%2Fazure--metrics--exporter-blue.svg?longCache=true&style=flat&logo=docker)](https://hub.docker.com/r/webdevops/azure-metrics-exporter/)
+[![Docker](https://img.shields.io/docker/cloud/automated/webdevops/azure-metrics-exporter)](https://hub.docker.com/r/webdevops/azure-metrics-exporter/)
 [![Docker Build Status](https://img.shields.io/docker/cloud/build/webdevops/azure-metrics-exporter)](https://hub.docker.com/r/webdevops/azure-metrics-exporter/)
 
 Prometheus exporter for Azure Insights metrics (on demand).
@@ -20,11 +20,14 @@ Usage:
   azure-metrics-exporter [OPTIONS]
 
 Application Options:
-  -v, --verbose                            Verbose mode [$VERBOSE]
-      --bind=                              Server address (default: :8080) [$SERVER_BIND]
+      --debug                              debug mode [$DEBUG]
+  -v, --verbose                            verbose mode [$VERBOSE]
+      --log.json                           Switch log output to json format [$LOG_JSON]
       --concurrency.subscription=          Concurrent subscription fetches (default: 5) [$CONCURRENCY_SUBSCRIPTION]
-      --concurrency.subscription.resource= Concurrent requests per resource (inside subscription requests) (default: 10) [$CONCURRENCY_SUBSCRIPTION_RESOURCE]
+      --concurrency.subscription.resource= Concurrent requests per resource (inside subscription requests) (default:
+                                           10) [$CONCURRENCY_SUBSCRIPTION_RESOURCE]
       --enable-caching                     Enable internal caching [$ENABLE_CACHING]
+      --bind=                              Server address (default: :8080) [$SERVER_BIND]
 
 Help Options:
   -h, --help                               Show this help message
