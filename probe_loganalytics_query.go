@@ -6,7 +6,6 @@ import (
 	"github.com/Azure/azure-sdk-for-go/services/operationalinsights/v1/operationalinsights"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
-	log "github.com/sirupsen/logrus"
 	prometheusCommon "github.com/webdevops/go-prometheus-common"
 	"net/http"
 	"time"
@@ -20,11 +19,13 @@ func probeLogAnalyticsQueryHandler(w http.ResponseWriter, r *http.Request) {
 
 	startTime := time.Now()
 
+	contextLogger := buildContextLoggerFromRequest(r)
+	
 	// If a timeout is configured via the Prometheus header, add it to the request.
 	timeoutSeconds, err = getPrometheusTimeout(r, ProbeLoganalyticsScrapeTimeoutDefault)
 	if err != nil {
-		log.Error(err)
-		http.Error(w, fmt.Sprintf("Failed to parse timeout from Prometheus header: %s", err), http.StatusInternalServerError)
+		contextLogger.Error(err)
+		http.Error(w, fmt.Sprintf("failed to parse timeout from Prometheus header: %s", err), http.StatusInternalServerError)
 		return
 	}
 
@@ -33,19 +34,19 @@ func probeLogAnalyticsQueryHandler(w http.ResponseWriter, r *http.Request) {
 	r = r.WithContext(ctx)
 
 	if workspace, err = paramsGetRequired(params, "workspace"); err != nil {
-		log.Error(err)
+		contextLogger.Error(err)
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
 	if query, err = paramsGetRequired(params, "query"); err != nil {
-		log.Error(err)
+		contextLogger.Error(err)
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
 	if timespan, err = paramsGetRequired(params, "timespan"); err != nil {
-		log.Error(err)
+		contextLogger.Error(err)
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
@@ -58,7 +59,7 @@ func probeLogAnalyticsQueryHandler(w http.ResponseWriter, r *http.Request) {
 	result, err := azureLogAnalyticsMetrics.Query(ctx, workspace, queryBody)
 
 	if err != nil {
-		log.Error(err)
+		contextLogger.Error(err)
 		http.Error(w, err.Error(), http.StatusBadRequest)
 	}
 

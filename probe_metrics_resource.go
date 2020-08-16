@@ -18,11 +18,13 @@ func probeMetricsResourceHandler(w http.ResponseWriter, r *http.Request) {
 
 	startTime := time.Now()
 
+	contextLogger := buildContextLoggerFromRequest(r)
+
 	// If a timeout is configured via the Prometheus header, add it to the request.
 	timeoutSeconds, err = getPrometheusTimeout(r, ProbeMetricsResourceTimeoutDefault)
 	if err != nil {
-		log.Error(err)
-		http.Error(w, fmt.Sprintf("Failed to parse timeout from Prometheus header: %s", err), http.StatusInternalServerError)
+		contextLogger.Error(err)
+		http.Error(w, fmt.Sprintf("failed to parse timeout from Prometheus header: %s", err), http.StatusInternalServerError)
 		return
 	}
 
@@ -32,20 +34,20 @@ func probeMetricsResourceHandler(w http.ResponseWriter, r *http.Request) {
 
 	var settings RequestMetricSettings
 	if settings, err = NewRequestMetricSettings(r); err != nil {
-		log.Errorln(buildErrorMessageForMetrics(err, settings))
+		contextLogger.Errorln(err)
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
 	if len(settings.Subscriptions) != 1 {
-		log.Errorln(buildErrorMessageForMetrics(err, settings))
+		contextLogger.Errorln(err)
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 	subscription := settings.Subscriptions[0]
 
 	if len(settings.Target) == 0 {
-		log.Errorln(buildErrorMessageForMetrics(err, settings))
+		contextLogger.Errorln(err)
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
@@ -66,8 +68,13 @@ func probeMetricsResourceHandler(w http.ResponseWriter, r *http.Request) {
 		for _, target := range settings.Target {
 			result, err := azureInsightMetrics.FetchMetrics(ctx, subscription, target, settings)
 
+			resourceLogger := contextLogger.WithFields(log.Fields{
+				"azureSubscription": subscription,
+				"azureResource": target,
+			})
+
 			if err != nil {
-				log.Warningln(buildErrorMessageForMetrics(err, settings))
+				resourceLogger.Warningln(err)
 				prometheusMetricRequests.With(prometheus.Labels{
 					"subscriptionID": subscription,
 					"handler":        ProbeMetricsResourceUrl,
@@ -78,7 +85,7 @@ func probeMetricsResourceHandler(w http.ResponseWriter, r *http.Request) {
 				continue
 			}
 
-			log.Debugf("subscription[%v] fetched metrics for %v", subscription, target)
+			resourceLogger.Debugf("fetched metrics for %v", target)
 			prometheusMetricRequests.With(prometheus.Labels{
 				"subscriptionID": subscription,
 				"handler":        ProbeMetricsResourceUrl,

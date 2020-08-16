@@ -1,7 +1,6 @@
 package main
 
 import (
-	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -35,7 +34,7 @@ func paramsGetWithDefault(params url.Values, name, defaultValue string) (value s
 func paramsGetRequired(params url.Values, name string) (value string, err error) {
 	value = params.Get(name)
 	if value == "" {
-		err = errors.New(fmt.Sprintf("%v parameter is missing", name))
+		err = fmt.Errorf("parameter \"%v\" is missing", name)
 	}
 
 	return
@@ -55,7 +54,7 @@ func paramsGetListRequired(params url.Values, name string) (list []string, err e
 	list, err = paramsGetList(params, name)
 
 	if len(list) == 0 {
-		err = errors.New(fmt.Sprintf("%v parameter is missing", name))
+		err = fmt.Errorf("parameter \"%v\" is missing", name)
 		return
 	}
 
