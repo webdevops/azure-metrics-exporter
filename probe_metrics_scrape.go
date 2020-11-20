@@ -133,7 +133,7 @@ func probeMetricsScrapeHandler(w http.ResponseWriter, r *http.Request) {
 					"subscriptionID": subscription,
 					"handler":        ProbeMetricsScrapeUrl,
 					"filter":         settings.Filter,
-				}).Observe(time.Now().Sub(startTime).Seconds())
+				}).Observe(time.Until(startTime).Seconds())
 			}(subscription)
 		}
 		wg.Wait()

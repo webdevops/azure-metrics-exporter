@@ -42,10 +42,7 @@ func paramsGetRequired(params url.Values, name string) (value string, err error)
 
 func paramsGetList(params url.Values, name string) (list []string, err error) {
 	for _, v := range params[name] {
-		sublist := strings.Split(v, ",")
-		for _, item := range sublist {
-			list = append(list, item)
-		}
+		list = append(list, strings.Split(v, ",")...)
 	}
 	return
 }

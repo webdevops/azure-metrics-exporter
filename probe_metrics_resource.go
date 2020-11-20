@@ -117,7 +117,7 @@ func probeMetricsResourceHandler(w http.ResponseWriter, r *http.Request) {
 		"subscriptionID": subscription,
 		"handler":        ProbeMetricsResourceUrl,
 		"filter":         "",
-	}).Observe(time.Now().Sub(startTime).Seconds())
+	}).Observe(time.Until(startTime).Seconds())
 
 	h := promhttp.HandlerFor(registry, promhttp.HandlerOpts{})
 	h.ServeHTTP(w, r)

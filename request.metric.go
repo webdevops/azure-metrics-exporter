@@ -127,7 +127,7 @@ func (s *RequestMetricSettings) CacheDuration(requestTime time.Time) (ret *time.
 	if s.Cache != nil {
 		bufferDuration := time.Duration(2 * time.Second)
 		cachedUntilTime := requestTime.Add(*s.Cache).Add(-bufferDuration)
-		cacheDuration := cachedUntilTime.Sub(time.Now())
+		cacheDuration := time.Until(cachedUntilTime)
 		if cacheDuration.Seconds() > 0 {
 			ret = &cacheDuration
 		}
