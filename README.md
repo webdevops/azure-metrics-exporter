@@ -138,10 +138,10 @@ Azure Redis metrics
   metrics_path: /probe/metrics/list
   params:
     name: ["my_own_metric_name"]
-    subscription:
+    subscription: 
     - xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
     filter: ["resourceType eq 'Microsoft.Cache/Redis'"]
-    metric:
+    metric:       
     - connectedclients
     - totalcommandsprocessed
     - cachehits
@@ -163,7 +163,7 @@ Azure Redis metrics
     - errors
     interval: ["PT1M"]
     timespan: ["PT1M"]
-    aggregation:
+    aggregation:  
     - average
     - total
   static_configs:
@@ -177,10 +177,10 @@ Virtual Gateway metrics
   metrics_path: /probe/metrics/list
   params:
     name: ["my_own_metric_name"]
-    subscription:
+    subscription: 
     - xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
     filter: ["resourceType eq 'Microsoft.Network/virtualNetworkGateways'"]
-    metric:
+    metric:       
     - AverageBandwidth
     - P2SBandwidth
     - P2SConnectionCount
@@ -220,7 +220,7 @@ Virtual Gateway connection metrics (dimension support)
     - TunnelIngressPacketDropTSMismatch
     interval: ["PT5M"]
     timespan: ["PT5M"]
-    aggregation:
+    aggregation:  
     - average
     - total
     # by connection (dimension support)
