@@ -34,7 +34,7 @@ func (m *AzureInsightMetrics) MetricsClient(subscriptionId string) *insights.Met
 	m.clientMutex.Lock()
 
 	if _, ok := m.metricsClientCache[subscriptionId]; !ok {
-		client := insights.NewMetricsClient(subscriptionId)
+		client := insights.NewMetricsClientWithBaseURI(AzureAdResourceUrl, subscriptionId)
 		client.Authorizer = AzureAuthorizer
 		m.metricsClientCache[subscriptionId] = &client
 	}
@@ -49,7 +49,7 @@ func (m *AzureInsightMetrics) ResourcesClient(subscriptionId string) *resources.
 	m.clientMutex.Lock()
 
 	if _, ok := m.resourceClientCache[subscriptionId]; !ok {
-		client := resources.NewClient(subscriptionId)
+		client := resources.NewClientWithBaseURI(AzureAdResourceUrl, subscriptionId)
 		client.Authorizer = AzureAuthorizer
 		m.resourceClientCache[subscriptionId] = &client
 	}

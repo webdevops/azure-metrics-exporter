@@ -24,6 +24,7 @@ Application Options:
   -v, --verbose                            verbose mode [$VERBOSE]
       --log.json                           Switch log output to json format [$LOG_JSON]
       --azure-environment=                 Azure environment name (default: AZUREPUBLICCLOUD) [$AZURE_ENVIRONMENT]
+      --azure-ad-resource-url=             Specifies the AAD resource ID to use. If not set, it defaults to ResourceManagerEndpoint for operations with Azure Resource Manager [$AZURE_AD_RESOURCE]
       --concurrency.subscription=          Concurrent subscription fetches (default: 5) [$CONCURRENCY_SUBSCRIPTION]
       --concurrency.subscription.resource= Concurrent requests per resource (inside subscription requests) (default:
                                            10) [$CONCURRENCY_SUBSCRIPTION_RESOURCE]
@@ -137,10 +138,10 @@ Azure Redis metrics
   metrics_path: /probe/metrics/list
   params:
     name: ["my_own_metric_name"]
-    subscription: 
+    subscription:
     - xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
     filter: ["resourceType eq 'Microsoft.Cache/Redis'"]
-    metric:       
+    metric:
     - connectedclients
     - totalcommandsprocessed
     - cachehits
@@ -162,7 +163,7 @@ Azure Redis metrics
     - errors
     interval: ["PT1M"]
     timespan: ["PT1M"]
-    aggregation:  
+    aggregation:
     - average
     - total
   static_configs:
@@ -176,10 +177,10 @@ Virtual Gateway metrics
   metrics_path: /probe/metrics/list
   params:
     name: ["my_own_metric_name"]
-    subscription: 
+    subscription:
     - xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
     filter: ["resourceType eq 'Microsoft.Network/virtualNetworkGateways'"]
-    metric:       
+    metric:
     - AverageBandwidth
     - P2SBandwidth
     - P2SConnectionCount
@@ -219,7 +220,7 @@ Virtual Gateway connection metrics (dimension support)
     - TunnelIngressPacketDropTSMismatch
     interval: ["PT5M"]
     timespan: ["PT5M"]
-    aggregation:  
+    aggregation:
     - average
     - total
     # by connection (dimension support)
