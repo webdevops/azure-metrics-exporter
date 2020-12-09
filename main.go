@@ -43,8 +43,9 @@ var (
 	argparser *flags.Parser
 	opts      config.Opts
 
-	AzureEnvironment azure.Environment
-	AzureAuthorizer  autorest.Authorizer
+	AzureEnvironment   azure.Environment
+	AzureAuthorizer    autorest.Authorizer
+	AzureAdResourceUrl string
 
 	prometheusCollectTime    *prometheus.SummaryVec
 	prometheusMetricRequests *prometheus.CounterVec
@@ -130,6 +131,12 @@ func initAzureConnection() {
 	AzureEnvironment, err = azure.EnvironmentFromName(*opts.Azure.Environment)
 	if err != nil {
 		log.Panic(err)
+	}
+
+	if opts.Azure.AdResourceUrl == nil {
+		AzureAdResourceUrl = AzureEnvironment.ResourceManagerEndpoint
+	} else {
+		AzureAdResourceUrl = *opts.Azure.AdResourceUrl
 	}
 
 	// setup azure authorizer
