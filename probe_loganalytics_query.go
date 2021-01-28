@@ -147,7 +147,7 @@ func probeLogAnalyticsQueryHandler(w http.ResponseWriter, r *http.Request) {
 		"subscriptionID": "",
 		"handler":        ProbeLoganalyticsScrapeUrl,
 		"filter":         query,
-	}).Observe(time.Until(startTime).Seconds())
+	}).Observe(time.Since(startTime).Seconds())
 
 	h := promhttp.HandlerFor(registry, promhttp.HandlerOpts{})
 	h.ServeHTTP(w, r)

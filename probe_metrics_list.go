@@ -115,7 +115,7 @@ func probeMetricsListHandler(w http.ResponseWriter, r *http.Request) {
 					"subscriptionID": subscription,
 					"handler":        ProbeMetricsListUrl,
 					"filter":         settings.Filter,
-				}).Observe(time.Until(startTime).Seconds())
+				}).Observe(time.Since(startTime).Seconds())
 
 			}(subscription)
 		}
