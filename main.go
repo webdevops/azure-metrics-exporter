@@ -50,9 +50,6 @@ var (
 	prometheusCollectTime    *prometheus.SummaryVec
 	prometheusMetricRequests *prometheus.CounterVec
 
-	azureInsightMetrics      *AzureInsightMetrics
-	azureLogAnalyticsMetrics *AzureLogAnalysticsMetrics
-
 	metricsCache *cache.Cache
 
 	// Git version information
@@ -145,8 +142,6 @@ func initAzureConnection() {
 		log.Panic(err)
 	}
 
-	azureInsightMetrics = NewAzureInsightMetrics()
-	azureLogAnalyticsMetrics = NewAzureLogAnalysticsMetrics()
 }
 
 // start and handle prometheus handler
@@ -184,6 +179,7 @@ func initMetricCollector() {
 			"filter",
 		},
 	)
+	prometheus.MustRegister(prometheusCollectTime)
 
 	prometheusMetricRequests = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
@@ -197,7 +193,5 @@ func initMetricCollector() {
 			"result",
 		},
 	)
-
-	prometheus.MustRegister(prometheusCollectTime)
 	prometheus.MustRegister(prometheusMetricRequests)
 }

@@ -4,17 +4,21 @@ import (
 	"context"
 	"github.com/Azure/azure-sdk-for-go/profiles/latest/resources/mgmt/resources"
 	"github.com/Azure/azure-sdk-for-go/services/preview/monitor/mgmt/2018-03-01/insights"
+	"github.com/Azure/go-autorest/autorest"
 	"github.com/prometheus/client_golang/prometheus"
 	prometheusCommon "github.com/webdevops/go-prometheus-common"
+	"net/http"
+	"strconv"
 	"strings"
-	"sync"
 )
 
 type AzureInsightMetrics struct {
-	metricsClientCache  map[string]*insights.MetricsClient
-	resourceClientCache map[string]*resources.Client
+	authorizer         *autorest.Authorizer
+	prometheusRegistry *prometheus.Registry
 
-	clientMutex sync.Mutex
+	prometheus struct {
+		apiQuota *prometheus.GaugeVec
+	}
 }
 
 type AzureInsightMetricsResult struct {
@@ -22,42 +26,65 @@ type AzureInsightMetricsResult struct {
 	ResourceID *string
 }
 
-func NewAzureInsightMetrics() *AzureInsightMetrics {
+func NewAzureInsightMetrics(authorizer autorest.Authorizer, registry *prometheus.Registry) *AzureInsightMetrics {
 	ret := AzureInsightMetrics{}
-	ret.metricsClientCache = map[string]*insights.MetricsClient{}
-	ret.resourceClientCache = map[string]*resources.Client{}
+	ret.authorizer = &authorizer
+	ret.prometheusRegistry = registry
+
+	ret.prometheus.apiQuota = prometheus.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Name: "azurerm_ratelimit",
+			Help: "Azure ResourceManager ratelimit",
+		},
+		[]string{
+			"subscriptionID",
+			"scope",
+			"type",
+		},
+	)
+	ret.prometheusRegistry.MustRegister(ret.prometheus.apiQuota)
 
 	return &ret
 }
 
 func (m *AzureInsightMetrics) MetricsClient(subscriptionId string) *insights.MetricsClient {
-	m.clientMutex.Lock()
+	client := insights.NewMetricsClientWithBaseURI(AzureAdResourceUrl, subscriptionId)
+	client.Authorizer = *m.authorizer
+	client.ResponseInspector = m.azureResponseInsepector(subscriptionId)
 
-	if _, ok := m.metricsClientCache[subscriptionId]; !ok {
-		client := insights.NewMetricsClientWithBaseURI(AzureAdResourceUrl, subscriptionId)
-		client.Authorizer = AzureAuthorizer
-		m.metricsClientCache[subscriptionId] = &client
-	}
-
-	client := m.metricsClientCache[subscriptionId]
-	m.clientMutex.Unlock()
-
-	return client
+	return &client
 }
 
 func (m *AzureInsightMetrics) ResourcesClient(subscriptionId string) *resources.Client {
-	m.clientMutex.Lock()
+	client := resources.NewClientWithBaseURI(AzureAdResourceUrl, subscriptionId)
+	client.Authorizer = *m.authorizer
+	client.ResponseInspector = m.azureResponseInsepector(subscriptionId)
 
-	if _, ok := m.resourceClientCache[subscriptionId]; !ok {
-		client := resources.NewClientWithBaseURI(AzureAdResourceUrl, subscriptionId)
-		client.Authorizer = AzureAuthorizer
-		m.resourceClientCache[subscriptionId] = &client
+	return &client
+}
+
+func (m *AzureInsightMetrics) azureResponseInsepector(subscriptionId string) autorest.RespondDecorator {
+	apiQuotaMetric := func(r *http.Response, headerName string, labels prometheus.Labels) {
+		ratelimit := r.Header.Get(headerName)
+		if v, err := strconv.ParseInt(ratelimit, 10, 64); err == nil {
+			m.prometheus.apiQuota.With(labels).Set(float64(v))
+		}
 	}
 
-	client := m.resourceClientCache[subscriptionId]
-	m.clientMutex.Unlock()
+	return func(p autorest.Responder) autorest.Responder {
+		return autorest.ResponderFunc(func(r *http.Response) error {
+			// subscription rate limits
+			apiQuotaMetric(r, "x-ms-ratelimit-remaining-subscription-reads", prometheus.Labels{"subscriptionID": subscriptionId, "scope": "subscription", "type": "read"})
+			apiQuotaMetric(r, "x-ms-ratelimit-remaining-subscription-resource-requests", prometheus.Labels{"subscriptionID": subscriptionId, "scope": "subscription", "type": "resource-requests"})
+			apiQuotaMetric(r, "x-ms-ratelimit-remaining-subscription-resource-entities-read", prometheus.Labels{"subscriptionID": subscriptionId, "scope": "subscription", "type": "resource-entities-read"})
 
-	return client
+			// tenant rate limits
+			apiQuotaMetric(r, "x-ms-ratelimit-remaining-tenant-reads", prometheus.Labels{"subscriptionID": subscriptionId, "scope": "tenant", "type": "read"})
+			apiQuotaMetric(r, "x-ms-ratelimit-remaining-tenant-resource-requests", prometheus.Labels{"subscriptionID": subscriptionId, "scope": "tenant", "type": "resource-requests"})
+			apiQuotaMetric(r, "x-ms-ratelimit-remaining-tenant-resource-entities-read", prometheus.Labels{"subscriptionID": subscriptionId, "scope": "tenant", "type": "resource-entities-read"})
+			return nil
+		})
+	}
 }
 
 func (m *AzureInsightMetrics) ListResources(subscriptionId, filter string) (resources.ListResultIterator, error) {
@@ -79,12 +106,11 @@ func (m *AzureInsightMetrics) CreatePrometheusMetricsGauge(metricName string) (g
 	})
 }
 
-func (m *AzureInsightMetrics) CreatePrometheusRegistryAndMetricsGauge(metricName string) (*prometheus.Registry, *prometheus.GaugeVec) {
-	registry := prometheus.NewRegistry()
-	gauge := azureInsightMetrics.CreatePrometheusMetricsGauge(metricName)
-	registry.MustRegister(gauge)
+func (m *AzureInsightMetrics) CreatePrometheusRegistryAndMetricsGauge(metricName string) *prometheus.GaugeVec {
+	gauge := m.CreatePrometheusMetricsGauge(metricName)
+	m.prometheusRegistry.MustRegister(gauge)
 
-	return registry, gauge
+	return gauge
 }
 
 func (m *AzureInsightMetrics) FetchMetrics(ctx context.Context, subscriptionId, resourceID string, settings RequestMetricSettings) (AzureInsightMetricsResult, error) {

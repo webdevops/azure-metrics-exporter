@@ -3,39 +3,49 @@ package main
 import (
 	"context"
 	"github.com/Azure/azure-sdk-for-go/services/operationalinsights/v1/operationalinsights"
+	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure/auth"
-	"sync"
+	"github.com/prometheus/client_golang/prometheus"
+	"net/http"
 )
 
 type AzureLogAnalysticsMetrics struct {
-	client      *operationalinsights.QueryClient
-	clientMutex sync.Mutex
+	authorizer         *autorest.Authorizer
+	prometheusRegistry *prometheus.Registry
 }
 
 type AzureLogAnalysticsMetricsResult struct {
 	Result *operationalinsights.QueryResults
 }
 
-func NewAzureLogAnalysticsMetrics() *AzureLogAnalysticsMetrics {
+func NewAzureLogAnalysticsMetrics(registry *prometheus.Registry) *AzureLogAnalysticsMetrics {
 	ret := AzureLogAnalysticsMetrics{}
+
+	authorizer, err := auth.NewAuthorizerFromEnvironmentWithResource(AzureEnvironment.ResourceIdentifiers.OperationalInsights)
+	if err != nil {
+		panic(err)
+	}
+
+	ret.authorizer = &authorizer
+	ret.prometheusRegistry = registry
+
 	return &ret
 }
 
 func (m *AzureLogAnalysticsMetrics) QueryClient() *operationalinsights.QueryClient {
-	if m.client == nil {
-		m.clientMutex.Lock()
-		authorizer, err := auth.NewAuthorizerFromEnvironmentWithResource(AzureEnvironment.ResourceIdentifiers.OperationalInsights)
-		if err != nil {
-			panic(err)
-		}
+	client := operationalinsights.NewQueryClient()
+	client.Authorizer = *m.authorizer
+	client.ResponseInspector = m.azureResponseInspector()
 
-		client := operationalinsights.NewQueryClient()
-		client.Authorizer = authorizer
-		m.client = &client
-		m.clientMutex.Unlock()
+	return &client
+}
+
+func (m *AzureLogAnalysticsMetrics) azureResponseInspector() autorest.RespondDecorator {
+	return func(p autorest.Responder) autorest.Responder {
+		return autorest.ResponderFunc(func(r *http.Response) error {
+			return nil
+		})
 	}
-
-	return m.client
 }
 
 func (m *AzureLogAnalysticsMetrics) Query(ctx context.Context, workspaceId string, query operationalinsights.QueryBody) (*AzureLogAnalysticsMetricsResult, error) {

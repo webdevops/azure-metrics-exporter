@@ -46,6 +46,7 @@ Metrics
 | `azurerm_stats_metric_requests`     | Counter of resource metric requests with result (error, success)               |
 | `azurerm_resource_metric`           | Resource metrics exported by probes (can be changed using `name` parameter)    |
 | `azurerm_loganalytics_query_result` | LogAnalytics rows exported by probes                                           |
+| `azurerm_ratelimit`                 | Azure ratelimit metric (only available for uncached /probe requests)           |
 
 
 HTTP Endpoints
@@ -138,10 +139,10 @@ Azure Redis metrics
   metrics_path: /probe/metrics/list
   params:
     name: ["my_own_metric_name"]
-    subscription: 
+    subscription:
     - xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
     filter: ["resourceType eq 'Microsoft.Cache/Redis'"]
-    metric:       
+    metric:
     - connectedclients
     - totalcommandsprocessed
     - cachehits
@@ -163,7 +164,7 @@ Azure Redis metrics
     - errors
     interval: ["PT1M"]
     timespan: ["PT1M"]
-    aggregation:  
+    aggregation:
     - average
     - total
   static_configs:
@@ -177,10 +178,10 @@ Virtual Gateway metrics
   metrics_path: /probe/metrics/list
   params:
     name: ["my_own_metric_name"]
-    subscription: 
+    subscription:
     - xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
     filter: ["resourceType eq 'Microsoft.Network/virtualNetworkGateways'"]
-    metric:       
+    metric:
     - AverageBandwidth
     - P2SBandwidth
     - P2SConnectionCount
@@ -220,7 +221,7 @@ Virtual Gateway connection metrics (dimension support)
     - TunnelIngressPacketDropTSMismatch
     interval: ["PT5M"]
     timespan: ["PT5M"]
-    aggregation:  
+    aggregation:
     - average
     - total
     # by connection (dimension support)

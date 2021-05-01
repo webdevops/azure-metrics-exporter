@@ -55,15 +55,14 @@ func probeLogAnalyticsQueryHandler(w http.ResponseWriter, r *http.Request) {
 		Query:    &query,
 		Timespan: &timespan,
 	}
-
+	registry := prometheus.NewRegistry()
+	azureLogAnalyticsMetrics := NewAzureLogAnalysticsMetrics(registry)
 	result, err := azureLogAnalyticsMetrics.Query(ctx, workspace, queryBody)
 
 	if err != nil {
 		contextLogger.Error(err)
 		http.Error(w, err.Error(), http.StatusBadRequest)
 	}
-
-	registry := prometheus.NewRegistry()
 
 	queryInfoGauge := prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		Name: "azurerm_loganalytics_query_result",

@@ -42,7 +42,10 @@ func probeMetricsScrapeHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	registry, metricGauge := azureInsightMetrics.CreatePrometheusRegistryAndMetricsGauge(settings.Name)
+
+	registry := prometheus.NewRegistry()
+	azureInsightMetrics := NewAzureInsightMetrics(AzureAuthorizer, registry)
+	metricGauge := azureInsightMetrics.CreatePrometheusRegistryAndMetricsGauge(settings.Name)
 
 	if metricTagName, err = paramsGetRequired(params, "metricTagName"); err != nil {
 		contextLogger.Errorln(err)

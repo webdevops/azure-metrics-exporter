@@ -52,7 +52,9 @@ func probeMetricsResourceHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	registry, metricGauge := azureInsightMetrics.CreatePrometheusRegistryAndMetricsGauge(settings.Name)
+	registry := prometheus.NewRegistry()
+	azureInsightMetrics := NewAzureInsightMetrics(AzureAuthorizer, registry)
+	metricGauge := azureInsightMetrics.CreatePrometheusRegistryAndMetricsGauge(settings.Name)
 
 	metricsList := prometheusCommon.NewMetricsList()
 	metricsList.SetCache(metricsCache)
