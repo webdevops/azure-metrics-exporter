@@ -2,29 +2,41 @@ package main
 
 import (
 	"context"
+	"crypto/sha1"
+	"encoding/json"
+	"fmt"
 	"github.com/Azure/azure-sdk-for-go/profiles/latest/resources/mgmt/resources"
 	"github.com/Azure/azure-sdk-for-go/services/preview/monitor/mgmt/2018-03-01/insights"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/prometheus/client_golang/prometheus"
+	log "github.com/sirupsen/logrus"
 	prometheusCommon "github.com/webdevops/go-prometheus-common"
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 )
 
-type AzureInsightMetrics struct {
-	authorizer         *autorest.Authorizer
-	prometheusRegistry *prometheus.Registry
+type (
+	AzureInsightMetrics struct {
+		authorizer         *autorest.Authorizer
+		prometheusRegistry *prometheus.Registry
 
-	prometheus struct {
-		apiQuota *prometheus.GaugeVec
+		prometheus struct {
+			apiQuota *prometheus.GaugeVec
+		}
 	}
-}
 
-type AzureInsightMetricsResult struct {
-	Result     *insights.Response
-	ResourceID *string
-}
+	AzureInsightMetricsResult struct {
+		Result     *insights.Response
+		ResourceID *string
+	}
+
+	AzureResource struct {
+		ID   *string
+		Tags map[string]*string
+	}
+)
 
 func NewAzureInsightMetrics(authorizer autorest.Authorizer, registry *prometheus.Registry) *AzureInsightMetrics {
 	ret := AzureInsightMetrics{}
@@ -87,8 +99,66 @@ func (m *AzureInsightMetrics) azureResponseInsepector(subscriptionId string) aut
 	}
 }
 
-func (m *AzureInsightMetrics) ListResources(subscriptionId, filter string) (resources.ListResultIterator, error) {
-	return m.ResourcesClient(subscriptionId).ListComplete(context.Background(), filter, "", nil)
+func (m *AzureInsightMetrics) ListResources(ctx context.Context, logger *log.Entry, subscriptionId, filter string, w http.ResponseWriter) ([]AzureResource, error) {
+	var cacheDuration *time.Duration
+	cacheKey := ""
+
+	resourceList := []AzureResource{}
+
+	if opts.Azure.ServiceDiscovery.CacheDuration != nil && opts.Azure.ServiceDiscovery.CacheDuration.Seconds() > 0 {
+		cacheDuration = opts.Azure.ServiceDiscovery.CacheDuration
+		cacheKey = fmt.Sprintf(
+			"sd:%x",
+			string(sha1.New().Sum([]byte(fmt.Sprintf("%v:%v", subscriptionId, filter)))),
+		)
+	}
+	// try cache
+	if cacheDuration != nil {
+		if v, ok := azureCache.Get(cacheKey); ok {
+			if cacheData, ok := v.([]byte); ok {
+				if err := json.Unmarshal(cacheData, &resourceList); err == nil {
+					logger.Debug("fetched servicediscovery from cache")
+					w.Header().Add("X-servicediscovery-cached", "true")
+					return resourceList, nil
+				} else {
+					logger.Debug("unable to parse cached servicediscovery")
+				}
+			}
+		}
+	}
+
+	list, err := m.ResourcesClient(subscriptionId).ListComplete(context.Background(), filter, "", nil)
+	if err != nil {
+		return resourceList, err
+	}
+
+	for list.NotDone() {
+		val := list.Value()
+
+		resourceList = append(
+			resourceList,
+			AzureResource{
+				ID:   val.ID,
+				Tags: val.Tags,
+			},
+		)
+
+		if list.NextWithContext(ctx) != nil {
+			break
+		}
+	}
+
+	// store to cache (if enabeld)
+	if cacheDuration != nil {
+		logger.Debug("saving servicedisccovery to cache")
+		if cacheData, err := json.Marshal(resourceList); err == nil {
+			w.Header().Add("X-servicediscovery-cached-until", time.Now().Add(*cacheDuration).Format(time.RFC3339))
+			azureCache.Set(cacheKey, cacheData, *cacheDuration)
+			logger.Debugf("saved servicediscovery to cache for %s", cacheDuration.String())
+		}
+	}
+
+	return resourceList, nil
 }
 
 func (m *AzureInsightMetrics) CreatePrometheusMetricsGauge(metricName string) (gauge *prometheus.GaugeVec) {

@@ -62,16 +62,15 @@ func probeMetricsListHandler(w http.ResponseWriter, r *http.Request) {
 				wgResource := sizedwaitgroup.New(opts.Prober.ConcurrencySubscriptionResource)
 
 				// fetch list of resources
-				list, err := azureInsightMetrics.ListResources(subscription, settings.Filter)
-
+				list, err := azureInsightMetrics.ListResources(ctx, contextLogger, subscription, settings.Filter, w)
 				if err != nil {
 					contextLogger.Errorln(err)
 					http.Error(w, err.Error(), http.StatusBadRequest)
 					return
 				}
 
-				for list.NotDone() {
-					val := list.Value()
+				for _, row := range list {
+					val := row
 
 					wgResource.Add()
 					go func() {
@@ -104,10 +103,6 @@ func probeMetricsListHandler(w http.ResponseWriter, r *http.Request) {
 							}).Inc()
 						}
 					}()
-
-					if list.NextWithContext(ctx) != nil {
-						break
-					}
 				}
 
 				wgResource.Wait()

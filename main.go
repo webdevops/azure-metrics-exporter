@@ -51,6 +51,7 @@ var (
 	prometheusMetricRequests *prometheus.CounterVec
 
 	metricsCache *cache.Cache
+	azureCache   *cache.Cache
 
 	// Git version information
 	gitCommit = "<unknown>"
@@ -63,6 +64,7 @@ func main() {
 	log.Infof("starting azure-metrics-exporter v%s (%s; %s; by %v)", gitTag, gitCommit, runtime.Version(), Author)
 	log.Info(string(opts.GetJson()))
 	metricsCache = cache.New(1*time.Minute, 1*time.Minute)
+	azureCache = cache.New(1*time.Minute, 1*time.Minute)
 
 	log.Infof("init Azure connection")
 	initAzureConnection()

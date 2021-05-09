@@ -23,11 +23,18 @@ Application Options:
       --debug                              debug mode [$DEBUG]
   -v, --verbose                            verbose mode [$VERBOSE]
       --log.json                           Switch log output to json format [$LOG_JSON]
-      --azure-environment=                 Azure environment name (default: AZUREPUBLICCLOUD) [$AZURE_ENVIRONMENT]
-      --azure-ad-resource-url=             Specifies the AAD resource ID to use. If not set, it defaults to ResourceManagerEndpoint for operations with Azure Resource Manager [$AZURE_AD_RESOURCE]
-      --concurrency.subscription=          Concurrent subscription fetches (default: 5) [$CONCURRENCY_SUBSCRIPTION]
-      --concurrency.subscription.resource= Concurrent requests per resource (inside subscription requests) (default:
-                                           10) [$CONCURRENCY_SUBSCRIPTION_RESOURCE]
+      --azure-environment=                 Azure environment name (default: AZUREPUBLICCLOUD)
+                                           [$AZURE_ENVIRONMENT]
+      --azure-ad-resource-url=             Specifies the AAD resource ID to use. If not set, it defaults to
+                                           ResourceManagerEndpoint for operations with Azure Resource Manager
+                                           [$AZURE_AD_RESOURCE]
+      --azure.servicediscovery.cache=      Duration for caching Azure ServiceDiscovery of workspaces to reduce
+                                           API calls (time.Duration) (default: 30m)
+                                           [$AZURE_SERVICEDISCOVERY_CACHE]
+      --concurrency.subscription=          Concurrent subscription fetches (default: 5)
+                                           [$CONCURRENCY_SUBSCRIPTION]
+      --concurrency.subscription.resource= Concurrent requests per resource (inside subscription requests)
+                                           (default: 10) [$CONCURRENCY_SUBSCRIPTION_RESOURCE]
       --enable-caching                     Enable internal caching [$ENABLE_CACHING]
       --bind=                              Server address (default: :8080) [$SERVER_BIND]
 
