@@ -10,6 +10,8 @@ Supports metrics fetching from all resource with one scrape (automatic service d
 
 Configuration (except Azure connection) of this exporter is made entirely in Prometheus instead of a seperate configuration file, see examples below.
 
+WARNING: LogAnalytics metrics are deprecated, please migrate to [azure-loganalytics-exporter](https://github.com/webdevops/azure-loganalytics-exporter)
+
 Configuration
 -------------
 
@@ -65,7 +67,7 @@ HTTP Endpoints
 | `/probe/metrics/resource`      | Probe metrics for one resource (see `azurerm_resource_metric`)                      |
 | `/probe/metrics/list`          | Probe metrics for list of resources (see `azurerm_resource_metric`)                 |
 | `/probe/metrics/scrape`        | Probe metrics for list of resources and config on resource by tag name (see `azurerm_resource_metric`) |
-| `/probe/loganalytics/query`    | Probe metrics from LogAnalytics query (see `azurerm_loganalytics_query_result`)     |
+| `/probe/loganalytics/query`    | **deprecated** Probe metrics from LogAnalytics query (see `azurerm_loganalytics_query_result`)   |
 
 
 #### /probe/metrics/resource parameters
@@ -125,8 +127,9 @@ HTTP Endpoints
 
 *Hint: Multiple values can be specified multiple times or with a comma in a single value.*
 
-#### /probe/loganalytics/query parameters
+#### /probe/loganalytics/query parameters **deprecated**
 
+WARNING: LogAnalytics metrics are deprecated, please migrate to [azure-loganalytics-exporter](https://github.com/webdevops/azure-loganalytics-exporter)
 
 | GET parameter          | Default   | Required | Description                                                          |
 |------------------------|-----------|----------|----------------------------------------------------------------------|
