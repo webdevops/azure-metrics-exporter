@@ -91,6 +91,8 @@ HTTP Endpoints
 
 #### /probe/metrics/list parameters
 
+HINT: service discovery information is cached for duration set by `$AZURE_SERVICEDISCOVERY_CACHE` (set to `0` to disable)
+
 | GET parameter          | Default                   | Required | Multiple | Description                                                          |
 |------------------------|---------------------------|----------|----------|----------------------------------------------------------------------|
 | `subscription`         |                           | **yes**  | **yes**  | Azure Subscription ID (or multiple separate by comma)                |
@@ -108,6 +110,8 @@ HTTP Endpoints
 *Hint: Multiple values can be specified multiple times or with a comma in a single value.*
 
 #### /probe/metrics/scrape parameters
+
+HINT: service discovery information is cached for duration set by `$AZURE_SERVICEDISCOVERY_CACHE` (set to `0` to disable)
 
 | GET parameter          | Default                   | Required | Multiple | Description                                                          |
 |------------------------|---------------------------|----------|----------|----------------------------------------------------------------------|
