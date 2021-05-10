@@ -99,7 +99,7 @@ func (m *AzureInsightMetrics) azureResponseInsepector(subscriptionId string) aut
 	}
 }
 
-func (m *AzureInsightMetrics) ListResources(ctx context.Context, logger *log.Entry, subscriptionId, filter string, w http.ResponseWriter) ([]AzureResource, error) {
+func (m *AzureInsightMetrics) ListResources(ctx context.Context, logger *log.Entry, subscriptionId, filter string) ([]AzureResource, error) {
 	var cacheDuration *time.Duration
 	cacheKey := ""
 
@@ -118,7 +118,6 @@ func (m *AzureInsightMetrics) ListResources(ctx context.Context, logger *log.Ent
 			if cacheData, ok := v.([]byte); ok {
 				if err := json.Unmarshal(cacheData, &resourceList); err == nil {
 					logger.Debug("fetched servicediscovery from cache")
-					w.Header().Add("X-servicediscovery-cached", "true")
 					return resourceList, nil
 				} else {
 					logger.Debug("unable to parse cached servicediscovery")
@@ -152,7 +151,6 @@ func (m *AzureInsightMetrics) ListResources(ctx context.Context, logger *log.Ent
 	if cacheDuration != nil {
 		logger.Debug("saving servicedisccovery to cache")
 		if cacheData, err := json.Marshal(resourceList); err == nil {
-			w.Header().Add("X-servicediscovery-cached-until", time.Now().Add(*cacheDuration).Format(time.RFC3339))
 			azureCache.Set(cacheKey, cacheData, *cacheDuration)
 			logger.Debugf("saved servicediscovery to cache for %s", cacheDuration.String())
 		}

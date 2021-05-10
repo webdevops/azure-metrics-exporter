@@ -75,7 +75,7 @@ func probeMetricsScrapeHandler(w http.ResponseWriter, r *http.Request) {
 				defer wg.Done()
 				wgResource := sizedwaitgroup.New(opts.Prober.ConcurrencySubscriptionResource)
 
-				list, err := azureInsightMetrics.ListResources(ctx, contextLogger, subscription, settings.Filter, w)
+				list, err := azureInsightMetrics.ListResources(ctx, contextLogger, subscription, settings.Filter)
 				if err != nil {
 					contextLogger.Errorln(err)
 					http.Error(w, err.Error(), http.StatusBadRequest)
