@@ -12,6 +12,7 @@ Configuration (except Azure connection) of this exporter is made entirely in Pro
 WARNING: LogAnalytics metrics are deprecated, please migrate to [azure-loganalytics-exporter](https://github.com/webdevops/azure-loganalytics-exporter)
 
 TOC:
+* [Features](#Features)
 * [Configuration](#configuration)
 * [Metrics](#metrics)
     + [Metric name template system](#metric-name-template-system)
@@ -24,6 +25,20 @@ TOC:
     + [/probe/metrics/scrape parameters](#probemetricsscrape-parameters)
     + [/probe/loganalytics/query parameters **deprecated**](#probeloganalyticsquery-parameters-deprecated)
 * [Prometheus configuration](#prometheus-configuration)
+
+## Features
+
+- Uses of official [Azure SDK for go](https://github.com/Azure/azure-sdk-for-go)
+- Caching of ServiceDiscovery to reduce Azure API calls
+- Caching of metrics (no need to request every minute from Azure Monitor API; you can keep scrape time of `30s` for metrics)
+- Customizable metric name (with [template system with metric information](#metric-name-template-system))
+- Ability to fetch metrics from resources found with ServiceDiscovery via [Azure resources API based on $filter](https://docs.microsoft.com/de-de/rest/api/resources/resources/list) (see `/probe/metrics/list`)
+- Configuration based on Prometheus scraping config or ServiceMonitor manifest (Prometheus operator)
+- Metric manipulation (adding, removing, updating or filtering of labels or metrics) can be done in scraping config
+- Full metric dimension support (see [Prometheus configuration](#prometheus-configuration) last example)
+- Docker image is based on Google's distroless static image to reduce attack surface
+- Can run non-root and with readonly root filesystem
+- Publishes Azure API rate limit metrics (if Azure API is used)
 
 ## Configuration
 
