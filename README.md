@@ -78,6 +78,8 @@ This can be modified via environment variable `$METRIC_TEMPLATE` or as request p
 
 HINT: Used templates are removed from labels!
 
+Recommendation: `{name}_{metric}_{aggregation}_{unit}`
+
 Following templates are available:
 
 | Template         |  Description                                                                                      |
@@ -176,7 +178,7 @@ azure_metric_keyvault_serviceapihit_count{aggregation="total",dimension="",inter
 azurerm_ratelimit{scope="subscription",subscriptionID="...",type="read"} 11996
 ```
 
-#### template `{name}_{metric}_{unit}_{aggregation}`
+#### template `{name}_{metric}_{aggregation}_{unit}`
 
 Prometheus config:
 ```yaml
@@ -185,7 +187,7 @@ Prometheus config:
   metrics_path: /probe/metrics/list
   params:
     name: ["azure_metric_keyvault"]
-    template: ["{name}_{metric}_{unit}_{aggregation}"]
+    template: ["{name}_{metric}_{aggregation}_{unit}"]
     subscription:
     - xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
     filter: ["resourceType eq 'Microsoft.KeyVault/vaults'"]
@@ -204,21 +206,30 @@ Prometheus config:
 
 generated metrics:
 ```
-# HELP azure_metric_keyvault_availability_percent_average Azure monitor insight metric
-# TYPE azure_metric_keyvault_availability_percent_average gauge
-azure_metric_keyvault_availability_percent_average{dimension="",interval="PT12H",resourceID="/subscriptions/...",timespan="PT12H"} 100
-azure_metric_keyvault_availability_percent_average{dimension="",interval="PT12H",resourceID="/subscriptions/...",timespan="PT12H"} 100
-# HELP azure_metric_keyvault_serviceapihit_count_average Azure monitor insight metric
-# TYPE azure_metric_keyvault_serviceapihit_count_average gauge
-azure_metric_keyvault_serviceapihit_count_average{dimension="",interval="PT12H",resourceID="/subscriptions/...",timespan="PT12H"} 0
-azure_metric_keyvault_serviceapihit_count_average{dimension="",interval="PT12H",resourceID="/subscriptions/...",timespan="PT12H"} 0
-# HELP azure_metric_keyvault_serviceapihit_count_total Azure monitor insight metric
-# TYPE azure_metric_keyvault_serviceapihit_count_total gauge
-azure_metric_keyvault_serviceapihit_count_total{dimension="",interval="PT12H",resourceID="/subscriptions/...",timespan="PT12H"} 0
-azure_metric_keyvault_serviceapihit_count_total{dimension="",interval="PT12H",resourceID="/subscriptions/...",timespan="PT12H"} 0
+# HELP azure_metric_keyvault_availability_average_percent Azure monitor insight metric
+# TYPE azure_metric_keyvault_availability_average_percent gauge
+azure_metric_keyvault_availability_average_percent{dimension="",interval="PT12H",resourceID="/subscriptions/...",timespan="PT12H"} 100
+azure_metric_keyvault_availability_average_percent{dimension="",interval="PT12H",resourceID="/subscriptions/...",timespan="PT12H"} 100
+# HELP azure_metric_keyvault_availability_total_percent Azure monitor insight metric
+# TYPE azure_metric_keyvault_availability_total_percent gauge
+azure_metric_keyvault_availability_total_percent{dimension="",interval="PT12H",resourceID="/subscriptions/...",timespan="PT12H"} 9
+# HELP azure_metric_keyvault_serviceapihit_average_count Azure monitor insight metric
+# TYPE azure_metric_keyvault_serviceapihit_average_count gauge
+azure_metric_keyvault_serviceapihit_average_count{dimension="",interval="PT12H",resourceID="/subscriptions/...",timespan="PT12H"} 0
+azure_metric_keyvault_serviceapihit_average_count{dimension="",interval="PT12H",resourceID="/subscriptions/...",timespan="PT12H"} 1
+# HELP azure_metric_keyvault_serviceapihit_total_count Azure monitor insight metric
+# TYPE azure_metric_keyvault_serviceapihit_total_count gauge
+azure_metric_keyvault_serviceapihit_total_count{dimension="",interval="PT12H",resourceID="/subscriptions/...",timespan="PT12H"} 0
+azure_metric_keyvault_serviceapihit_total_count{dimension="",interval="PT12H",resourceID="/subscriptions/...",timespan="PT12H"} 9
+# HELP azure_metric_keyvault_serviceapilatency_average_milliseconds Azure monitor insight metric
+# TYPE azure_metric_keyvault_serviceapilatency_average_milliseconds gauge
+azure_metric_keyvault_serviceapilatency_average_milliseconds{dimension="",interval="PT12H",resourceID="/subscriptions/...",timespan="PT12H"} 38.666666666666664
+# HELP azure_metric_keyvault_serviceapilatency_total_milliseconds Azure monitor insight metric
+# TYPE azure_metric_keyvault_serviceapilatency_total_milliseconds gauge
+azure_metric_keyvault_serviceapilatency_total_milliseconds{dimension="",interval="PT12H",resourceID="/subscriptions/...",timespan="PT12H"} 348
 # HELP azurerm_ratelimit Azure ResourceManager ratelimit
 # TYPE azurerm_ratelimit gauge
-azurerm_ratelimit{scope="subscription",subscriptionID="...",type="read"} 11992
+azurerm_ratelimit{scope="subscription",subscriptionID="...",type="read"} 11999
 ```
 
 ## HTTP Endpoints
