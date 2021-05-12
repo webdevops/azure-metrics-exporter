@@ -10,11 +10,16 @@ import (
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/prometheus/client_golang/prometheus"
 	log "github.com/sirupsen/logrus"
-	prometheusCommon "github.com/webdevops/go-prometheus-common"
 	"net/http"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
+)
+
+var (
+	metricNamePlaceholders    = regexp.MustCompile(`{([^}]+)}`)
+	metricNameNotAllowedChars = regexp.MustCompile(`[^a-zA-Z0-9_:]`)
 )
 
 type (
@@ -30,6 +35,12 @@ type (
 	AzureInsightMetricsResult struct {
 		Result     *insights.Response
 		ResourceID *string
+	}
+
+	PrometheusMetricResult struct {
+		Name   string
+		Labels prometheus.Labels
+		Value  float64
 	}
 
 	AzureResource struct {
@@ -159,28 +170,6 @@ func (m *AzureInsightMetrics) ListResources(ctx context.Context, logger *log.Ent
 	return resourceList, nil
 }
 
-func (m *AzureInsightMetrics) CreatePrometheusMetricsGauge(metricName string) (gauge *prometheus.GaugeVec) {
-	return prometheus.NewGaugeVec(prometheus.GaugeOpts{
-		Name: metricName,
-		Help: "Azure monitor insight metics",
-	}, []string{
-		"resourceID",
-		"metric",
-		"dimension",
-		"unit",
-		"aggregation",
-		"interval",
-		"timespan",
-	})
-}
-
-func (m *AzureInsightMetrics) CreatePrometheusRegistryAndMetricsGauge(metricName string) *prometheus.GaugeVec {
-	gauge := m.CreatePrometheusMetricsGauge(metricName)
-	m.prometheusRegistry.MustRegister(gauge)
-
-	return gauge
-}
-
 func (m *AzureInsightMetrics) FetchMetrics(ctx context.Context, subscriptionId, resourceID string, settings RequestMetricSettings) (AzureInsightMetricsResult, error) {
 	ret := AzureInsightMetricsResult{}
 
@@ -206,7 +195,46 @@ func (m *AzureInsightMetrics) FetchMetrics(ctx context.Context, subscriptionId, 
 	return ret, err
 }
 
-func (r *AzureInsightMetricsResult) SetGauge(gauge *prometheusCommon.MetricList, settings RequestMetricSettings) {
+func (r *AzureInsightMetricsResult) buildMetric(settings RequestMetricSettings, labels prometheus.Labels, value float64) (metric PrometheusMetricResult) {
+	metric = PrometheusMetricResult{
+		Name:   settings.MetricTemplate,
+		Labels: labels,
+		Value:  value,
+	}
+
+	// fallback if template is empty (should not be)
+	if settings.Name == "" {
+		metric.Name = settings.Name
+	}
+
+	if metricNamePlaceholders.MatchString(metric.Name) {
+		metric.Name = metricNamePlaceholders.ReplaceAllStringFunc(
+			metric.Name,
+			func(fieldName string) string {
+				fieldName = strings.Trim(fieldName, "{}")
+				switch fieldName {
+				case "name":
+					return settings.Name
+				default:
+					if fieldValue, exists := metric.Labels[fieldName]; exists {
+						delete(metric.Labels, fieldName)
+						return fieldValue
+					}
+				}
+				return ""
+			},
+		)
+	}
+
+	metric.Name = strings.ReplaceAll(metric.Name, "-", "_")
+	metric.Name = strings.ReplaceAll(metric.Name, " ", "_")
+	metric.Name = strings.ToLower(metric.Name)
+	metric.Name = metricNameNotAllowedChars.ReplaceAllString(metric.Name, "")
+
+	return
+}
+
+func (r *AzureInsightMetricsResult) SendMetricToChannel(settings RequestMetricSettings, channel chan<- PrometheusMetricResult) {
 	if r.Result.Value != nil {
 		// DEBUGGING
 		//data,_ := json.Marshal(r.Result)
@@ -226,63 +254,83 @@ func (r *AzureInsightMetricsResult) SetGauge(gauge *prometheusCommon.MetricList,
 							}
 
 							if timeseriesData.Total != nil {
-								gauge.Add(prometheus.Labels{
-									"resourceID":  *r.ResourceID,
-									"metric":      stringPtrToString(metric.Name.Value),
-									"dimension":   dimensionName,
-									"unit":        string(metric.Unit),
-									"aggregation": "total",
-									"interval":    stringPtrToString(settings.Interval),
-									"timespan":    settings.Timespan,
-								}, *timeseriesData.Total)
+								channel <- r.buildMetric(
+									settings,
+									prometheus.Labels{
+										"resourceID":  *r.ResourceID,
+										"metric":      stringPtrToString(metric.Name.Value),
+										"dimension":   dimensionName,
+										"unit":        string(metric.Unit),
+										"aggregation": "total",
+										"interval":    stringPtrToString(settings.Interval),
+										"timespan":    settings.Timespan,
+									},
+									*timeseriesData.Total,
+								)
 							}
 
 							if timeseriesData.Minimum != nil {
-								gauge.Add(prometheus.Labels{
-									"resourceID":  *r.ResourceID,
-									"metric":      stringPtrToString(metric.Name.Value),
-									"dimension":   dimensionName,
-									"unit":        string(metric.Unit),
-									"aggregation": "minimum",
-									"interval":    stringPtrToString(settings.Interval),
-									"timespan":    settings.Timespan,
-								}, *timeseriesData.Minimum)
+								channel <- r.buildMetric(
+									settings,
+									prometheus.Labels{
+										"resourceID":  *r.ResourceID,
+										"metric":      stringPtrToString(metric.Name.Value),
+										"dimension":   dimensionName,
+										"unit":        string(metric.Unit),
+										"aggregation": "minimum",
+										"interval":    stringPtrToString(settings.Interval),
+										"timespan":    settings.Timespan,
+									},
+									*timeseriesData.Minimum,
+								)
 							}
 
 							if timeseriesData.Maximum != nil {
-								gauge.Add(prometheus.Labels{
-									"resourceID":  *r.ResourceID,
-									"metric":      stringPtrToString(metric.Name.Value),
-									"dimension":   dimensionName,
-									"unit":        string(metric.Unit),
-									"aggregation": "maximum",
-									"interval":    stringPtrToString(settings.Interval),
-									"timespan":    settings.Timespan,
-								}, *timeseriesData.Maximum)
+								channel <- r.buildMetric(
+									settings,
+									prometheus.Labels{
+										"resourceID":  *r.ResourceID,
+										"metric":      stringPtrToString(metric.Name.Value),
+										"dimension":   dimensionName,
+										"unit":        string(metric.Unit),
+										"aggregation": "maximum",
+										"interval":    stringPtrToString(settings.Interval),
+										"timespan":    settings.Timespan,
+									},
+									*timeseriesData.Maximum,
+								)
 							}
 
 							if timeseriesData.Average != nil {
-								gauge.Add(prometheus.Labels{
-									"resourceID":  *r.ResourceID,
-									"metric":      stringPtrToString(metric.Name.Value),
-									"dimension":   dimensionName,
-									"unit":        string(metric.Unit),
-									"aggregation": "average",
-									"interval":    stringPtrToString(settings.Interval),
-									"timespan":    settings.Timespan,
-								}, *timeseriesData.Average)
+								channel <- r.buildMetric(
+									settings,
+									prometheus.Labels{
+										"resourceID":  *r.ResourceID,
+										"metric":      stringPtrToString(metric.Name.Value),
+										"dimension":   dimensionName,
+										"unit":        string(metric.Unit),
+										"aggregation": "average",
+										"interval":    stringPtrToString(settings.Interval),
+										"timespan":    settings.Timespan,
+									},
+									*timeseriesData.Average,
+								)
 							}
 
 							if timeseriesData.Count != nil {
-								gauge.Add(prometheus.Labels{
-									"resourceID":  *r.ResourceID,
-									"metric":      stringPtrToString(metric.Name.Value),
-									"dimension":   dimensionName,
-									"unit":        string(metric.Unit),
-									"aggregation": "count",
-									"interval":    stringPtrToString(settings.Interval),
-									"timespan":    settings.Timespan,
-								}, *timeseriesData.Count)
+								channel <- r.buildMetric(
+									settings,
+									prometheus.Labels{
+										"resourceID":  *r.ResourceID,
+										"metric":      stringPtrToString(metric.Name.Value),
+										"dimension":   dimensionName,
+										"unit":        string(metric.Unit),
+										"aggregation": "count",
+										"interval":    stringPtrToString(settings.Interval),
+										"timespan":    settings.Timespan,
+									},
+									*timeseriesData.Count,
+								)
 							}
 						}
 					}

@@ -7,7 +7,6 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	log "github.com/sirupsen/logrus"
-	prometheusCommon "github.com/webdevops/go-prometheus-common"
 	"net/http"
 	"time"
 )
@@ -53,54 +52,73 @@ func probeMetricsResourceHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	registry := prometheus.NewRegistry()
+	metricList := NewMetricList()
+
 	azureInsightMetrics := NewAzureInsightMetrics(AzureAuthorizer, registry)
-	metricGauge := azureInsightMetrics.CreatePrometheusRegistryAndMetricsGauge(settings.Name)
 
-	metricsList := prometheusCommon.NewMetricsList()
-	metricsList.SetCache(metricsCache)
-
-	cacheKey := fmt.Sprintf("probeMetricsResourceHandler::%x", sha256.Sum256([]byte(r.URL.String())))
+	cacheKey := fmt.Sprintf("resource::%x", sha256.Sum256([]byte(r.URL.String())))
 	loadedFromCache := false
 	if settings.Cache != nil {
-		loadedFromCache = metricsList.LoadFromCache(cacheKey)
+		if val, ok := metricsCache.Get(cacheKey); ok {
+			metricList = val.(*MetricList)
+			loadedFromCache = true
+		}
 	}
 
 	if !loadedFromCache {
 		w.Header().Add("X-metrics-cached", "false")
-		for _, target := range settings.Target {
-			result, err := azureInsightMetrics.FetchMetrics(ctx, subscription, target, settings)
+		metricChannel := make(chan PrometheusMetricResult)
 
-			resourceLogger := contextLogger.WithFields(log.Fields{
-				"azureSubscription": subscription,
-				"azureResource":     target,
-			})
+		go func() {
+			for _, target := range settings.Target {
+				result, err := azureInsightMetrics.FetchMetrics(ctx, subscription, target, settings)
 
-			if err != nil {
-				resourceLogger.Warningln(err)
+				resourceLogger := contextLogger.WithFields(log.Fields{
+					"azureSubscription": subscription,
+					"azureResource":     target,
+				})
+
+				if err != nil {
+					resourceLogger.Warningln(err)
+					prometheusMetricRequests.With(prometheus.Labels{
+						"subscriptionID": subscription,
+						"handler":        ProbeMetricsResourceUrl,
+						"filter":         "",
+						"result":         "error",
+					}).Inc()
+					http.Error(w, err.Error(), http.StatusBadRequest)
+					continue
+				}
+
+				resourceLogger.Debugf("fetched metrics for %v", target)
 				prometheusMetricRequests.With(prometheus.Labels{
 					"subscriptionID": subscription,
 					"handler":        ProbeMetricsResourceUrl,
 					"filter":         "",
-					"result":         "error",
+					"result":         "success",
 				}).Inc()
-				http.Error(w, err.Error(), http.StatusBadRequest)
-				continue
+
+				result.SendMetricToChannel(settings, metricChannel)
 			}
 
-			resourceLogger.Debugf("fetched metrics for %v", target)
-			prometheusMetricRequests.With(prometheus.Labels{
-				"subscriptionID": subscription,
-				"handler":        ProbeMetricsResourceUrl,
-				"filter":         "",
-				"result":         "success",
-			}).Inc()
-			result.SetGauge(metricsList, settings)
+			close(metricChannel)
+		}()
+
+		// collect metrics from channel
+		for result := range metricChannel {
+			metric := MetricRow{
+				Labels: result.Labels,
+				Value:  result.Value,
+			}
+			metricList.Add(result.Name, metric)
 		}
 
 		// enable caching if enabled
-		if cacheDuration := settings.CacheDuration(startTime); cacheDuration != nil {
-			metricsList.StoreToCache(cacheKey, *cacheDuration)
-			w.Header().Add("X-metrics-cached-until", time.Now().Add(*cacheDuration).Format(time.RFC3339))
+		if settings.Cache != nil {
+			if cacheDuration := settings.CacheDuration(startTime); cacheDuration != nil {
+				_ = metricsCache.Add(cacheKey, metricList, *cacheDuration)
+				w.Header().Add("X-metrics-cached-until", time.Now().Add(*cacheDuration).Format(time.RFC3339))
+			}
 		}
 	} else {
 		w.Header().Add("X-metrics-cached", "true")
@@ -112,7 +130,20 @@ func probeMetricsResourceHandler(w http.ResponseWriter, r *http.Request) {
 		}).Inc()
 	}
 
-	metricsList.GaugeSet(metricGauge)
+	// create prometheus metrics and set rows
+	for _, metricName := range metricList.GetMetricNames() {
+		gauge := prometheus.NewGaugeVec(prometheus.GaugeOpts{
+			Name: metricName,
+			Help: "Azure monitor insight metric",
+		},
+			metricList.GetMetricLabelNames(metricName),
+		)
+		registry.MustRegister(gauge)
+
+		for _, row := range metricList.GetMetricList(metricName) {
+			gauge.With(row.Labels).Set(row.Value)
+		}
+	}
 
 	// global stats counter
 	prometheusCollectTime.With(prometheus.Labels{

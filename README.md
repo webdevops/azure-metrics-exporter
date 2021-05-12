@@ -1,5 +1,4 @@
-Azure Insights metrics exporter
-===============================
+# Azure Insights metrics exporter
 
 [![license](https://img.shields.io/github/license/webdevops/azure-metrics-exporter.svg)](https://github.com/webdevops/azure-metrics-exporter/blob/master/LICENSE)
 [![DockerHub](https://img.shields.io/badge/DockerHub-webdevops%2Fazure--metrics--exporter-blue)](https://hub.docker.com/r/webdevops/azure-metrics-exporter/)
@@ -12,8 +11,21 @@ Configuration (except Azure connection) of this exporter is made entirely in Pro
 
 WARNING: LogAnalytics metrics are deprecated, please migrate to [azure-loganalytics-exporter](https://github.com/webdevops/azure-loganalytics-exporter)
 
-Configuration
--------------
+TOC:
+* [Configuration](#configuration)
+* [Metrics](#metrics)
+    + [Metric name template system](#metric-name-template-system)
+        - [default template](#default-template)
+        - [template `{name}_{metric}_{unit}`](#template---name---metric---unit--)
+        - [template `{name}_{metric}_{unit}_{aggregation}`](#template---name---metric---unit---aggregation--)
+* [HTTP Endpoints](#http-endpoints)
+    + [/probe/metrics/resource parameters](#-probe-metrics-resource-parameters)
+    + [/probe/metrics/list parameters](#-probe-metrics-list-parameters)
+    + [/probe/metrics/scrape parameters](#-probe-metrics-scrape-parameters)
+    + [/probe/loganalytics/query parameters **deprecated**](#-probe-loganalytics-query-parameters---deprecated--)
+* [Prometheus configuration](#prometheus-configuration)
+
+## Configuration
 
 Normally no configuration is needed but can be customized using environment variables.
 
@@ -33,6 +45,7 @@ Application Options:
       --azure.servicediscovery.cache=      Duration for caching Azure ServiceDiscovery of workspaces to reduce
                                            API calls (time.Duration) (default: 30m)
                                            [$AZURE_SERVICEDISCOVERY_CACHE]
+      --metrics.template=                  Template for metric name (default: {name}) [$METRIC_TEMPLATE]
       --concurrency.subscription=          Concurrent subscription fetches (default: 5)
                                            [$CONCURRENCY_SUBSCRIPTION]
       --concurrency.subscription.resource= Concurrent requests per resource (inside subscription requests)
@@ -46,20 +59,169 @@ Help Options:
 
 for Azure API authentication (using ENV vars) see https://github.com/Azure/azure-sdk-for-go#authentication
 
-Metrics
--------
+## Metrics
 
 | Metric                                   | Description                                                                    |
 |------------------------------------------|--------------------------------------------------------------------------------|
 | `azurerm_stats_metric_collecttime`       | General exporter stats                                                         |
 | `azurerm_stats_metric_requests`          | Counter of resource metric requests with result (error, success)               |
-| `azurerm_resource_metric` (customizable) | Resource metrics exported by probes (can be changed using `name` parameter)    |
+| `azurerm_resource_metric` (customizable) | Resource metrics exported by probes (can be changed using `name` parameter and template system) |
 | `azurerm_loganalytics_query_result`      | LogAnalytics rows exported by probes                                           |
 | `azurerm_ratelimit`                      | Azure ratelimit metric (only available for uncached /probe requests)           |
 
+### Metric name template system
 
-HTTP Endpoints
---------------
+(with 21.5.3 and later)
+
+By default Azure monitor metrics are generated with the name specified in the request (see parameter `name`).
+This can be modified via environment variable `$METRIC_TEMPLATE` or as request parameter `template`.
+
+HINT: Used templates are removed from labels!
+
+Following templates are available:
+
+| Template         |  Description                                                                                      |
+|------------------|---------------------------------------------------------------------------------------------------|
+| `{name}`         | Name of template specified by request parameter `name`                                            |
+| `{metric}`       | Name of Azure monitor metric                                                                      |
+| `{dimension}`    | Dimension value of Azure monitor metric (if dimension is used)                                    |
+| `{unit}`         | Unit name of Azure monitor metric (eg `count`, `percent`, ...)                                    |
+| `{aggregation}`  | Aggregation of Azure monitor metric (eg `total`, `average`)                                       |
+| `{interval}`     | Interval of requested Azure monitor metric                                                        |
+| `{timespan}`     | Timespan of requested Azure monitor metric                                                        |
+
+#### default template
+
+Prometheus config:
+```yaml
+- job_name: azure-metrics-keyvault
+  scrape_interval: 1m
+  metrics_path: /probe/metrics/list
+  params:
+    name: ["azure_metric_keyvault"]
+    subscription:
+    - xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+    filter: ["resourceType eq 'Microsoft.KeyVault/vaults'"]
+    metric:
+    - Availability
+    - ServiceApiHit
+    - ServiceApiLatency
+    interval: ["PT15M"]
+    timespan: ["PT15M"]
+    aggregation:
+    - average
+    - total
+  static_configs:
+  - targets: ["azure-metrics:8080"]
+```
+
+generated metrics:
+```
+# HELP azure_metric_keyvault Azure monitor insight metric
+# TYPE azure_metric_keyvault gauge
+azure_metric_keyvault{aggregation="average",dimension="",interval="PT12H",metric="Availability",resourceID="/subscriptions/...",timespan="PT12H",unit="Percent"} 100
+azure_metric_keyvault{aggregation="average",dimension="",interval="PT12H",metric="Availability",resourceID="/subscriptions/...",timespan="PT12H",unit="Percent"} 100
+azure_metric_keyvault{aggregation="average",dimension="",interval="PT12H",metric="ServiceApiHit",resourceID="/subscriptions/...",timespan="PT12H",unit="Count"} 0
+azure_metric_keyvault{aggregation="average",dimension="",interval="PT12H",metric="ServiceApiHit",resourceID="/subscriptions/...",timespan="PT12H",unit="Count"} 0
+azure_metric_keyvault{aggregation="total",dimension="",interval="PT12H",metric="ServiceApiHit",resourceID="/subscriptions/...",timespan="PT12H",unit="Count"} 0
+azure_metric_keyvault{aggregation="total",dimension="",interval="PT12H",metric="ServiceApiHit",resourceID="/subscriptions/...",timespan="PT12H",unit="Count"} 0
+# HELP azurerm_ratelimit Azure ResourceManager ratelimit
+# TYPE azurerm_ratelimit gauge
+azurerm_ratelimit{scope="subscription",subscriptionID="...",type="read"} 11997
+```
+
+
+#### template `{name}_{metric}_{unit}`
+
+Prometheus config:
+```yaml
+- job_name: azure-metrics-keyvault
+  scrape_interval: 1m
+  metrics_path: /probe/metrics/list
+  params:
+    name: ["azure_metric_keyvault"]
+    template: ["{name}_{metric}_{unit}"]
+    subscription:
+    - xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+    filter: ["resourceType eq 'Microsoft.KeyVault/vaults'"]
+    metric:
+    - Availability
+    - ServiceApiHit
+    - ServiceApiLatency
+    interval: ["PT15M"]
+    timespan: ["PT15M"]
+    aggregation:
+    - average
+    - total
+  static_configs:
+  - targets: ["azure-metrics:8080"]
+```
+
+generated metrics:
+```
+# HELP azure_metric_keyvault_availability_percent Azure monitor insight metric
+# TYPE azure_metric_keyvault_availability_percent gauge
+azure_metric_keyvault_availability_percent{aggregation="average",dimension="",interval="PT12H",resourceID="/subscriptions/...",timespan="PT12H"} 100
+azure_metric_keyvault_availability_percent{aggregation="average",dimension="",interval="PT12H",resourceID="/subscriptions/...",timespan="PT12H"} 100
+
+# HELP azure_metric_keyvault_serviceapihit_count Azure monitor insight metric
+# TYPE azure_metric_keyvault_serviceapihit_count gauge
+azure_metric_keyvault_serviceapihit_count{aggregation="average",dimension="",interval="PT12H",resourceID="/subscriptions/...",timespan="PT12H"} 0
+azure_metric_keyvault_serviceapihit_count{aggregation="average",dimension="",interval="PT12H",resourceID="/subscriptions/...",timespan="PT12H"} 0
+azure_metric_keyvault_serviceapihit_count{aggregation="total",dimension="",interval="PT12H",resourceID="/subscriptions/...",timespan="PT12H"} 0
+azure_metric_keyvault_serviceapihit_count{aggregation="total",dimension="",interval="PT12H",resourceID="/subscriptions/...",timespan="PT12H"} 0
+
+# HELP azurerm_ratelimit Azure ResourceManager ratelimit
+# TYPE azurerm_ratelimit gauge
+azurerm_ratelimit{scope="subscription",subscriptionID="...",type="read"} 11996
+```
+
+#### template `{name}_{metric}_{unit}_{aggregation}`
+
+Prometheus config:
+```yaml
+- job_name: azure-metrics-keyvault
+  scrape_interval: 1m
+  metrics_path: /probe/metrics/list
+  params:
+    name: ["azure_metric_keyvault"]
+    template: ["{name}_{metric}_{unit}_{aggregation}"]
+    subscription:
+    - xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+    filter: ["resourceType eq 'Microsoft.KeyVault/vaults'"]
+    metric:
+    - Availability
+    - ServiceApiHit
+    - ServiceApiLatency
+    interval: ["PT15M"]
+    timespan: ["PT15M"]
+    aggregation:
+    - average
+    - total
+  static_configs:
+  - targets: ["azure-metrics:8080"]
+```
+
+generated metrics:
+```
+# HELP azure_metric_keyvault_availability_percent_average Azure monitor insight metric
+# TYPE azure_metric_keyvault_availability_percent_average gauge
+azure_metric_keyvault_availability_percent_average{dimension="",interval="PT12H",resourceID="/subscriptions/...",timespan="PT12H"} 100
+azure_metric_keyvault_availability_percent_average{dimension="",interval="PT12H",resourceID="/subscriptions/...",timespan="PT12H"} 100
+# HELP azure_metric_keyvault_serviceapihit_count_average Azure monitor insight metric
+# TYPE azure_metric_keyvault_serviceapihit_count_average gauge
+azure_metric_keyvault_serviceapihit_count_average{dimension="",interval="PT12H",resourceID="/subscriptions/...",timespan="PT12H"} 0
+azure_metric_keyvault_serviceapihit_count_average{dimension="",interval="PT12H",resourceID="/subscriptions/...",timespan="PT12H"} 0
+# HELP azure_metric_keyvault_serviceapihit_count_total Azure monitor insight metric
+# TYPE azure_metric_keyvault_serviceapihit_count_total gauge
+azure_metric_keyvault_serviceapihit_count_total{dimension="",interval="PT12H",resourceID="/subscriptions/...",timespan="PT12H"} 0
+azure_metric_keyvault_serviceapihit_count_total{dimension="",interval="PT12H",resourceID="/subscriptions/...",timespan="PT12H"} 0
+# HELP azurerm_ratelimit Azure ResourceManager ratelimit
+# TYPE azurerm_ratelimit gauge
+azurerm_ratelimit{scope="subscription",subscriptionID="...",type="read"} 11992
+```
+
+## HTTP Endpoints
 
 | Endpoint                       | Description                                                                         |
 |--------------------------------|-------------------------------------------------------------------------------------|
@@ -70,7 +232,7 @@ HTTP Endpoints
 | `/probe/loganalytics/query`    | **deprecated** Probe metrics from LogAnalytics query (see `azurerm_loganalytics_query_result`)   |
 
 
-#### /probe/metrics/resource parameters
+### /probe/metrics/resource parameters
 
 
 | GET parameter          | Default                   | Required | Multiple | Description                                                          |
@@ -86,10 +248,11 @@ HTTP Endpoints
 | `metricTop`            |                           | no       | no       | Prometheus metric dimension count (dimension support)                |
 | `metricOrderBy`        |                           | no       | no       | Prometheus metric order by (dimension support)                       |
 | `cache`                | (same as timespan)        | no       | no       | Use of internal metrics caching                                      |
+| `template`             | set to `$METRIC_TEMPLATE` | no       | no       | see metric template section                                          |
 
 *Hint: Multiple values can be specified multiple times or with a comma in a single value.*
 
-#### /probe/metrics/list parameters
+### /probe/metrics/list parameters
 
 HINT: service discovery information is cached for duration set by `$AZURE_SERVICEDISCOVERY_CACHE` (set to `0` to disable)
 
@@ -106,10 +269,11 @@ HINT: service discovery information is cached for duration set by `$AZURE_SERVIC
 | `metricTop`            |                           | no       | no       | Prometheus metric dimension count (dimension support)                |
 | `metricOrderBy`        |                           | no       | no       | Prometheus metric order by (dimension support)                       |
 | `cache`                | (same as timespan)        | no       | no       | Use of internal metrics caching                                      |
+| `template`             | set to `$METRIC_TEMPLATE` | no       | no       | see metric template section                                          |
 
 *Hint: Multiple values can be specified multiple times or with a comma in a single value.*
 
-#### /probe/metrics/scrape parameters
+### /probe/metrics/scrape parameters
 
 HINT: service discovery information is cached for duration set by `$AZURE_SERVICEDISCOVERY_CACHE` (set to `0` to disable)
 
@@ -128,10 +292,11 @@ HINT: service discovery information is cached for duration set by `$AZURE_SERVIC
 | `metricTop`            |                           | no       | no       | Prometheus metric dimension count (integer, dimension support)       |
 | `metricOrderBy`        |                           | no       | no       | Prometheus metric order by (dimension support)                       |
 | `cache`                | (same as timespan)        | no       | no       | Use of internal metrics caching                                      |
+| `template`             | set to `$METRIC_TEMPLATE` | no       | no       | see metric template section                                          |
 
 *Hint: Multiple values can be specified multiple times or with a comma in a single value.*
 
-#### /probe/loganalytics/query parameters **deprecated**
+### /probe/loganalytics/query parameters **deprecated**
 
 WARNING: LogAnalytics metrics are deprecated, please migrate to [azure-loganalytics-exporter](https://github.com/webdevops/azure-loganalytics-exporter)
 
@@ -142,8 +307,7 @@ WARNING: LogAnalytics metrics are deprecated, please migrate to [azure-loganalyt
 | `timespan`             |           | **yes**  | Query timespan                                                       |
 
 
-Prometheus configuration
-------------------------
+## Prometheus configuration
 
 Azure Redis metrics
 

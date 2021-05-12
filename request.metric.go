@@ -25,6 +25,8 @@ type (
 		MetricFilter  string
 		MetricOrderBy string
 
+		MetricTemplate string
+
 		// cache
 		Cache *time.Duration
 	}
@@ -98,6 +100,9 @@ func NewRequestMetricSettings(r *http.Request) (RequestMetricSettings, error) {
 
 	// param metricOrderBy
 	ret.MetricOrderBy = paramsGetWithDefault(params, "metricOrderBy", "")
+
+	// param template
+	ret.MetricTemplate = paramsGetWithDefault(params, "template", opts.Metrics.Template)
 
 	// param cache (timespan as default)
 	if opts.Prober.Cache {

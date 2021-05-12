@@ -24,6 +24,10 @@ type (
 			}
 		}
 
+		Metrics struct {
+			Template string `long:"metrics.template" env:"METRIC_TEMPLATE" description:"Template for metric name"   default:"{name}"`
+		}
+
 		// Prober settings
 		Prober struct {
 			ConcurrencySubscription         int  `long:"concurrency.subscription"          env:"CONCURRENCY_SUBSCRIPTION"           description:"Concurrent subscription fetches"                                  default:"5"`
