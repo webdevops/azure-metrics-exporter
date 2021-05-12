@@ -248,7 +248,7 @@ azurerm_ratelimit{scope="subscription",subscriptionID="...",type="read"} 11992
 | `metricTop`            |                           | no       | no       | Prometheus metric dimension count (dimension support)                |
 | `metricOrderBy`        |                           | no       | no       | Prometheus metric order by (dimension support)                       |
 | `cache`                | (same as timespan)        | no       | no       | Use of internal metrics caching                                      |
-| `template`             | set to `$METRIC_TEMPLATE` | no       | no       | see metric template section                                          |
+| `template`             | set to `$METRIC_TEMPLATE` | no       | no       | see [metric name template system](#metric-name-template-system)      |
 
 *Hint: Multiple values can be specified multiple times or with a comma in a single value.*
 
@@ -269,7 +269,7 @@ HINT: service discovery information is cached for duration set by `$AZURE_SERVIC
 | `metricTop`            |                           | no       | no       | Prometheus metric dimension count (dimension support)                |
 | `metricOrderBy`        |                           | no       | no       | Prometheus metric order by (dimension support)                       |
 | `cache`                | (same as timespan)        | no       | no       | Use of internal metrics caching                                      |
-| `template`             | set to `$METRIC_TEMPLATE` | no       | no       | see metric template section                                          |
+| `template`             | set to `$METRIC_TEMPLATE` | no       | no       | see [metric name template system](#metric-name-template-system)      |
 
 *Hint: Multiple values can be specified multiple times or with a comma in a single value.*
 
@@ -292,7 +292,7 @@ HINT: service discovery information is cached for duration set by `$AZURE_SERVIC
 | `metricTop`            |                           | no       | no       | Prometheus metric dimension count (integer, dimension support)       |
 | `metricOrderBy`        |                           | no       | no       | Prometheus metric order by (dimension support)                       |
 | `cache`                | (same as timespan)        | no       | no       | Use of internal metrics caching                                      |
-| `template`             | set to `$METRIC_TEMPLATE` | no       | no       | see metric template section                                          |
+| `template`             | set to `$METRIC_TEMPLATE` | no       | no       | see [metric name template system](#metric-name-template-system)      |
 
 *Hint: Multiple values can be specified multiple times or with a comma in a single value.*
 
