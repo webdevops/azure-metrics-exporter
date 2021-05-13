@@ -1,4 +1,4 @@
-package main
+package metrics
 
 import "github.com/prometheus/client_golang/prometheus"
 
@@ -15,12 +15,8 @@ type (
 
 func NewMetricList() *MetricList {
 	list := MetricList{}
-	list.Init()
+	list.List = map[string][]MetricRow{}
 	return &list
-}
-
-func (l *MetricList) Init() {
-	l.List = map[string][]MetricRow{}
 }
 
 func (l *MetricList) Add(name string, metric ...MetricRow) {
@@ -31,14 +27,11 @@ func (l *MetricList) Add(name string, metric ...MetricRow) {
 	l.List[name] = append(l.List[name], metric...)
 }
 
-func (l *MetricList) GetMetricNames() []string {
-	list := []string{}
-
+func (l *MetricList) GetMetricNames() (list []string) {
 	for name := range l.List {
 		list = append(list, name)
 	}
-
-	return list
+	return
 }
 
 func (l *MetricList) GetMetricList(name string) []MetricRow {
@@ -46,6 +39,7 @@ func (l *MetricList) GetMetricList(name string) []MetricRow {
 }
 
 func (l *MetricList) GetMetricLabelNames(name string) []string {
+	var list []string
 	uniqueLabelMap := map[string]string{}
 
 	for _, row := range l.List[name] {
@@ -54,7 +48,6 @@ func (l *MetricList) GetMetricLabelNames(name string) []string {
 		}
 	}
 
-	list := []string{}
 	for labelName := range uniqueLabelMap {
 		list = append(list, labelName)
 	}

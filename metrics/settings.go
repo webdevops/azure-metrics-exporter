@@ -1,12 +1,17 @@
-package main
+package metrics
 
 import (
 	iso8601 "github.com/ChannelMeter/iso8601duration"
 	log "github.com/sirupsen/logrus"
+	"github.com/webdevops/azure-metrics-exporter/config"
 	"net/http"
 	"strconv"
 	"strings"
 	"time"
+)
+
+const (
+	PrometheusMetricNameDefault = "azurerm_resource_metric"
 )
 
 type (
@@ -16,8 +21,8 @@ type (
 		Filter        string
 		Timespan      string
 		Interval      *string
-		Metric        []string
-		Aggregation   []string
+		Metrics       []string
+		Aggregations  []string
 		Target        []string
 
 		// needed for dimension support
@@ -32,12 +37,12 @@ type (
 	}
 )
 
-func NewRequestMetricSettings(r *http.Request) (RequestMetricSettings, error) {
+func NewRequestMetricSettings(r *http.Request, opts config.Opts) (RequestMetricSettings, error) {
 	ret := RequestMetricSettings{}
 	params := r.URL.Query()
 
 	// param name
-	ret.Name = paramsGetWithDefault(params, "name", PROMETHEUS_METRIC_NAME)
+	ret.Name = paramsGetWithDefault(params, "name", PrometheusMetricNameDefault)
 
 	// param subscription
 	if subscriptionList, err := paramsGetListRequired(params, "subscription"); err == nil {
@@ -66,14 +71,14 @@ func NewRequestMetricSettings(r *http.Request) (RequestMetricSettings, error) {
 
 	// param metric
 	if val, err := paramsGetList(params, "metric"); err == nil {
-		ret.Metric = val
+		ret.Metrics = val
 	} else {
 		return ret, err
 	}
 
 	// param aggregation
 	if val, err := paramsGetList(params, "aggregation"); err == nil {
-		ret.Aggregation = val
+		ret.Aggregations = val
 	} else {
 		return ret, err
 	}
@@ -130,7 +135,7 @@ func NewRequestMetricSettings(r *http.Request) (RequestMetricSettings, error) {
 
 func (s *RequestMetricSettings) CacheDuration(requestTime time.Time) (ret *time.Duration) {
 	if s.Cache != nil {
-		bufferDuration := time.Duration(2 * time.Second)
+		bufferDuration := 2 * time.Second
 		cachedUntilTime := requestTime.Add(*s.Cache).Add(-bufferDuration)
 		cacheDuration := time.Until(cachedUntilTime)
 		if cacheDuration.Seconds() > 0 {
@@ -141,9 +146,9 @@ func (s *RequestMetricSettings) CacheDuration(requestTime time.Time) (ret *time.
 }
 
 func (s *RequestMetricSettings) SetMetrics(val string) {
-	s.Metric = strings.Split(val, ",")
+	s.Metrics = stringToStringList(val, ",")
 }
 
 func (s *RequestMetricSettings) SetAggregations(val string) {
-	s.Aggregation = strings.Split(val, ",")
+	s.Aggregations = stringToStringList(val, ",")
 }

@@ -24,8 +24,6 @@ const (
 
 	MetricsUrl = "/metrics"
 
-	PROMETHEUS_METRIC_NAME = "azurerm_resource_metric"
-
 	ProbeMetricsResourceUrl            = "/probe/metrics/resource"
 	ProbeMetricsResourceTimeoutDefault = 10
 
@@ -34,18 +32,14 @@ const (
 
 	ProbeMetricsScrapeUrl            = "/probe/metrics/scrape"
 	ProbeMetricsScrapeTimeoutDefault = 120
-
-	ProbeLoganalyticsScrapeUrl            = "/probe/loganalytics/query"
-	ProbeLoganalyticsScrapeTimeoutDefault = 120
 )
 
 var (
 	argparser *flags.Parser
 	opts      config.Opts
 
-	AzureEnvironment   azure.Environment
-	AzureAuthorizer    autorest.Authorizer
-	AzureAdResourceUrl string
+	AzureEnvironment azure.Environment
+	AzureAuthorizer  autorest.Authorizer
 
 	prometheusCollectTime    *prometheus.SummaryVec
 	prometheusMetricRequests *prometheus.CounterVec
@@ -132,10 +126,8 @@ func initAzureConnection() {
 		log.Panic(err)
 	}
 
-	if opts.Azure.AdResourceUrl == nil {
-		AzureAdResourceUrl = AzureEnvironment.ResourceManagerEndpoint
-	} else {
-		AzureAdResourceUrl = *opts.Azure.AdResourceUrl
+	if opts.Azure.AdResourceUrl != nil {
+		AzureEnvironment.ResourceManagerEndpoint = *opts.Azure.AdResourceUrl
 	}
 
 	// setup azure authorizer
@@ -160,10 +152,6 @@ func startHttpServer() {
 
 	http.HandleFunc(ProbeMetricsScrapeUrl, func(w http.ResponseWriter, r *http.Request) {
 		probeMetricsScrapeHandler(w, r)
-	})
-
-	http.HandleFunc(ProbeLoganalyticsScrapeUrl, func(w http.ResponseWriter, r *http.Request) {
-		probeLogAnalyticsQueryHandler(w, r)
 	})
 
 	log.Fatal(http.ListenAndServe(opts.ServerBind, nil))

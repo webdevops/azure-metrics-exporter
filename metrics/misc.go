@@ -1,27 +1,10 @@
-package main
+package metrics
 
 import (
 	"fmt"
-	"net/http"
 	"net/url"
-	"strconv"
 	"strings"
 )
-
-func getPrometheusTimeout(r *http.Request, defaultTimeout float64) (timeout float64, err error) {
-	// If a timeout is configured via the Prometheus header, add it to the request.
-	if v := r.Header.Get("X-Prometheus-Scrape-Timeout-Seconds"); v != "" {
-		timeout, err = strconv.ParseFloat(v, 64)
-		if err != nil {
-			return
-		}
-	}
-	if timeout == 0 {
-		timeout = defaultTimeout
-	}
-
-	return
-}
 
 func paramsGetWithDefault(params url.Values, name, defaultValue string) (value string) {
 	value = params.Get(name)
@@ -42,7 +25,7 @@ func paramsGetRequired(params url.Values, name string) (value string, err error)
 
 func paramsGetList(params url.Values, name string) (list []string, err error) {
 	for _, v := range params[name] {
-		list = append(list, strings.Split(v, ",")...)
+		list = append(list, stringToStringList(v, ",")...)
 	}
 	return
 }
@@ -55,5 +38,20 @@ func paramsGetListRequired(params url.Values, name string) (list []string, err e
 		return
 	}
 
+	return
+}
+
+func stringPtrToString(v *string) string {
+	if v == nil {
+		return ""
+	}
+
+	return *v
+}
+
+func stringToStringList(v string, sep string) (list []string) {
+	for _, v := range strings.Split(v, sep) {
+		list = append(list, strings.TrimSpace(v))
+	}
 	return
 }

@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
-	log "github.com/sirupsen/logrus"
+	"github.com/webdevops/azure-metrics-exporter/metrics"
 	"net/http"
 	"time"
 )
@@ -16,8 +16,8 @@ func probeMetricsResourceHandler(w http.ResponseWriter, r *http.Request) {
 	var timeoutSeconds float64
 
 	startTime := time.Now()
-
 	contextLogger := buildContextLoggerFromRequest(r)
+	registry := prometheus.NewRegistry()
 
 	// If a timeout is configured via the Prometheus header, add it to the request.
 	timeoutSeconds, err = getPrometheusTimeout(r, ProbeMetricsResourceTimeoutDefault)
@@ -31,126 +31,62 @@ func probeMetricsResourceHandler(w http.ResponseWriter, r *http.Request) {
 	defer cancel()
 	r = r.WithContext(ctx)
 
-	var settings RequestMetricSettings
-	if settings, err = NewRequestMetricSettings(r); err != nil {
+	var settings metrics.RequestMetricSettings
+	if settings, err = metrics.NewRequestMetricSettings(r, opts); err != nil {
 		contextLogger.Errorln(err)
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	if len(settings.Subscriptions) != 1 {
-		contextLogger.Errorln(err)
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-	subscription := settings.Subscriptions[0]
-
-	if len(settings.Target) == 0 {
-		contextLogger.Errorln(err)
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-
-	registry := prometheus.NewRegistry()
-	metricList := NewMetricList()
-
-	azureInsightMetrics := NewAzureInsightMetrics(AzureAuthorizer, registry)
-
-	cacheKey := fmt.Sprintf("resource::%x", sha256.Sum256([]byte(r.URL.String())))
-	loadedFromCache := false
+	prober := metrics.NewMetricProber(ctx, contextLogger, w, r, &settings, opts)
+	prober.SetAzure(AzureEnvironment, AzureAuthorizer)
+	prober.SetPrometheusRegistry(registry)
 	if settings.Cache != nil {
-		if val, ok := metricsCache.Get(cacheKey); ok {
-			metricList = val.(*MetricList)
-			loadedFromCache = true
-		}
+		cacheKey := fmt.Sprintf("list:%x", sha256.Sum256([]byte(r.URL.String())))
+		prober.EnableMetricsCache(metricsCache, cacheKey, settings.CacheDuration(startTime))
 	}
 
-	if !loadedFromCache {
-		w.Header().Add("X-metrics-cached", "false")
-		metricChannel := make(chan PrometheusMetricResult)
-
-		go func() {
-			for _, target := range settings.Target {
-				result, err := azureInsightMetrics.FetchMetrics(ctx, subscription, target, settings)
-
-				resourceLogger := contextLogger.WithFields(log.Fields{
-					"azureSubscription": subscription,
-					"azureResource":     target,
-				})
-
-				if err != nil {
-					resourceLogger.Warningln(err)
-					prometheusMetricRequests.With(prometheus.Labels{
-						"subscriptionID": subscription,
-						"handler":        ProbeMetricsResourceUrl,
-						"filter":         "",
-						"result":         "error",
-					}).Inc()
-					http.Error(w, err.Error(), http.StatusBadRequest)
-					continue
-				}
-
-				resourceLogger.Debugf("fetched metrics for %v", target)
-				prometheusMetricRequests.With(prometheus.Labels{
-					"subscriptionID": subscription,
-					"handler":        ProbeMetricsResourceUrl,
-					"filter":         "",
-					"result":         "success",
-				}).Inc()
-
-				result.SendMetricToChannel(settings, metricChannel)
-			}
-
-			close(metricChannel)
-		}()
-
-		// collect metrics from channel
-		for result := range metricChannel {
-			metric := MetricRow{
-				Labels: result.Labels,
-				Value:  result.Value,
-			}
-			metricList.Add(result.Name, metric)
+	if resourceList, err := paramsGetListRequired(r.URL.Query(), "target"); err == nil {
+		targetList := []metrics.MetricProbeTarget{}
+		for _, resourceId := range resourceList {
+			targetList = append(
+				targetList,
+				metrics.MetricProbeTarget{
+					ResourceId:   resourceId,
+					Metrics:      settings.Metrics,
+					Aggregations: settings.Aggregations,
+				},
+			)
 		}
+		prober.AddTarget(targetList...)
+	} else {
+		contextLogger.Errorln(err)
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
 
-		// enable caching if enabled
-		if settings.Cache != nil {
-			if cacheDuration := settings.CacheDuration(startTime); cacheDuration != nil {
-				_ = metricsCache.Add(cacheKey, metricList, *cacheDuration)
-				w.Header().Add("X-metrics-cached-until", time.Now().Add(*cacheDuration).Format(time.RFC3339))
-			}
-		}
+	if !prober.FetchFromCache() {
+		prober.RegisterSubscriptionCollectFinishCallback(func(subscriptionId string) {
+			// global stats counter
+			prometheusCollectTime.With(prometheus.Labels{
+				"subscriptionID": subscriptionId,
+				"handler":        ProbeMetricsListUrl,
+				"filter":         settings.Filter,
+			}).Observe(time.Since(startTime).Seconds())
+		})
+
+		prober.Run()
 	} else {
 		w.Header().Add("X-metrics-cached", "true")
-		prometheusMetricRequests.With(prometheus.Labels{
-			"subscriptionID": "",
-			"handler":        ProbeMetricsResourceUrl,
-			"filter":         settings.Filter,
-			"result":         "cached",
-		}).Inc()
-	}
-
-	// create prometheus metrics and set rows
-	for _, metricName := range metricList.GetMetricNames() {
-		gauge := prometheus.NewGaugeVec(prometheus.GaugeOpts{
-			Name: metricName,
-			Help: "Azure monitor insight metric",
-		},
-			metricList.GetMetricLabelNames(metricName),
-		)
-		registry.MustRegister(gauge)
-
-		for _, row := range metricList.GetMetricList(metricName) {
-			gauge.With(row.Labels).Set(row.Value)
+		for _, subscriptionId := range settings.Subscriptions {
+			prometheusMetricRequests.With(prometheus.Labels{
+				"subscriptionID": subscriptionId,
+				"handler":        ProbeMetricsListUrl,
+				"filter":         settings.Filter,
+				"result":         "cached",
+			}).Inc()
 		}
 	}
-
-	// global stats counter
-	prometheusCollectTime.With(prometheus.Labels{
-		"subscriptionID": subscription,
-		"handler":        ProbeMetricsResourceUrl,
-		"filter":         "",
-	}).Observe(time.Until(startTime).Seconds())
 
 	h := promhttp.HandlerFor(registry, promhttp.HandlerOpts{})
 	h.ServeHTTP(w, r)

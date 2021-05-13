@@ -1,0 +1,232 @@
+package metrics
+
+import (
+	"context"
+	"github.com/Azure/go-autorest/autorest"
+	"github.com/Azure/go-autorest/autorest/azure"
+	"github.com/patrickmn/go-cache"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/remeh/sizedwaitgroup"
+	log "github.com/sirupsen/logrus"
+	"github.com/webdevops/azure-metrics-exporter/config"
+	"net/http"
+	"time"
+)
+
+type (
+	MetricProber struct {
+		Conf config.Opts
+
+		Azure struct {
+			Environment     azure.Environment
+			AzureAuthorizer autorest.Authorizer
+		}
+
+		settings *RequestMetricSettings
+
+		request  *http.Request
+		response http.ResponseWriter
+
+		ctx context.Context
+
+		logger *log.Entry
+
+		metricsCache struct {
+			cache         *cache.Cache
+			cacheKey      *string
+			cacheDuration *time.Duration
+		}
+
+		serviceDiscoveryCache struct {
+			cache         *cache.Cache
+			cacheDuration *time.Duration
+		}
+
+		targets map[string][]MetricProbeTarget
+
+		metricList *MetricList
+
+		prometheus struct {
+			registry *prometheus.Registry
+			apiQuota *prometheus.GaugeVec
+		}
+
+		callbackSubscriptionFishish func(subscriptionId string)
+
+		ServiceDiscovery AzureServiceDiscovery
+	}
+
+	MetricProbeTarget struct {
+		ResourceId   string
+		Metrics      []string
+		Aggregations []string
+	}
+)
+
+func NewMetricProber(ctx context.Context, logger *log.Entry, w http.ResponseWriter, r *http.Request, settings *RequestMetricSettings, conf config.Opts) *MetricProber {
+	prober := MetricProber{}
+	prober.ctx = ctx
+	prober.request = r
+	prober.response = w
+	prober.logger = logger
+	prober.settings = settings
+	prober.Conf = conf
+	prober.ServiceDiscovery = AzureServiceDiscovery{prober: &prober}
+	prober.Init()
+	return &prober
+}
+
+func (p *MetricProber) Init() {
+	p.targets = map[string][]MetricProbeTarget{}
+
+	p.metricList = NewMetricList()
+	p.prometheus.apiQuota = prometheus.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Name: "azurerm_ratelimit",
+			Help: "Azure ResourceManager ratelimit",
+		},
+		[]string{
+			"subscriptionID",
+			"scope",
+			"type",
+		},
+	)
+}
+func (p *MetricProber) RegisterSubscriptionCollectFinishCallback(callback func(subscriptionId string)) {
+	p.callbackSubscriptionFishish = callback
+}
+
+func (p *MetricProber) SetPrometheusRegistry(registry *prometheus.Registry) {
+	p.prometheus.registry = registry
+	p.prometheus.registry.MustRegister(p.prometheus.apiQuota)
+}
+
+func (p *MetricProber) SetAzure(environment azure.Environment, authorizer autorest.Authorizer) {
+	p.Azure.Environment = environment
+	p.Azure.AzureAuthorizer = authorizer
+}
+
+func (p *MetricProber) EnableMetricsCache(cache *cache.Cache, cacheKey string, cacheDuration *time.Duration) {
+	p.metricsCache.cache = cache
+	p.metricsCache.cacheKey = &cacheKey
+	p.metricsCache.cacheDuration = cacheDuration
+}
+
+func (p *MetricProber) EnableServiceDiscoveryCache(cache *cache.Cache, cacheDuration *time.Duration) {
+	p.serviceDiscoveryCache.cache = cache
+	p.serviceDiscoveryCache.cacheDuration = cacheDuration
+}
+
+func (p *MetricProber) AddTarget(targets ...MetricProbeTarget) {
+	for _, target := range targets {
+		resourceInfo, err := azure.ParseResourceID(target.ResourceId)
+		if err != nil {
+			p.logger.Warnf("unable to parse resource id: %s", err.Error())
+			continue
+		}
+
+		subscriptionId := resourceInfo.SubscriptionID
+		if _, exists := p.targets[subscriptionId]; !exists {
+			p.targets[subscriptionId] = []MetricProbeTarget{}
+		}
+
+		p.targets[subscriptionId] = append(p.targets[subscriptionId], target)
+	}
+}
+
+func (p *MetricProber) FetchFromCache() bool {
+	if p.metricsCache.cache == nil {
+		return false
+	}
+
+	if val, ok := p.metricsCache.cache.Get(*p.metricsCache.cacheKey); ok {
+		p.metricList = val.(*MetricList)
+		p.publishMetricList()
+		return true
+	}
+
+	return false
+}
+
+func (p *MetricProber) SaveToCache() {
+	if p.metricsCache.cache == nil {
+		return
+	}
+
+	if p.metricsCache.cacheDuration != nil {
+		_ = p.metricsCache.cache.Add(*p.metricsCache.cacheKey, p.metricList, *p.metricsCache.cacheDuration)
+		p.response.Header().Add("X-metrics-cached-until", time.Now().Add(*p.metricsCache.cacheDuration).Format(time.RFC3339))
+	}
+}
+
+func (p *MetricProber) Run() {
+	p.collectMetricsFromTargets()
+	p.SaveToCache()
+	p.publishMetricList()
+}
+
+func (p *MetricProber) collectMetricsFromTargets() {
+	metricsChannel := make(chan PrometheusMetricResult)
+
+	wgSubscription := sizedwaitgroup.New(p.Conf.Prober.ConcurrencySubscription)
+	wgSubscriptionResource := sizedwaitgroup.New(p.Conf.Prober.ConcurrencySubscriptionResource)
+
+	go func() {
+		for subscriptionId, resourceList := range p.targets {
+			wgSubscription.Add()
+			go func(subscriptionId string, targetList []MetricProbeTarget) {
+				defer wgSubscription.Done()
+				client := p.MetricsClient(subscriptionId)
+
+				for _, target := range targetList {
+					wgSubscriptionResource.Add()
+					go func(target MetricProbeTarget) {
+						defer wgSubscriptionResource.Done()
+						if result, err := p.FetchMetricsFromTarget(client, target); err == nil {
+							result.SendMetricToChannel(metricsChannel)
+						} else {
+							p.logger.Warn(err)
+						}
+
+					}(target)
+				}
+				wgSubscriptionResource.Wait()
+
+				if p.callbackSubscriptionFishish != nil {
+					p.callbackSubscriptionFishish(subscriptionId)
+				}
+			}(subscriptionId, resourceList)
+		}
+		wgSubscription.Wait()
+		close(metricsChannel)
+	}()
+
+	for result := range metricsChannel {
+		metric := MetricRow{
+			Labels: result.Labels,
+			Value:  result.Value,
+		}
+		p.metricList.Add(result.Name, metric)
+	}
+}
+
+func (p *MetricProber) publishMetricList() {
+	if p.metricList == nil {
+		return
+	}
+
+	// create prometheus metrics and set rows
+	for _, metricName := range p.metricList.GetMetricNames() {
+		gauge := prometheus.NewGaugeVec(prometheus.GaugeOpts{
+			Name: metricName,
+			Help: "Azure monitor insight metric",
+		},
+			p.metricList.GetMetricLabelNames(metricName),
+		)
+		p.prometheus.registry.MustRegister(gauge)
+
+		for _, row := range p.metricList.GetMetricList(metricName) {
+			gauge.With(row.Labels).Set(row.Value)
+		}
+	}
+}
