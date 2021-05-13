@@ -16,7 +16,7 @@ TOC:
     + [Metric name template system](#metric-name-template-system)
         - [default template](#default-template)
         - [template `{name}_{metric}_{unit}`](#template-name_metric_unit)
-        - [template `{name}_{metric}_{unit}_{aggregation}`](#template-name_metric_unit_aggregation)
+        - [template `{name}_{metric}_{aggregation}_{unit}`](#template-name_metric_aggregation_unit)
 * [HTTP Endpoints](#http-endpoints)
     + [/probe/metrics/resource parameters](#probemetricsresource-parameters)
     + [/probe/metrics/list parameters](#probemetricslist-parameters)
@@ -29,6 +29,7 @@ TOC:
 ## Features
 
 - Uses of official [Azure SDK for go](https://github.com/Azure/azure-sdk-for-go)
+- Supports all Azure environments (Azure public cloud, Azure governmant cloud, Azure china cloud, ...) via Azure SDK configuration
 - Caching of Azure ServiceDiscovery to reduce Azure API calls
 - Caching of fetched metrics (no need to request every minute from Azure Monitor API; you can keep scrape time of `30s` for metrics)
 - Customizable metric names (with [template system with metric information](#metric-name-template-system))
@@ -37,8 +38,9 @@ TOC:
 - Ability to fetch metrics from resources found with ServiceDiscovery via [Azure resources API based on $filter](https://docs.microsoft.com/de-de/rest/api/resources/resources/list) with configuration inside Azure resource tags (see `/probe/metrics/scrape`)
 - Configuration based on Prometheus scraping config or ServiceMonitor manifest (Prometheus operator)
 - Metric manipulation (adding, removing, updating or filtering of labels or metrics) can be done in scraping config (eg [`metric_relabel_configs`](https://prometheus.io/docs/prometheus/latest/configuration/configuration/#metric_relabel_configs))
-- Full metric [dimension support](#dimension-support)
+- Full metric [dimension support](#virtualnetworkgateway-connections-dimension-support)
 - Docker image is based on [Google's distroless](https://github.com/GoogleContainerTools/distroless) static image to reduce attack surface (no shell, no other binaries inside image)
+- Available via Docker Hub and Quay (see badges on top)
 - Can run non-root and with readonly root filesystem, doesn't need any capabilities (you can safely use `drop: ["All"]`)
 - Publishes Azure API rate limit metrics (when exporter sends Azure API requests)
 
