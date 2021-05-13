@@ -169,13 +169,14 @@ func (p *MetricProber) collectMetricsFromTargets() {
 	metricsChannel := make(chan PrometheusMetricResult)
 
 	wgSubscription := sizedwaitgroup.New(p.Conf.Prober.ConcurrencySubscription)
-	wgSubscriptionResource := sizedwaitgroup.New(p.Conf.Prober.ConcurrencySubscriptionResource)
 
 	go func() {
 		for subscriptionId, resourceList := range p.targets {
 			wgSubscription.Add()
 			go func(subscriptionId string, targetList []MetricProbeTarget) {
 				defer wgSubscription.Done()
+
+				wgSubscriptionResource := sizedwaitgroup.New(p.Conf.Prober.ConcurrencySubscriptionResource)
 				client := p.MetricsClient(subscriptionId)
 
 				for _, target := range targetList {
