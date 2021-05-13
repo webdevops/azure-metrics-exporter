@@ -37,6 +37,7 @@ TOC:
 - Customizable metric names (with [template system with metric information](#metric-name-template-system))
 - Ability to fetch metrics from one or more resources via `target` parameter  (see `/probe/metrics/resource`)
 - Ability to fetch metrics from resources found with ServiceDiscovery via [Azure resources API based on $filter](https://docs.microsoft.com/de-de/rest/api/resources/resources/list) (see `/probe/metrics/list`)
+- Ability to fetch metrics from resources found with ServiceDiscovery via [Azure resources API based on $filter](https://docs.microsoft.com/de-de/rest/api/resources/resources/list) with configuration inside Azure resource tags (see `/probe/metrics/scrape`)
 - Configuration based on Prometheus scraping config or ServiceMonitor manifest (Prometheus operator)
 - Metric manipulation (adding, removing, updating or filtering of labels or metrics) can be done in scraping config
 - Full metric [dimension support](#dimension-support)
@@ -317,13 +318,13 @@ HINT: service discovery information is cached for duration set by `$AZURE_SERVIC
 | GET parameter          | Default                   | Required | Multiple | Description                                                          |
 |------------------------|---------------------------|----------|----------|----------------------------------------------------------------------|
 | `subscription`         |                           | **yes**  | **yes**  | Azure Subscription ID  (or multiple separate by comma)               |
-| `filter`               |                           | **yes**  | no       | Azure Resource filter (https://docs.microsoft.com/en-us/rest/api/resources/resources/list)                                              |
-| `metricTagName`        |                           | **yes**  | no       | Resource tag name for getting "metric" list                                                                                             |
-| `aggregationTagName`   |                           | **yes**  | no       | Resource tag name for getting "aggregation" list                     |
+| `filter`               |                           | **yes**  | no       | Azure Resource filter (https://docs.microsoft.com/en-us/rest/api/resources/resources/list) |
+| `metricTagName`        |                           | **yes**  | no       | Resource tag name for getting "metrics" list                         |
+| `aggregationTagName`   |                           | **yes**  | no       | Resource tag name for getting "aggregations" list                    |
 | `timespan`             | `PT1M`                    | no       | no       | Metric timespan                                                      |
 | `interval`             |                           | no       | no       | Metric timespan                                                      |
 | `metric`               |                           | no       | **yes**  | Metric name                                                          |
-| `aggregation`          |                           | no       | **yes**  | Metric aggregation (`minimum`, `maximum`, `average`, `total`, multiple possible separated with `,`)        |
+| `aggregation`          |                           | no       | **yes**  | Metric aggregation (`minimum`, `maximum`, `average`, `total`, multiple possible separated with `,`)  |
 | `name`                 | `azurerm_resource_metric` | no       | no       | Prometheus metric name                                               |
 | `metricFilter`         |                           | no       | no       | Prometheus metric filter (dimension support)                         |
 | `metricTop`            |                           | no       | no       | Prometheus metric dimension count (integer, dimension support)       |
