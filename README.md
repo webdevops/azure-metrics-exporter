@@ -32,6 +32,7 @@ TOC:
 - Caching of ServiceDiscovery to reduce Azure API calls
 - Caching of metrics (no need to request every minute from Azure Monitor API; you can keep scrape time of `30s` for metrics)
 - Customizable metric name (with [template system with metric information](#metric-name-template-system))
+- Ability to fetch metrics from one or more resources via `target` parameter  (see `/probe/metrics/resource`)
 - Ability to fetch metrics from resources found with ServiceDiscovery via [Azure resources API based on $filter](https://docs.microsoft.com/de-de/rest/api/resources/resources/list) (see `/probe/metrics/list`)
 - Configuration based on Prometheus scraping config or ServiceMonitor manifest (Prometheus operator)
 - Metric manipulation (adding, removing, updating or filtering of labels or metrics) can be done in scraping config
@@ -39,6 +40,13 @@ TOC:
 - Docker image is based on Google's distroless static image to reduce attack surface
 - Can run non-root and with readonly root filesystem
 - Publishes Azure API rate limit metrics (if Azure API is used)
+
+usefull with additional exporters:
+
+- [azure-resourcegraph-exporter](https://github.com/webdevops/azure-resourcegraph-exporter) for exporting Azure resource information from Azure ResourceGraph API with custom Kusto queries (get the tags from resources and ResourceGroups with this exporter)
+- [azure-resourcemanager-exporter](https://github.com/webdevops/azure-resourcemanager-exporter) for exporting Azure subscription information (eg ratelimit, subscription quotas, ServicePrincipal expiry, RoleAssignments, resource health, ...)
+- [azure-keyvault-exporter](https://github.com/webdevops/azure-keyvault-exporter) for exporting Azure KeyVault information (eg expiry date for secrets, certificates and keys)
+- [azure-loganalytics-exporter](https://github.com/webdevops/azure-loganalytics-exporter) for exporting Azure LogAnalytics workspace information with custom Kusto queries (eg ingestion rate or application error count)
 
 ## Configuration
 
