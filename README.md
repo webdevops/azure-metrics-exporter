@@ -27,7 +27,7 @@ TOC:
 * [Prometheus configuration examples](#prometheus-configuration-examples)
     * [Redis](#Redis)
     * [VirtualNetworkGateways](#virtualnetworkgateways)
-    * [virtualNetworkGateway connections (dimension support)](#virtualnetworkgateways-connections-dimension-support)
+    * [virtualNetworkGateway connections (dimension support)](#virtualnetworkgateway-connections-dimension-support)
 
 ## Features
 
