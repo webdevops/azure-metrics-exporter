@@ -24,8 +24,10 @@ TOC:
     + [/probe/metrics/list parameters](#probemetricslist-parameters)
     + [/probe/metrics/scrape parameters](#probemetricsscrape-parameters)
     + [/probe/loganalytics/query parameters **deprecated**](#probeloganalyticsquery-parameters-deprecated)
-* [Prometheus configuration](#prometheus-configuration)
-    * [Dimension support](#dimension-support)
+* [Prometheus configuration examples](#prometheus-configuration-examples)
+    * [Redis](#Redis)
+    * [VirtualNetworkGateways](#virtualnetworkgateways)
+    * [virtualNetworkGateway connections (dimension support)](#virtualnetworkgateways-connections-dimension-support)
 
 ## Features
 
@@ -342,9 +344,9 @@ WARNING: LogAnalytics metrics are deprecated, please migrate to [azure-loganalyt
 | `timespan`             |           | **yes**  | Query timespan                                                       |
 
 
-## Prometheus configuration
+## Prometheus configuration examples
 
-Azure Redis metrics
+### Redis
 
 ```yaml
 - job_name: azure-metrics-redis
@@ -384,7 +386,8 @@ Azure Redis metrics
   - targets: ["azure-metrics:8080"]
 ```
 
-Virtual Gateway metrics
+### VirtualNetworkGateways
+
 ```yaml
 - job_name: azure-metrics-virtualNetworkGateways
   scrape_interval: 1m
@@ -414,7 +417,7 @@ Virtual Gateway metrics
   - targets: ["azure-metrics:8080"]
 ```
 
-## Dimension support
+### virtualNetworkGateway connections (dimension support)
 
 Virtual Gateway connection metrics (dimension support)
 ```yaml
