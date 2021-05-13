@@ -2,7 +2,7 @@ package metrics
 
 import (
 	"context"
-	"crypto/sha1"
+	"crypto/sha1" // #nosec G505
 	"encoding/json"
 	"fmt"
 	"github.com/Azure/azure-sdk-for-go/profiles/latest/resources/mgmt/resources"
@@ -15,8 +15,7 @@ import (
 
 type (
 	AzureServiceDiscovery struct {
-		enabled bool
-		prober  *MetricProber
+		prober *MetricProber
 	}
 
 	AzureResource struct {
@@ -63,9 +62,9 @@ func (sd *AzureServiceDiscovery) publishTargetList(targetList []MetricProbeTarge
 
 func (sd *AzureServiceDiscovery) fetchResourceList(subscriptionId, filter string) (resourceList []AzureResource, err error) {
 	cacheKey := fmt.Sprintf(
-		"sub:%x",
+		"%x",
 		string(sha1.New().Sum([]byte(fmt.Sprintf("%v:%v", subscriptionId, filter)))),
-	)
+	) // #nosec G401
 
 	// try to fetch info from cache
 	if cachedResourceList, ok := sd.fetchFromCache(cacheKey); !ok {

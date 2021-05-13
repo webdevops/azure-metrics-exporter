@@ -2,7 +2,7 @@ package main
 
 import (
 	"context"
-	"crypto/sha256"
+	"crypto/sha1" // #nosec G505
 	"fmt"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -42,7 +42,7 @@ func probeMetricsResourceHandler(w http.ResponseWriter, r *http.Request) {
 	prober.SetAzure(AzureEnvironment, AzureAuthorizer)
 	prober.SetPrometheusRegistry(registry)
 	if settings.Cache != nil {
-		cacheKey := fmt.Sprintf("list:%x", sha256.Sum256([]byte(r.URL.String())))
+		cacheKey := fmt.Sprintf("resource:%x", sha1.Sum([]byte(r.URL.String()))) // #nosec G401
 		prober.EnableMetricsCache(metricsCache, cacheKey, settings.CacheDuration(startTime))
 	}
 

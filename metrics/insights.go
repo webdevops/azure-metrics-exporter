@@ -2,7 +2,6 @@ package metrics
 
 import (
 	"github.com/Azure/azure-sdk-for-go/services/preview/monitor/mgmt/2018-03-01/insights"
-	"github.com/Azure/go-autorest/autorest"
 	"github.com/prometheus/client_golang/prometheus"
 	"regexp"
 	"strings"
@@ -15,8 +14,6 @@ var (
 
 type (
 	AzureInsightMetrics struct {
-		authorizer         *autorest.Authorizer
-		prometheusRegistry *prometheus.Registry
 	}
 
 	AzureInsightMetricsResult struct {

@@ -23,14 +23,6 @@ func getPrometheusTimeout(r *http.Request, defaultTimeout float64) (timeout floa
 	return
 }
 
-func paramsGetWithDefault(params url.Values, name, defaultValue string) (value string) {
-	value = params.Get(name)
-	if value == "" {
-		value = defaultValue
-	}
-	return
-}
-
 func paramsGetRequired(params url.Values, name string) (value string, err error) {
 	value = params.Get(name)
 	if value == "" {
