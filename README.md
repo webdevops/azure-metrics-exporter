@@ -1,15 +1,13 @@
-# Azure Insights metrics exporter
+# Azure Monitor metrics exporter
 
 [![license](https://img.shields.io/github/license/webdevops/azure-metrics-exporter.svg)](https://github.com/webdevops/azure-metrics-exporter/blob/master/LICENSE)
 [![DockerHub](https://img.shields.io/badge/DockerHub-webdevops%2Fazure--metrics--exporter-blue)](https://hub.docker.com/r/webdevops/azure-metrics-exporter/)
 [![Quay.io](https://img.shields.io/badge/Quay.io-webdevops%2Fazure--metrics--exporter-blue)](https://quay.io/repository/webdevops/azure-metrics-exporter)
 
-Prometheus exporter for Azure Insights metrics (on demand).
-Supports metrics fetching from all resource with one scrape (automatic service discovery) and also supports dimensions.
+Prometheus exporter for Azure Monitor metrics.
+Supports metrics fetching from all resource with one scrape (automatic service discovery), custom metric names with template system, full dimensions support and caching.
 
 Configuration (except Azure connection) of this exporter is made entirely in Prometheus instead of a seperate configuration file, see examples below.
-
-WARNING: LogAnalytics metrics are deprecated, please migrate to [azure-loganalytics-exporter](https://github.com/webdevops/azure-loganalytics-exporter)
 
 TOC:
 * [Features](#Features)
@@ -23,7 +21,6 @@ TOC:
     + [/probe/metrics/resource parameters](#probemetricsresource-parameters)
     + [/probe/metrics/list parameters](#probemetricslist-parameters)
     + [/probe/metrics/scrape parameters](#probemetricsscrape-parameters)
-    + [/probe/loganalytics/query parameters **deprecated**](#probeloganalyticsquery-parameters-deprecated)
 * [Prometheus configuration examples](#prometheus-configuration-examples)
     * [Redis](#Redis)
     * [VirtualNetworkGateways](#virtualnetworkgateways)
@@ -39,13 +36,13 @@ TOC:
 - Ability to fetch metrics from resources found with ServiceDiscovery via [Azure resources API based on $filter](https://docs.microsoft.com/de-de/rest/api/resources/resources/list) (see `/probe/metrics/list`)
 - Ability to fetch metrics from resources found with ServiceDiscovery via [Azure resources API based on $filter](https://docs.microsoft.com/de-de/rest/api/resources/resources/list) with configuration inside Azure resource tags (see `/probe/metrics/scrape`)
 - Configuration based on Prometheus scraping config or ServiceMonitor manifest (Prometheus operator)
-- Metric manipulation (adding, removing, updating or filtering of labels or metrics) can be done in scraping config
+- Metric manipulation (adding, removing, updating or filtering of labels or metrics) can be done in scraping config (eg [`metric_relabel_configs`](https://prometheus.io/docs/prometheus/latest/configuration/configuration/#metric_relabel_configs))
 - Full metric [dimension support](#dimension-support)
-- Docker image is based on [Google's distroless](https://github.com/GoogleContainerTools/distroless) static image to reduce attack surface
+- Docker image is based on [Google's distroless](https://github.com/GoogleContainerTools/distroless) static image to reduce attack surface (no shell, no other binaries inside image)
 - Can run non-root and with readonly root filesystem, doesn't need any capabilities (you can safely use `drop: ["All"]`)
 - Publishes Azure API rate limit metrics (when exporter sends Azure API requests)
 
-usefull with additional exporters:
+useful with additional exporters:
 
 - [azure-resourcegraph-exporter](https://github.com/webdevops/azure-resourcegraph-exporter) for exporting Azure resource information from Azure ResourceGraph API with custom Kusto queries (get the tags from resources and ResourceGroups with this exporter)
 - [azure-resourcemanager-exporter](https://github.com/webdevops/azure-resourcemanager-exporter) for exporting Azure subscription information (eg ratelimit, subscription quotas, ServicePrincipal expiry, RoleAssignments, resource health, ...)
@@ -93,7 +90,6 @@ for Azure API authentication (using ENV vars) see https://github.com/Azure/azure
 | `azurerm_stats_metric_collecttime`       | General exporter stats                                                         |
 | `azurerm_stats_metric_requests`          | Counter of resource metric requests with result (error, success)               |
 | `azurerm_resource_metric` (customizable) | Resource metrics exported by probes (can be changed using `name` parameter and template system) |
-| `azurerm_loganalytics_query_result`      | LogAnalytics rows exported by probes                                           |
 | `azurerm_ratelimit`                      | Azure ratelimit metric (only available for uncached /probe requests)           |
 
 ### Metric name template system
@@ -267,8 +263,6 @@ azurerm_ratelimit{scope="subscription",subscriptionID="...",type="read"} 11999
 | `/probe/metrics/resource`      | Probe metrics for one resource (see `azurerm_resource_metric`)                      |
 | `/probe/metrics/list`          | Probe metrics for list of resources (see `azurerm_resource_metric`)                 |
 | `/probe/metrics/scrape`        | Probe metrics for list of resources and config on resource by tag name (see `azurerm_resource_metric`) |
-| `/probe/loganalytics/query`    | **deprecated** Probe metrics from LogAnalytics query (see `azurerm_loganalytics_query_result`)   |
-
 
 ### /probe/metrics/resource parameters
 
@@ -334,21 +328,55 @@ HINT: service discovery information is cached for duration set by `$AZURE_SERVIC
 
 *Hint: Multiple values can be specified multiple times or with a comma in a single value.*
 
-### /probe/loganalytics/query parameters **deprecated**
-
-WARNING: LogAnalytics metrics are deprecated, please migrate to [azure-loganalytics-exporter](https://github.com/webdevops/azure-loganalytics-exporter)
-
-| GET parameter          | Default   | Required | Description                                                          |
-|------------------------|-----------|----------|----------------------------------------------------------------------|
-| `workspace   `         |           | **yes**  | Azure LogAnalytics workspace ID                                      |
-| `query`                |           | **yes**  | LogAnalytics query                                                   |
-| `timespan`             |           | **yes**  | Query timespan                                                       |
-
-
 ## Prometheus configuration examples
 
 ### Redis
 
+using target (single instances):
+
+```yaml
+- job_name: azure-metrics-redis
+  scrape_interval: 1m
+  metrics_path: /probe/metrics/resource
+  params:
+    name: ["my_own_metric_name"]
+    subscription:
+    - xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+    target:
+        - /subscriptions/.../resourceGroups/.../providers/Microsoft.Cache/Redis/...
+        - /subscriptions/.../resourceGroups/.../providers/Microsoft.Cache/Redis/...
+        - /subscriptions/.../resourceGroups/.../providers/Microsoft.Cache/Redis/...
+        - /subscriptions/.../resourceGroups/.../providers/Microsoft.Cache/Redis/...
+    metric:
+    - connectedclients
+    - totalcommandsprocessed
+    - cachehits
+    - cachemisses
+    - getcommands
+    - setcommands
+    - operationsPerSecond
+    - evictedkeys
+    - totalkeys
+    - expiredkeys
+    - usedmemory
+    - usedmemorypercentage
+    - usedmemoryRss
+    - serverLoad
+    - cacheWrite
+    - cacheRead
+    - percentProcessorTime
+    - cacheLatency
+    - errors
+    interval: ["PT1M"]
+    timespan: ["PT1M"]
+    aggregation:
+    - average
+    - total
+  static_configs:
+  - targets: ["azure-metrics:8080"]
+```
+
+using ServiceDiscovery:
 ```yaml
 - job_name: azure-metrics-redis
   scrape_interval: 1m
@@ -449,6 +477,7 @@ Virtual Gateway connection metrics (dimension support)
   static_configs:
   - targets: ["azure-metrics:8080"]
 ```
+
 
 In these examples all metrics are published with metric name `my_own_metric_name`.
 
