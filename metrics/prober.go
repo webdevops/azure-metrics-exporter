@@ -186,7 +186,7 @@ func (p *MetricProber) collectMetricsFromTargets() {
 						if result, err := p.FetchMetricsFromTarget(client, target); err == nil {
 							result.SendMetricToChannel(metricsChannel)
 						} else {
-							p.logger.Warn(err)
+							p.logger.WithField("resourceID", target.ResourceId).Warn(err)
 						}
 
 					}(target)

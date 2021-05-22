@@ -1,6 +1,7 @@
 package metrics
 
 import (
+	"fmt"
 	iso8601 "github.com/ChannelMeter/iso8601duration"
 	log "github.com/sirupsen/logrus"
 	"github.com/webdevops/azure-metrics-exporter/config"
@@ -16,14 +17,16 @@ const (
 
 type (
 	RequestMetricSettings struct {
-		Name          string
-		Subscriptions []string
-		Filter        string
-		Timespan      string
-		Interval      *string
-		Metrics       []string
-		Aggregations  []string
-		Target        []string
+		Name            string
+		Subscriptions   []string
+		ResourceSubPath string
+		Filter          string
+		Timespan        string
+		Interval        *string
+		Metrics         []string
+		MetricNamespace string
+		Aggregations    []string
+		Target          []string
 
 		// needed for dimension support
 		MetricTop     *int32
@@ -54,6 +57,13 @@ func NewRequestMetricSettings(r *http.Request, opts config.Opts) (RequestMetricS
 		return ret, err
 	}
 
+	// param metricNamespace
+	ret.ResourceSubPath = paramsGetWithDefault(params, "resourceSubPath", "")
+	ret.ResourceSubPath = fmt.Sprintf(
+		"/%s",
+		strings.TrimLeft(ret.ResourceSubPath, "/"),
+	)
+
 	// param filter
 	if filter, err := paramsGetRequired(params, "filter"); err == nil {
 		ret.Filter = filter
@@ -75,6 +85,9 @@ func NewRequestMetricSettings(r *http.Request, opts config.Opts) (RequestMetricS
 	} else {
 		return ret, err
 	}
+
+	// param metricNamespace
+	ret.MetricNamespace = paramsGetWithDefault(params, "metricNamespace", "")
 
 	// param aggregation
 	if val, err := paramsGetList(params, "aggregation"); err == nil {

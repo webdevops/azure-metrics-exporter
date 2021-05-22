@@ -42,7 +42,7 @@ func (p *MetricProber) FetchMetricsFromTarget(client *insights.MetricsClient, ta
 
 	result, err := client.List(
 		p.ctx,
-		target.ResourceId,
+		target.ResourceId+p.settings.ResourceSubPath,
 		p.settings.Timespan,
 		p.settings.Interval,
 		strings.Join(target.Metrics, ","),
@@ -51,8 +51,9 @@ func (p *MetricProber) FetchMetricsFromTarget(client *insights.MetricsClient, ta
 		p.settings.MetricOrderBy,
 		p.settings.MetricFilter,
 		insights.Data,
-		"",
+		p.settings.MetricNamespace,
 	)
+	p.logger.Debugf("sent request to %s", result.Request.URL.String())
 
 	if err == nil {
 		ret.Result = &result
@@ -104,7 +105,7 @@ func (r *AzureInsightMetricsResult) buildMetric(labels prometheus.Labels, value 
 func (r *AzureInsightMetricsResult) SendMetricToChannel(channel chan<- PrometheusMetricResult) {
 	if r.Result.Value != nil {
 		// DEBUGGING
-		//data,_ := json.Marshal(r.Result)
+		//data, _ := json.Marshal(r.Result)
 		//fmt.Println(string(data))
 
 		for _, metric := range *r.Result.Value {
