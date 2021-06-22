@@ -1,0 +1,25 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  labels:
+    {{- include "azure-metrics-exporter.labels" . | nindent 4 }}
+  name: {{ include "azure-metrics-exporter.fullname" . }}
+spec:
+  endpoints:
+  - interval: 30s
+    port: metrics
+    params:
+      name: ["azure_metric_keyvault"]
+      subscription:
+        - xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+      filter: ["resourceType eq 'Microsoft.ContainerService/managedClusters'"]
+      metric:
+        - cluster_autoscaler_cluster_safe_to_autoscale
+        - cluster_autoscaler_scale_down_in_cooldown
+        - cluster_autoscaler_unneeded_nodes_count
+        - cluster_autoscaler_unschedulable_pods_count
+      interval: ["PT15M"]
+      timespan: ["PT15M"]
+  selector:
+    matchLabels:
+      {{- include "azure-metrics-exporter.labels" . | nindent 6 }}
