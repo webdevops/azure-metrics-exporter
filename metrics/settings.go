@@ -35,6 +35,8 @@ type (
 
 		MetricTemplate string
 
+		LowercaseResourceId bool
+
 		// cache
 		Cache *time.Duration
 	}
@@ -43,6 +45,8 @@ type (
 func NewRequestMetricSettings(r *http.Request, opts config.Opts) (RequestMetricSettings, error) {
 	ret := RequestMetricSettings{}
 	params := r.URL.Query()
+
+	ret.LowercaseResourceId = opts.Metrics.ResourceIdLowercase
 
 	// param name
 	ret.Name = paramsGetWithDefault(params, "name", PrometheusMetricNameDefault)

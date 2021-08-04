@@ -25,7 +25,8 @@ type (
 		}
 
 		Metrics struct {
-			Template string `long:"metrics.template" env:"METRIC_TEMPLATE" description:"Template for metric name"   default:"{name}"`
+			ResourceIdLowercase bool   `long:"metrics.resourceid.lowercase"   env:"METRIC_RESOURCEID_LOWERCASE"       description:"Publish lowercase Azure Resoruce ID in metrics"`
+			Template            string `long:"metrics.template"               env:"METRIC_TEMPLATE"                   description:"Template for metric name"   default:"{name}"`
 		}
 
 		// Prober settings

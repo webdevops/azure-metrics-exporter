@@ -2,6 +2,7 @@ package metrics
 
 import (
 	"github.com/Azure/azure-sdk-for-go/services/preview/monitor/mgmt/2018-03-01/insights"
+	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/prometheus/client_golang/prometheus"
 	"regexp"
 	"strings"
@@ -121,15 +122,20 @@ func (r *AzureInsightMetricsResult) SendMetricToChannel(channel chan<- Prometheu
 								}
 							}
 
+							resourceId := to.String(r.ResourceID)
+							if r.settings.LowercaseResourceId {
+								resourceId = strings.ToLower(resourceId)
+							}
+
 							if timeseriesData.Total != nil {
 								channel <- r.buildMetric(
 									prometheus.Labels{
-										"resourceID":  *r.ResourceID,
-										"metric":      stringPtrToString(metric.Name.Value),
+										"resourceID":  resourceId,
+										"metric":      to.String(metric.Name.Value),
 										"dimension":   dimensionName,
 										"unit":        string(metric.Unit),
 										"aggregation": "total",
-										"interval":    stringPtrToString(r.settings.Interval),
+										"interval":    to.String(r.settings.Interval),
 										"timespan":    r.settings.Timespan,
 									},
 									*timeseriesData.Total,
@@ -139,12 +145,12 @@ func (r *AzureInsightMetricsResult) SendMetricToChannel(channel chan<- Prometheu
 							if timeseriesData.Minimum != nil {
 								channel <- r.buildMetric(
 									prometheus.Labels{
-										"resourceID":  *r.ResourceID,
-										"metric":      stringPtrToString(metric.Name.Value),
+										"resourceID":  resourceId,
+										"metric":      to.String(metric.Name.Value),
 										"dimension":   dimensionName,
 										"unit":        string(metric.Unit),
 										"aggregation": "minimum",
-										"interval":    stringPtrToString(r.settings.Interval),
+										"interval":    to.String(r.settings.Interval),
 										"timespan":    r.settings.Timespan,
 									},
 									*timeseriesData.Minimum,
@@ -154,12 +160,12 @@ func (r *AzureInsightMetricsResult) SendMetricToChannel(channel chan<- Prometheu
 							if timeseriesData.Maximum != nil {
 								channel <- r.buildMetric(
 									prometheus.Labels{
-										"resourceID":  *r.ResourceID,
-										"metric":      stringPtrToString(metric.Name.Value),
+										"resourceID":  resourceId,
+										"metric":      to.String(metric.Name.Value),
 										"dimension":   dimensionName,
 										"unit":        string(metric.Unit),
 										"aggregation": "maximum",
-										"interval":    stringPtrToString(r.settings.Interval),
+										"interval":    to.String(r.settings.Interval),
 										"timespan":    r.settings.Timespan,
 									},
 									*timeseriesData.Maximum,
@@ -169,12 +175,12 @@ func (r *AzureInsightMetricsResult) SendMetricToChannel(channel chan<- Prometheu
 							if timeseriesData.Average != nil {
 								channel <- r.buildMetric(
 									prometheus.Labels{
-										"resourceID":  *r.ResourceID,
-										"metric":      stringPtrToString(metric.Name.Value),
+										"resourceID":  resourceId,
+										"metric":      to.String(metric.Name.Value),
 										"dimension":   dimensionName,
 										"unit":        string(metric.Unit),
 										"aggregation": "average",
-										"interval":    stringPtrToString(r.settings.Interval),
+										"interval":    to.String(r.settings.Interval),
 										"timespan":    r.settings.Timespan,
 									},
 									*timeseriesData.Average,
@@ -184,12 +190,12 @@ func (r *AzureInsightMetricsResult) SendMetricToChannel(channel chan<- Prometheu
 							if timeseriesData.Count != nil {
 								channel <- r.buildMetric(
 									prometheus.Labels{
-										"resourceID":  *r.ResourceID,
-										"metric":      stringPtrToString(metric.Name.Value),
+										"resourceID":  resourceId,
+										"metric":      to.String(metric.Name.Value),
 										"dimension":   dimensionName,
 										"unit":        string(metric.Unit),
 										"aggregation": "count",
-										"interval":    stringPtrToString(r.settings.Interval),
+										"interval":    to.String(r.settings.Interval),
 										"timespan":    r.settings.Timespan,
 									},
 									*timeseriesData.Count,

@@ -32,14 +32,6 @@ func paramsGetListRequired(params url.Values, name string) (list []string, err e
 	return
 }
 
-func stringPtrToString(v *string) string {
-	if v == nil {
-		return ""
-	}
-
-	return *v
-}
-
 func stringToStringList(v string, sep string) (list []string) {
 	for _, v := range strings.Split(v, sep) {
 		list = append(list, strings.TrimSpace(v))
