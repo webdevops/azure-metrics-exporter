@@ -81,7 +81,6 @@ func NewRequestMetricSettings(r *http.Request, opts config.Opts) (RequestMetricS
 		return ret, fmt.Errorf("parameter \"resourceType\" or \"filter\" is missing")
 	}
 
-	fmt.Println(ret.Filter )
 	// param timespan
 	ret.Timespan = paramsGetWithDefault(params, "timespan", "PT1M")
 
