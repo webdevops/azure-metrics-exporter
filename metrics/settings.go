@@ -65,12 +65,23 @@ func NewRequestMetricSettings(r *http.Request, opts config.Opts) (RequestMetricS
 	)
 
 	// param filter
-	if filter, err := paramsGetRequired(params, "filter"); err == nil {
+	resourceType := paramsGetWithDefault(params, "resourceType", "")
+	filter := paramsGetWithDefault(params, "filter", "")
+
+	if resourceType != "" && filter != "" {
+		return ret, fmt.Errorf("parameter \"resourceType\" and \"filter\" are mutually exclusive")
+	} else if resourceType != "" {
+		ret.Filter = fmt.Sprintf(
+			"resourceType eq '%s'",
+			strings.ReplaceAll(resourceType, "'", "\\'"),
+		)
+	} else if filter != "" {
 		ret.Filter = filter
 	} else {
-		return ret, err
+		return ret, fmt.Errorf("parameter \"resourceType\" or \"filter\" is missing")
 	}
 
+	fmt.Println(ret.Filter )
 	// param timespan
 	ret.Timespan = paramsGetWithDefault(params, "timespan", "PT1M")
 
