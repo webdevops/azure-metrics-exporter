@@ -54,9 +54,11 @@ func (p *MetricProber) FetchMetricsFromTarget(client *insights.MetricsClient, ta
 		insights.Data,
 		p.settings.MetricNamespace,
 	)
-	p.logger.Debugf("sent request to %s", result.Request.URL.String())
 
 	if err == nil {
+		if result.Request.URL != nil {
+			p.logger.Debugf("sent request to %s", result.Request.URL.String())
+		}
 		ret.Result = &result
 		ret.ResourceID = &target.ResourceId
 	}
