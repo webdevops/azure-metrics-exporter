@@ -6,11 +6,17 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/Azure/azure-sdk-for-go/profiles/latest/resources/mgmt/resources"
+	resourcegraph "github.com/Azure/azure-sdk-for-go/services/resourcegraph/mgmt/2019-04-01/resourcegraph"
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/prometheus/client_golang/prometheus"
 	"net/http"
 	"strconv"
+	"strings"
+)
+
+const (
+	ResourceGraphQueryTop = 1000
 )
 
 type (
@@ -156,7 +162,7 @@ func (sd *AzureServiceDiscovery) FindSubscriptionResources(subscriptionId, filte
 	sd.publishTargetList(targetList)
 }
 
-func (sd *AzureServiceDiscovery) FindSubscriptionResourcesWithScrapeTags(subscriptionId, filter, metricTagName, aggregationTagName string) {
+func (sd *AzureServiceDiscovery) FindSubscriptionResourcesWithScrapeTags(ctx context.Context, subscriptionId, filter, metricTagName, aggregationTagName string) {
 	var targetList []MetricProbeTarget
 
 	if resourceList, err := sd.fetchResourceList(subscriptionId, filter); err == nil {
@@ -178,6 +184,96 @@ func (sd *AzureServiceDiscovery) FindSubscriptionResourcesWithScrapeTags(subscri
 	} else {
 		sd.prober.logger.Error(err)
 		return
+	}
+
+	sd.publishTargetList(targetList)
+}
+
+func (sd *AzureServiceDiscovery) FindResourceGraph(ctx context.Context, subscriptionId, resourceType, filter string) {
+	var targetList []MetricProbeTarget
+
+	// Create and authorize a ResourceGraph client
+	resourcegraphClient := resourcegraph.NewWithBaseURI(sd.prober.Azure.Environment.ResourceManagerEndpoint)
+	resourcegraphClient.Authorizer = sd.prober.Azure.AzureAuthorizer
+	resourcegraphClient.ResponseInspector = sd.azureResponseInsepector(subscriptionId)
+
+	subscriptions := []string{subscriptionId}
+
+	if filter != "" {
+		filter = "| " + filter
+	}
+
+	queryTemplate := `
+Resources
+| where type =~ "%s"
+%s
+| project id
+`
+
+	query := strings.TrimSpace(fmt.Sprintf(
+		queryTemplate,
+		strings.ReplaceAll(resourceType, "'", "\\'"),
+		filter,
+	))
+
+	sd.prober.logger.WithField("query", query).Debugf("using Kusto query")
+
+	requestQueryTop := int32(ResourceGraphQueryTop)
+	requestQuerySkip := int32(0)
+
+	// Set options
+	RequestOptions := resourcegraph.QueryRequestOptions{
+		ResultFormat: "objectArray",
+		Top:          &requestQueryTop,
+		Skip:         &requestQuerySkip,
+	}
+
+	// Run the query and get the results
+	resultTotalRecords := int32(0)
+	for {
+		// Create the query request
+		Request := resourcegraph.QueryRequest{
+			Subscriptions: &subscriptions,
+			Query:         &query,
+			Options:       &RequestOptions,
+		}
+
+		var results, queryErr = resourcegraphClient.Resources(ctx, Request)
+		if results.TotalRecords != nil {
+			resultTotalRecords = int32(*results.TotalRecords)
+		}
+
+		if queryErr == nil {
+			if resultList, ok := results.Data.([]interface{}); ok {
+				// check if we got data, otherwise break the for loop
+				if len(resultList) == 0 {
+					break
+				}
+
+				for _, v := range resultList {
+					if resultRow, ok := v.(map[string]interface{}); ok {
+						if val, ok := resultRow["id"]; ok && val != "" {
+							if resourceId, ok := val.(string); ok {
+
+								targetList = append(
+									targetList,
+									MetricProbeTarget{
+										ResourceId:   resourceId,
+										Metrics:      sd.prober.settings.Metrics,
+										Aggregations: sd.prober.settings.Aggregations,
+									},
+								)
+							}
+						}
+					}
+				}
+			}
+		}
+
+		*RequestOptions.Skip += requestQueryTop
+		if *RequestOptions.Skip >= resultTotalRecords {
+			break
+		}
 	}
 
 	sd.publishTargetList(targetList)

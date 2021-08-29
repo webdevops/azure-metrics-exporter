@@ -11,7 +11,7 @@ import (
 	"time"
 )
 
-func probeMetricsListHandler(w http.ResponseWriter, r *http.Request) {
+func probeMetricsResourceGraphHandler(w http.ResponseWriter, r *http.Request) {
 	var err error
 	var timeoutSeconds float64
 
@@ -20,7 +20,7 @@ func probeMetricsListHandler(w http.ResponseWriter, r *http.Request) {
 	registry := prometheus.NewRegistry()
 
 	// If a timeout is configured via the Prometheus header, add it to the request.
-	timeoutSeconds, err = getPrometheusTimeout(r, ProbeMetricsListTimeoutDefault)
+	timeoutSeconds, err = getPrometheusTimeout(r, ProbeMetricsResourceGraphTimeoutDefault)
 	if err != nil {
 		contextLogger.Error(err)
 		http.Error(w, fmt.Sprintf("failed to parse timeout from Prometheus header: %s", err), http.StatusInternalServerError)
@@ -32,7 +32,14 @@ func probeMetricsListHandler(w http.ResponseWriter, r *http.Request) {
 	r = r.WithContext(ctx)
 
 	var settings metrics.RequestMetricSettings
-	if settings, err = metrics.NewRequestMetricSettingsForAzureResourceApi(r, opts); err != nil {
+	if settings, err = metrics.NewRequestMetricSettings(r, opts); err != nil {
+		contextLogger.Errorln(err)
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	resourceType, err := paramsGetRequired(r.URL.Query(), "resourceType")
+	if err != nil {
 		contextLogger.Errorln(err)
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -42,7 +49,7 @@ func probeMetricsListHandler(w http.ResponseWriter, r *http.Request) {
 	prober.SetAzure(AzureEnvironment, AzureAuthorizer)
 	prober.SetPrometheusRegistry(registry)
 	if settings.Cache != nil {
-		cacheKey := fmt.Sprintf("list:%x", sha1.Sum([]byte(r.URL.String()))) // #nosec G401
+		cacheKey := fmt.Sprintf("scrape:%x", sha1.Sum([]byte(r.URL.String()))) // #nosec G401
 		prober.EnableMetricsCache(metricsCache, cacheKey, settings.CacheDuration(startTime))
 	}
 
@@ -52,7 +59,7 @@ func probeMetricsListHandler(w http.ResponseWriter, r *http.Request) {
 
 	if !prober.FetchFromCache() {
 		for _, subscription := range settings.Subscriptions {
-			prober.ServiceDiscovery.FindSubscriptionResources(subscription, settings.Filter)
+			prober.ServiceDiscovery.FindResourceGraph(ctx, subscription, resourceType, settings.Filter)
 		}
 
 		prober.RegisterSubscriptionCollectFinishCallback(func(subscriptionId string) {

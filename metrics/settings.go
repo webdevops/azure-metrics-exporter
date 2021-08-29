@@ -20,6 +20,7 @@ type (
 		Name            string
 		Subscriptions   []string
 		ResourceSubPath string
+		ResourceType    string
 		Filter          string
 		Timespan        string
 		Interval        *string
@@ -41,6 +42,26 @@ type (
 		Cache *time.Duration
 	}
 )
+
+func NewRequestMetricSettingsForAzureResourceApi(r *http.Request, opts config.Opts) (RequestMetricSettings, error) {
+	settings, err := NewRequestMetricSettings(r, opts)
+	if err != nil {
+		return settings, err
+	}
+
+	if settings.ResourceType != "" && settings.Filter != "" {
+		return settings, fmt.Errorf("parameter \"resourceType\" and \"filter\" are mutually exclusive")
+	} else if settings.ResourceType != "" {
+		settings.Filter = fmt.Sprintf(
+			"resourceType eq '%s'",
+			strings.ReplaceAll(settings.ResourceType, "'", "\\'"),
+		)
+	} else if settings.Filter == "" {
+		return settings, fmt.Errorf("parameter \"resourceType\" or \"filter\" is missing")
+	}
+
+	return settings, nil
+}
 
 func NewRequestMetricSettings(r *http.Request, opts config.Opts) (RequestMetricSettings, error) {
 	ret := RequestMetricSettings{}
@@ -69,21 +90,8 @@ func NewRequestMetricSettings(r *http.Request, opts config.Opts) (RequestMetricS
 	)
 
 	// param filter
-	resourceType := paramsGetWithDefault(params, "resourceType", "")
-	filter := paramsGetWithDefault(params, "filter", "")
-
-	if resourceType != "" && filter != "" {
-		return ret, fmt.Errorf("parameter \"resourceType\" and \"filter\" are mutually exclusive")
-	} else if resourceType != "" {
-		ret.Filter = fmt.Sprintf(
-			"resourceType eq '%s'",
-			strings.ReplaceAll(resourceType, "'", "\\'"),
-		)
-	} else if filter != "" {
-		ret.Filter = filter
-	} else {
-		return ret, fmt.Errorf("parameter \"resourceType\" or \"filter\" is missing")
-	}
+	ret.ResourceType = paramsGetWithDefault(params, "resourceType", "")
+	ret.Filter = paramsGetWithDefault(params, "filter", "")
 
 	// param timespan
 	ret.Timespan = paramsGetWithDefault(params, "timespan", "PT1M")

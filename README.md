@@ -35,8 +35,9 @@ TOC:
 - Caching of fetched metrics (no need to request every minute from Azure Monitor API; you can keep scrape time of `30s` for metrics)
 - Customizable metric names (with [template system with metric information](#metric-name-template-system))
 - Ability to fetch metrics from one or more resources via `target` parameter  (see `/probe/metrics/resource`)
-- Ability to fetch metrics from resources found with ServiceDiscovery via [Azure resources API based on $filter](https://docs.microsoft.com/de-de/rest/api/resources/resources/list) (see `/probe/metrics/list`)
-- Ability to fetch metrics from resources found with ServiceDiscovery via [Azure resources API based on $filter](https://docs.microsoft.com/de-de/rest/api/resources/resources/list) with configuration inside Azure resource tags (see `/probe/metrics/scrape`)
+- Ability to fetch metrics from resources found with ServiceDiscovery via [Azure resources API based on $filter](https://docs.microsoft.com/en-us/rest/api/resources/resources/list) (see `/probe/metrics/list`)
+- Ability to fetch metrics from resources found with ServiceDiscovery via [Azure resources API based on $filter](https://docs.microsoft.com/en-us/rest/api/resources/resources/list) with configuration inside Azure resource tags (see `/probe/metrics/scrape`)
+- Ability to fetch metrics from resources found with ServiceDiscovery via [Azure ResourceGraph API based on Kusto query](https://docs.microsoft.com/en-us/azure/governance/resource-graph/overview) (see `/probe/metrics/resourcegraph`)
 - Configuration based on Prometheus scraping config or ServiceMonitor manifest (Prometheus operator)
 - Metric manipulation (adding, removing, updating or filtering of labels or metrics) can be done in scraping config (eg [`metric_relabel_configs`](https://prometheus.io/docs/prometheus/latest/configuration/configuration/#metric_relabel_configs))
 - Full metric [dimension support](#virtualnetworkgateway-connections-dimension-support)
@@ -329,6 +330,33 @@ HINT: service discovery information is cached for duration set by `$AZURE_SERVIC
 | `name`                     | `azurerm_resource_metric` | no       | no       | Prometheus metric name                                               |
 | `metricFilter`             |                           | no       | no       | Prometheus metric filter (dimension support)                         |
 | `metricTop`                |                           | no       | no       | Prometheus metric dimension count (integer, dimension support)       |
+| `metricOrderBy`            |                           | no       | no       | Prometheus metric order by (dimension support)                       |
+| `cache`                    | (same as timespan)        | no       | no       | Use of internal metrics caching                                      |
+| `template`                 | set to `$METRIC_TEMPLATE` | no       | no       | see [metric name template system](#metric-name-template-system)      |
+
+*Hint: Multiple values can be specified multiple times or with a comma in a single value.*
+
+
+### /probe/metrics/resourcegraph parameters
+
+This endpoint is using Azure ResoruceGraph API for servicediscovery (with 21.9.0 and later)
+
+HINT: service discovery information is cached for duration set by `$AZURE_SERVICEDISCOVERY_CACHE` (set to `0` to disable)
+
+| GET parameter              | Default                   | Required | Multiple | Description                                                          |
+|----------------------------|---------------------------|----------|----------|----------------------------------------------------------------------|
+| `subscription`             |                           | **yes**  | **yes**  | Azure Subscription ID (or multiple separate by comma)                |
+| `resourceType`             |                           | **yes**  | no       | Azure Resource type                                                  |
+| `filter`                   |                           | no       | no       | Additional Kusto query part (eg. `where id contains "/xzy/"`)        |
+| `resourceSubPath`          |                           | no       | no       | Additional resource path which will be appended to Resource ID       |
+| `timespan`                 | `PT1M`                    | no       | no       | Metric timespan                                                      |
+| `interval`                 |                           | no       | no       | Metric timespan                                                      |
+| `metricNamespace`          |                           | no       | **yes**  | Metric namespace (might need also `resourceSubPath`)                 |
+| `metric`                   |                           | no       | **yes**  | Metric name                                                          |
+| `aggregation`              |                           | no       | **yes**  | Metric aggregation (`minimum`, `maximum`, `average`, `total`, `count`, multiple possible separated with `,`) |
+| `name`                     | `azurerm_resource_metric` | no       | no       | Prometheus metric name                                               |
+| `metricFilter`             |                           | no       | no       | Prometheus metric filter (dimension support)                         |
+| `metricTop`                |                           | no       | no       | Prometheus metric dimension count (dimension support)                |
 | `metricOrderBy`            |                           | no       | no       | Prometheus metric order by (dimension support)                       |
 | `cache`                    | (same as timespan)        | no       | no       | Use of internal metrics caching                                      |
 | `template`                 | set to `$METRIC_TEMPLATE` | no       | no       | see [metric name template system](#metric-name-template-system)      |

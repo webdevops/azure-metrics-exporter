@@ -33,7 +33,7 @@ func probeMetricsScrapeHandler(w http.ResponseWriter, r *http.Request) {
 	r = r.WithContext(ctx)
 
 	var settings metrics.RequestMetricSettings
-	if settings, err = metrics.NewRequestMetricSettings(r, opts); err != nil {
+	if settings, err = metrics.NewRequestMetricSettingsForAzureResourceApi(r, opts); err != nil {
 		contextLogger.Errorln(err)
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -64,7 +64,7 @@ func probeMetricsScrapeHandler(w http.ResponseWriter, r *http.Request) {
 
 	if !prober.FetchFromCache() {
 		for _, subscription := range settings.Subscriptions {
-			prober.ServiceDiscovery.FindSubscriptionResourcesWithScrapeTags(subscription, settings.Filter, metricTagName, aggregationTagName)
+			prober.ServiceDiscovery.FindSubscriptionResourcesWithScrapeTags(ctx, subscription, settings.Filter, metricTagName, aggregationTagName)
 		}
 
 		prober.RegisterSubscriptionCollectFinishCallback(func(subscriptionId string) {

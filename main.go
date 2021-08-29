@@ -32,6 +32,9 @@ const (
 
 	ProbeMetricsScrapeUrl            = "/probe/metrics/scrape"
 	ProbeMetricsScrapeTimeoutDefault = 120
+
+	ProbeMetricsResourceGraphUrl            = "/probe/metrics/resourcegraph"
+	ProbeMetricsResourceGraphTimeoutDefault = 120
 )
 
 var (
@@ -152,6 +155,10 @@ func startHttpServer() {
 
 	http.HandleFunc(ProbeMetricsScrapeUrl, func(w http.ResponseWriter, r *http.Request) {
 		probeMetricsScrapeHandler(w, r)
+	})
+
+	http.HandleFunc(ProbeMetricsResourceGraphUrl, func(w http.ResponseWriter, r *http.Request) {
+		probeMetricsResourceGraphHandler(w, r)
 	})
 
 	log.Fatal(http.ListenAndServe(opts.ServerBind, nil))
