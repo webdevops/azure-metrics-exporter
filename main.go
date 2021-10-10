@@ -24,6 +24,8 @@ const (
 
 	MetricsUrl = "/metrics"
 
+	DevelWebUiUrl = "/query"
+
 	ProbeMetricsResourceUrl            = "/probe/metrics/resource"
 	ProbeMetricsResourceTimeoutDefault = 10
 
@@ -160,6 +162,16 @@ func startHttpServer() {
 	http.HandleFunc(ProbeMetricsResourceGraphUrl, func(w http.ResponseWriter, r *http.Request) {
 		probeMetricsResourceGraphHandler(w, r)
 	})
+
+	if opts.Development.WebUi {
+		http.HandleFunc(DevelWebUiUrl, func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Add("Content-Type", "text/html")
+			_, err := w.Write([]byte(WebUiIndexHtml))
+			if err != nil {
+				log.Error(err)
+			}
+		})
+	}
 
 	log.Fatal(http.ListenAndServe(opts.ServerBind, nil))
 }

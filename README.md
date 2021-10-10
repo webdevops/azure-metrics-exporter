@@ -69,21 +69,30 @@ Application Options:
       --azure-ad-resource-url=             Specifies the AAD resource ID to use. If not set, it defaults to
                                            ResourceManagerEndpoint for operations with Azure Resource Manager
                                            [$AZURE_AD_RESOURCE]
-      --azure.servicediscovery.cache=      Duration for caching Azure ServiceDiscovery of workspaces to reduce API calls
-                                           (time.Duration) (default: 30m) [$AZURE_SERVICEDISCOVERY_CACHE]
+      --azure.servicediscovery.cache=      Duration for caching Azure ServiceDiscovery of workspaces to reduce API
+                                           calls (time.Duration) (default: 30m) [$AZURE_SERVICEDISCOVERY_CACHE]
       --metrics.resourceid.lowercase       Publish lowercase Azure Resoruce ID in metrics [$METRIC_RESOURCEID_LOWERCASE]
       --metrics.template=                  Template for metric name (default: {name}) [$METRIC_TEMPLATE]
       --concurrency.subscription=          Concurrent subscription fetches (default: 5) [$CONCURRENCY_SUBSCRIPTION]
-      --concurrency.subscription.resource= Concurrent requests per resource (inside subscription requests) (default: 10)
-                                           [$CONCURRENCY_SUBSCRIPTION_RESOURCE]
+      --concurrency.subscription.resource= Concurrent requests per resource (inside subscription requests) (default:
+                                           10) [$CONCURRENCY_SUBSCRIPTION_RESOURCE]
       --enable-caching                     Enable internal caching [$ENABLE_CACHING]
       --bind=                              Server address (default: :8080) [$SERVER_BIND]
+      --development.webui                  Enable webui on server bind socket, accessible with /query
+                                           [$DEVELOPMENT_WEBUI]
 
 Help Options:
   -h, --help                               Show this help message
 ```
 
 for Azure API authentication (using ENV vars) see https://github.com/Azure/azure-sdk-for-go#authentication
+
+## How to test
+
+Enable the webui (`--development.webui`) to get a basic web frontend to query the exporter which helps you to find
+the right settings for your configuration.
+
+webui is available under url `/query`
 
 ## Metrics
 
