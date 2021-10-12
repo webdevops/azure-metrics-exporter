@@ -13,7 +13,7 @@ TOC:
 * [Features](#Features)
 * [Configuration](#configuration)
 * [Metrics](#metrics)
-    + [Metric name template system](#metric-name-template-system)
+    + [Metric name and help template system](#metric-name-and-help-template-system)
         - [default template](#default-template)
         - [template `{name}_{metric}_{unit}`](#template-name_metric_unit)
         - [template `{name}_{metric}_{aggregation}_{unit}`](#template-name_metric_aggregation_unit)
@@ -26,6 +26,7 @@ TOC:
     * [VirtualNetworkGateways](#virtualnetworkgateways)
     * [virtualNetworkGateway connections (dimension support)](#virtualnetworkgateway-connections-dimension-support)
     * [StorageAccount (metric namespace and dimension support)](#storageaccount-metric-namespace-and-dimension-support)
+* [Development and testing query webui](#development-and-testing-query-webui)
 
 ## Features
 
@@ -73,6 +74,8 @@ Application Options:
                                            calls (time.Duration) (default: 30m) [$AZURE_SERVICEDISCOVERY_CACHE]
       --metrics.resourceid.lowercase       Publish lowercase Azure Resoruce ID in metrics [$METRIC_RESOURCEID_LOWERCASE]
       --metrics.template=                  Template for metric name (default: {name}) [$METRIC_TEMPLATE]
+      --metrics.help=                      Metric help (with template support) (default: Azure monitor insight metric)
+                                           [$METRIC_HELP]
       --concurrency.subscription=          Concurrent subscription fetches (default: 5) [$CONCURRENCY_SUBSCRIPTION]
       --concurrency.subscription.resource= Concurrent requests per resource (inside subscription requests) (default:
                                            10) [$CONCURRENCY_SUBSCRIPTION_RESOURCE]
@@ -103,7 +106,7 @@ webui is available under url `/query`
 | `azurerm_resource_metric` (customizable) | Resource metrics exported by probes (can be changed using `name` parameter and template system) |
 | `azurerm_ratelimit`                      | Azure ratelimit metric (only available for uncached /probe requests)           |
 
-### Metric name template system
+### Metric name and help template system
 
 (with 21.5.3 and later)
 
@@ -112,7 +115,9 @@ This can be modified via environment variable `$METRIC_TEMPLATE` or as request p
 
 HINT: Used templates are removed from labels!
 
-Recommendation: `{name}_{metric}_{aggregation}_{unit}`
+Metric name recommendation: `{name}_{metric}_{aggregation}_{unit}`
+
+Help recommendation: `Azure metrics for {metric} with aggregation {aggregation} as {unit}`
 
 Following templates are available:
 
@@ -177,6 +182,7 @@ Prometheus config:
   params:
     name: ["azure_metric_keyvault"]
     template: ["{name}_{metric}_{unit}"]
+    help: ["Custom help with {metric}"]
     subscription:
     - xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
     filter: ["resourceType eq 'Microsoft.KeyVault/vaults'"]
@@ -195,12 +201,12 @@ Prometheus config:
 
 generated metrics:
 ```
-# HELP azure_metric_keyvault_availability_percent Azure monitor insight metric
+# HELP azure_metric_keyvault_availability_percent Custom help with availability
 # TYPE azure_metric_keyvault_availability_percent gauge
 azure_metric_keyvault_availability_percent{aggregation="average",dimension="",interval="PT12H",resourceID="/subscriptions/...",timespan="PT12H"} 100
 azure_metric_keyvault_availability_percent{aggregation="average",dimension="",interval="PT12H",resourceID="/subscriptions/...",timespan="PT12H"} 100
 
-# HELP azure_metric_keyvault_serviceapihit_count Azure monitor insight metric
+# HELP azure_metric_keyvault_serviceapihit_count Custom help with serviceapihit
 # TYPE azure_metric_keyvault_serviceapihit_count gauge
 azure_metric_keyvault_serviceapihit_count{aggregation="average",dimension="",interval="PT12H",resourceID="/subscriptions/...",timespan="PT12H"} 0
 azure_metric_keyvault_serviceapihit_count{aggregation="average",dimension="",interval="PT12H",resourceID="/subscriptions/...",timespan="PT12H"} 0
@@ -293,7 +299,8 @@ azurerm_ratelimit{scope="subscription",subscriptionID="...",type="read"} 11999
 | `metricTop`            |                           | no       | no       | Prometheus metric dimension count (dimension support)                |
 | `metricOrderBy`        |                           | no       | no       | Prometheus metric order by (dimension support)                       |
 | `cache`                | (same as timespan)        | no       | no       | Use of internal metrics caching                                      |
-| `template`             | set to `$METRIC_TEMPLATE` | no       | no       | see [metric name template system](#metric-name-template-system)      |
+| `template`             | set to `$METRIC_TEMPLATE` | no       | no       | see [metric name and help template system](#metric-name-and-help-template-system)      |
+| `help`                 | set to `$METRIC_HELP`     | no       | no       | see [metric name and help template system](#metric-name-and-help-template-system)      |
 
 *Hint: Multiple values can be specified multiple times or with a comma in a single value.*
 
@@ -316,7 +323,8 @@ HINT: service discovery information is cached for duration set by `$AZURE_SERVIC
 | `metricTop`                |                           | no       | no       | Prometheus metric dimension count (dimension support)                |
 | `metricOrderBy`            |                           | no       | no       | Prometheus metric order by (dimension support)                       |
 | `cache`                    | (same as timespan)        | no       | no       | Use of internal metrics caching                                      |
-| `template`                 | set to `$METRIC_TEMPLATE` | no       | no       | see [metric name template system](#metric-name-template-system)      |
+| `template`                 | set to `$METRIC_TEMPLATE` | no       | no       | see [metric name and help template system](#metric-name-and-help-template-system)      |
+| `help`                     | set to `$METRIC_HELP`     | no       | no       | see [metric name and help template system](#metric-name-and-help-template-system)      |
 
 *Hint: Multiple values can be specified multiple times or with a comma in a single value.*
 
@@ -341,7 +349,8 @@ HINT: service discovery information is cached for duration set by `$AZURE_SERVIC
 | `metricTop`                |                           | no       | no       | Prometheus metric dimension count (integer, dimension support)       |
 | `metricOrderBy`            |                           | no       | no       | Prometheus metric order by (dimension support)                       |
 | `cache`                    | (same as timespan)        | no       | no       | Use of internal metrics caching                                      |
-| `template`                 | set to `$METRIC_TEMPLATE` | no       | no       | see [metric name template system](#metric-name-template-system)      |
+| `template`                 | set to `$METRIC_TEMPLATE` | no       | no       | see [metric name and help template system](#metric-name-and-help-template-system)      |
+| `help`                 | set to `$METRIC_HELP`     | no       | no       | see [metric name and help template system](#metric-name-and-help-template-system)      |
 
 *Hint: Multiple values can be specified multiple times or with a comma in a single value.*
 
@@ -368,7 +377,8 @@ HINT: service discovery information is cached for duration set by `$AZURE_SERVIC
 | `metricTop`                |                           | no       | no       | Prometheus metric dimension count (dimension support)                |
 | `metricOrderBy`            |                           | no       | no       | Prometheus metric order by (dimension support)                       |
 | `cache`                    | (same as timespan)        | no       | no       | Use of internal metrics caching                                      |
-| `template`                 | set to `$METRIC_TEMPLATE` | no       | no       | see [metric name template system](#metric-name-template-system)      |
+| `template`                 | set to `$METRIC_TEMPLATE` | no       | no       | see [metric name and help template system](#metric-name-and-help-template-system)      |
+| `help`                     | set to `$METRIC_HELP`     | no       | no       | see [metric name and help template system](#metric-name-and-help-template-system)      |
 
 *Hint: Multiple values can be specified multiple times or with a comma in a single value.*
 
@@ -591,3 +601,10 @@ Virtual Gateway connection metrics (dimension support)
 In these examples all metrics are published with metric name `my_own_metric_name`.
 
 The [List of supported metrics](https://docs.microsoft.com/en-us/azure/azure-monitor/platform/metrics-supported) is available in the Microsoft Azure docs.
+
+### Development and testing query webui
+
+(with 21.10.0-beta1 and later)
+
+if azure-metrics-exporter is started with `--development.webui` there is a webui at `http://url-to-exporter/query`.
+Here you can test different query settings and get the generated prometheus scrape_config.

@@ -208,6 +208,7 @@ func (p *MetricProber) collectMetricsFromTargets() {
 			Value:  result.Value,
 		}
 		p.metricList.Add(result.Name, metric)
+		p.metricList.SetMetricHelp(result.Name, result.Help)
 	}
 }
 
@@ -218,12 +219,10 @@ func (p *MetricProber) publishMetricList() {
 
 	// create prometheus metrics and set rows
 	for _, metricName := range p.metricList.GetMetricNames() {
-		help := p.metricList.GetMetricHelp(metricName)
-
 		gauge := prometheus.NewGaugeVec(
 			prometheus.GaugeOpts{
 				Name: metricName,
-				Help: help,
+				Help: p.metricList.GetMetricHelp(metricName),
 			},
 			p.metricList.GetMetricLabelNames(metricName),
 		)

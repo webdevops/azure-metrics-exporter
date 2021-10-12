@@ -21,6 +21,7 @@ type (
 func NewMetricList() *MetricList {
 	list := MetricList{}
 	list.List = map[string][]MetricRow{}
+	list.Help = map[string]string{}
 	return &list
 }
 
@@ -44,7 +45,7 @@ func (l *MetricList) SetMetricHelp(name, help string) {
 }
 
 func (l *MetricList) GetMetricHelp(name string) string {
-	if val, ok := l.Help[name]; !ok {
+	if val, ok := l.Help[name]; ok {
 		return val
 	}
 	return MetricHelpDefault

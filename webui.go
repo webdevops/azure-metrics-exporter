@@ -181,6 +181,14 @@ var WebUiIndexHtml = `
           </div>
 
           <div class="mb-3 row">
+            <label for="help" class="col-sm-2 col-form-label">help</label>
+            <div class="col-sm-10">
+              <input type="text" class="form-control" id="help" value="10" value="Azure metric {metric} for {aggregation}">
+            <div class="form-text">Help text (with template support)</div>
+            </div>
+          </div>
+
+          <div class="mb-3 row">
             <label for="cache" class="col-sm-2 col-form-label">cache</label>
             <div class="col-sm-10">
               <input type="text" class="form-control" id="cache">

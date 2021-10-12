@@ -35,6 +35,7 @@ type (
 		MetricOrderBy string
 
 		MetricTemplate string
+		HelpTemplate   string
 
 		LowercaseResourceId bool
 
@@ -143,6 +144,9 @@ func NewRequestMetricSettings(r *http.Request, opts config.Opts) (RequestMetricS
 
 	// param template
 	ret.MetricTemplate = paramsGetWithDefault(params, "template", opts.Metrics.Template)
+
+	// param help
+	ret.HelpTemplate = paramsGetWithDefault(params, "help", opts.Metrics.Help)
 
 	// param cache (timespan as default)
 	if opts.Prober.Cache {

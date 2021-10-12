@@ -88,6 +88,26 @@ func (r *AzureInsightMetricsResult) buildMetric(labels prometheus.Labels, value 
 		metric.Name = r.settings.Name
 	}
 
+	// set help
+	metric.Help = r.settings.HelpTemplate
+	if metricNamePlaceholders.MatchString(metric.Help) {
+		metric.Help = metricNamePlaceholders.ReplaceAllStringFunc(
+			metric.Help,
+			func(fieldName string) string {
+				fieldName = strings.Trim(fieldName, "{}")
+				switch fieldName {
+				case "name":
+					return r.settings.Name
+				default:
+					if fieldValue, exists := metric.Labels[fieldName]; exists {
+						return fieldValue
+					}
+				}
+				return ""
+			},
+		)
+	}
+
 	if metricNamePlaceholders.MatchString(metric.Name) {
 		metric.Name = metricNamePlaceholders.ReplaceAllStringFunc(
 			metric.Name,
@@ -98,6 +118,7 @@ func (r *AzureInsightMetricsResult) buildMetric(labels prometheus.Labels, value 
 					return r.settings.Name
 				default:
 					if fieldValue, exists := metric.Labels[fieldName]; exists {
+						// remove label, when we add it to metric name
 						delete(metric.Labels, fieldName)
 						return fieldValue
 					}
@@ -107,6 +128,7 @@ func (r *AzureInsightMetricsResult) buildMetric(labels prometheus.Labels, value 
 		)
 	}
 
+	// sanitize metric name
 	metric.Name = strings.ReplaceAll(metric.Name, "-", "_")
 	metric.Name = strings.ReplaceAll(metric.Name, " ", "_")
 	metric.Name = strings.ToLower(metric.Name)
