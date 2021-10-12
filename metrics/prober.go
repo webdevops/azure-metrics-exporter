@@ -218,10 +218,13 @@ func (p *MetricProber) publishMetricList() {
 
 	// create prometheus metrics and set rows
 	for _, metricName := range p.metricList.GetMetricNames() {
-		gauge := prometheus.NewGaugeVec(prometheus.GaugeOpts{
-			Name: metricName,
-			Help: "Azure monitor insight metric",
-		},
+		help := p.metricList.GetMetricHelp(metricName)
+
+		gauge := prometheus.NewGaugeVec(
+			prometheus.GaugeOpts{
+				Name: metricName,
+				Help: help,
+			},
 			p.metricList.GetMetricLabelNames(metricName),
 		)
 		p.prometheus.registry.MustRegister(gauge)

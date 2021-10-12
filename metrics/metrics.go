@@ -2,9 +2,14 @@ package metrics
 
 import "github.com/prometheus/client_golang/prometheus"
 
+const (
+	MetricHelpDefault = "Azure monitor insight metric"
+)
+
 type (
 	MetricList struct {
 		List map[string][]MetricRow
+		Help map[string]string
 	}
 
 	MetricRow struct {
@@ -32,6 +37,17 @@ func (l *MetricList) GetMetricNames() (list []string) {
 		list = append(list, name)
 	}
 	return
+}
+
+func (l *MetricList) SetMetricHelp(name, help string) {
+	l.Help[name] = help
+}
+
+func (l *MetricList) GetMetricHelp(name string) string {
+	if val, ok := l.Help[name]; !ok {
+		return val
+	}
+	return MetricHelpDefault
 }
 
 func (l *MetricList) GetMetricList(name string) []MetricRow {
