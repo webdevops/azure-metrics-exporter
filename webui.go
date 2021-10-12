@@ -17,9 +17,102 @@ var WebUiIndexHtml = `
 		.navbar-brand {
 			font-size: 1rem;
 		}
+
 		small {
 			font-size: 0.5em;
 		}
+
+		code {
+ 			white-space: pre;
+		}
+
+		code.response {
+			overflow-x: scroll;
+		}
+
+		.scrolling {
+			max-height: 15rem;
+			overflow-y: scroll;
+		}
+
+		.spinner {
+			display: none;
+
+			position: absolute;
+			top: 0;
+			bottom: 0;
+			right: 0;
+			left: 0;
+			background: rgba(0, 0, 0, 0.2);
+		}
+
+		.queryResult {
+			position: relative;
+		}
+		.queryResult.loading .spinner {
+			display: block;
+		}
+
+		.loader,
+		.loader:before,
+		.loader:after {
+		  background: #ffffff;
+		  -webkit-animation: load1 1s infinite ease-in-out;
+		  animation: load1 1s infinite ease-in-out;
+		  width: 1em;
+		  height: 4em;
+		}
+		.loader {
+		  color: #ffffff;
+		  text-indent: -9999em;
+		  margin: 88px auto;
+		  position: relative;
+		  font-size: 11px;
+		  -webkit-transform: translateZ(0);
+		  -ms-transform: translateZ(0);
+		  transform: translateZ(0);
+		  -webkit-animation-delay: -0.16s;
+		  animation-delay: -0.16s;
+		}
+		.loader:before,
+		.loader:after {
+		  position: absolute;
+		  top: 0;
+		  content: '';
+		}
+		.loader:before {
+		  left: -1.5em;
+		  -webkit-animation-delay: -0.32s;
+		  animation-delay: -0.32s;
+		}
+		.loader:after {
+		  left: 1.5em;
+		}
+		@-webkit-keyframes load1 {
+		  0%,
+		  80%,
+		  100% {
+			box-shadow: 0 0;
+			height: 4em;
+		  }
+		  40% {
+			box-shadow: 0 -2em;
+			height: 5em;
+		  }
+		}
+		@keyframes load1 {
+		  0%,
+		  80%,
+		  100% {
+			box-shadow: 0 0;
+			height: 4em;
+		  }
+		  40% {
+			box-shadow: 0 -2em;
+			height: 5em;
+		  }
+		}
+
 	</style>
     <title>azure-metrics-exporter</title>
   </head>
@@ -37,7 +130,7 @@ var WebUiIndexHtml = `
           <li class="nav-item dropdown">
             <a class="nav-link dropdown-toggle" href="#" id="dropdown03" data-bs-toggle="dropdown" aria-expanded="false">Examples</a>
             <ul class="dropdown-menu" aria-labelledby="dropdown03">
-              <li><a class="dropdown-item" href="/query?#eyJlbmRwb2ludCI6Ii9wcm9iZS9tZXRyaWNzL2xpc3QiLCJtZXRyaWNOYW1lIjoiYXp1cmVfbWV0cmljIiwic3Vic2NyaXB0aW9uIjoieHh4eHh4eHgteHh4eC14eHh4LXh4eHgteHh4eHh4eHh4eHh4IiwidGFyZ2V0IjoiIiwicmVzb3VyY2VUeXBlIjoiTWljcm9zb2Z0LktleVZhdWx0L3ZhdWx0cyIsImZpbHRlciI6IiIsInJlc291cmNlU3ViUGF0aCI6IiIsIm1ldHJpY05hbWVzcGFjZSI6IiIsIm1ldHJpYyI6IkF2YWlsYWJpbGl0eVxuU2VydmljZUFwaUhpdFxuU2VydmljZUFwaUxhdGVuY3kiLCJpbnRlcnZhbCI6IlBUMUgiLCJ0aW1lc3BhbiI6IlBUMUgiLCJhZ2dyZWdhdGlvbiI6ImF2ZXJhZ2VcbnRvdGFsXG5jb3VudCIsIm1ldHJpY0ZpbHRlciI6IiIsIm1ldHJpY1RvcCI6IjEwIiwidGVtcGxhdGUiOiJ7bmFtZX1fe21ldHJpY31fe2FnZ3JlZ2F0aW9ufV97dW5pdH0iLCJjYWNoZSI6IiIsInNlbmRRdWVyeSI6IiJ9">Azure KeyVault</a></li>
+              <li><a class="dropdown-item" href="/query?#eyJlbmRwb2ludCI6Ii9wcm9iZS9tZXRyaWNzL2xpc3QiLCJuYW1lIjoiYXp1cmUtbWV0cmljIiwidGVtcGxhdGUiOiJ7bmFtZX1fe21ldHJpY31fe2FnZ3JlZ2F0aW9ufV97dW5pdH0iLCJjYWNoZSI6IiIsInN1YnNjcmlwdGlvbiI6Inh4eHh4eHh4LXh4eHgteHh4eC14eHh4LXh4eHh4eHh4eHh4eCIsInRhcmdldCI6IiIsInJlc291cmNlVHlwZSI6Ik1pY3Jvc29mdC5LZXlWYXVsdC92YXVsdHMiLCJmaWx0ZXIiOiIiLCJyZXNvdXJjZVN1YlBhdGgiOiIiLCJtZXRyaWNOYW1lc3BhY2UiOiIiLCJtZXRyaWMiOiJBdmFpbGFiaWxpdHlcblNlcnZpY2VBcGlIaXRcblNlcnZpY2VBcGlMYXRlbmN5IiwiaW50ZXJ2YWwiOiJQVDFIIiwidGltZXNwYW4iOiJQVDFIIiwiYWdncmVnYXRpb24iOiJhdmVyYWdlXG50b3RhbFxuY291bnQiLCJtZXRyaWNGaWx0ZXIiOiIiLCJtZXRyaWNUb3AiOiIxMCIsInNlbmRRdWVyeSI6IiJ9">Azure KeyVault</a></li>
             </ul>
           </li>
         </ul>
@@ -72,9 +165,9 @@ var WebUiIndexHtml = `
           </div>
 
           <div class="mb-3 row">
-            <label for="metricName" class="col-sm-2 col-form-label">name</label>
+            <label for="name" class="col-sm-2 col-form-label">name</label>
             <div class="col-sm-10">
-              <input type="text" class="form-control" id="metricName" value="azure_metric">
+              <input type="text" class="form-control" id="name" value="azure_metric">
               <div class="form-text">Name of metric</div>
             </div>
           </div>
@@ -217,6 +310,7 @@ count</textarea>
       </div>
 
       <div class="bg-light p-5 rounded queryResult">
+		<div class="spinner"><div class="loader">Loading...</div></div>
         <h2>Result</h2>
 
           <div class="mb-3 row">
@@ -229,7 +323,7 @@ count</textarea>
           <div class="mb-3 row">
             <label for="metricTop" class="col-sm-2 col-form-label">Response body</label>
             <div class="col-sm-10">
-              <code id="exporterResponseBody"></code>
+              <code id="exporterResponseBody" class="response"></code>
             </div>
           </div>
 
@@ -247,7 +341,7 @@ count</textarea>
           <div class="mb-3 row">
             <label for="metricTop" class="col-sm-2 col-form-label">scrape_config</label>
             <div class="col-sm-10">
-              <code id="exporterPrometheusScrapeConfig" style="white-space: pre;"></code>
+              <code id="exporterPrometheusScrapeConfig" class="config"></code>
             </div>
           </div>
       </div>
@@ -289,7 +383,7 @@ $( document ).ready(function() {
                 let hashString = window.location.hash.substring(1);
                 let formData = jQuery.parseJSON(atob(hashString));
 
-                console.log(formData);
+				$("form :input").val("");
                 Object.keys(formData).forEach((fieldName) => {
                     $("#" + fieldName + ":input").val(formData[fieldName]);
                 });
@@ -326,8 +420,6 @@ $( document ).ready(function() {
 			lineWidth: -1,
 		};
 
-
-
 		$("#exporterPrometheusScrapeConfig").text( jsyaml.dump(scrapeConfig, yamlOpts) );
 	};
 
@@ -353,6 +445,13 @@ $( document ).ready(function() {
                 case "endpoint":
                     queryEndpoint = fieldValue;
                     break;
+				case "metricTop":
+					if (fieldValue !== "") {
+						fieldValue = parseInt(fieldValue)
+                        queryParams[fieldName] = fieldValue
+						queryParamsForPrometheus[fieldName] = [fieldValue]
+					}
+					break;
                 default:
 					// split by newline
                     fieldValue = fieldValue.split(/\r?\n/);
@@ -368,6 +467,7 @@ $( document ).ready(function() {
 
         if (queryEndpoint) {
 			$(".queryResult code").text("");
+			$(".queryResult").addClass("loading");
 
             let jqxhr = $.ajax({
               url: queryEndpoint,
@@ -375,6 +475,7 @@ $( document ).ready(function() {
               dataType: "text",
               traditional: false
             }).always(function() {
+				$(".queryResult").removeClass("loading");
                 $("#exporterResponseStatus").text("HTTP " + jqxhr.status + " " + jqxhr.statusText);
                 $("#exporterResponseBody").text(jqxhr.responseText);
 
@@ -387,9 +488,9 @@ $( document ).ready(function() {
                 } else {
                     $("#exporterResponseCache").text("");
                 }
-
-				buildPrometheusScrapeConfig(queryEndpoint, queryParamsForPrometheus);
             });
+
+			buildPrometheusScrapeConfig(queryEndpoint, queryParamsForPrometheus);
         } else {
             alert("endpoint not selected");
         }
