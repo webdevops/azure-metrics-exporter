@@ -9,20 +9,53 @@ var WebUiIndexHtml = `
 
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-1BmE4kWBq78iYhFldvKuhfTAU6auU8tT94WrHftjDbrCEXSU1oBoqyl2QvZ6jIW3" crossorigin="anonymous">
 
+	<style>
+		div.row.hidden {
+			display: none;
+		}
+
+		.navbar-brand {
+			font-size: 1rem;
+		}
+		small {
+			font-size: 0.5em;
+		}
+	</style>
     <title>azure-metrics-exporter</title>
   </head>
   <body>
 
-    <nav class="navbar navbar-expand-md navbar-dark bg-dark mb-4">
-      <div class="container-fluid">
-        <a class="navbar-brand" href="#">azure-metrics-exporter query (beta)</a>
+  <nav class="navbar navbar-expand-sm navbar-dark bg-dark" aria-label="navbar">
+    <div class="container-fluid">
+      <a class="navbar-brand" href="#">azure-metrics-exporter query tester <small>(beta)</small></a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+
+      <div class="collapse navbar-collapse" id="navbar">
+        <ul class="navbar-nav me-auto mb-2 mb-sm-0">
+          <li class="nav-item dropdown">
+            <a class="nav-link dropdown-toggle" href="#" id="dropdown03" data-bs-toggle="dropdown" aria-expanded="false">Examples</a>
+            <ul class="dropdown-menu" aria-labelledby="dropdown03">
+              <li><a class="dropdown-item" href="/query?#eyJlbmRwb2ludCI6Ii9wcm9iZS9tZXRyaWNzL2xpc3QiLCJtZXRyaWNOYW1lIjoiYXp1cmVfbWV0cmljIiwic3Vic2NyaXB0aW9uIjoieHh4eHh4eHgteHh4eC14eHh4LXh4eHgteHh4eHh4eHh4eHh4IiwidGFyZ2V0IjoiIiwicmVzb3VyY2VUeXBlIjoiTWljcm9zb2Z0LktleVZhdWx0L3ZhdWx0cyIsImZpbHRlciI6IiIsInJlc291cmNlU3ViUGF0aCI6IiIsIm1ldHJpY05hbWVzcGFjZSI6IiIsIm1ldHJpYyI6IkF2YWlsYWJpbGl0eVxuU2VydmljZUFwaUhpdFxuU2VydmljZUFwaUxhdGVuY3kiLCJpbnRlcnZhbCI6IlBUMUgiLCJ0aW1lc3BhbiI6IlBUMUgiLCJhZ2dyZWdhdGlvbiI6ImF2ZXJhZ2VcbnRvdGFsXG5jb3VudCIsIm1ldHJpY0ZpbHRlciI6IiIsIm1ldHJpY1RvcCI6IjEwIiwidGVtcGxhdGUiOiJ7bmFtZX1fe21ldHJpY31fe2FnZ3JlZ2F0aW9ufV97dW5pdH0iLCJjYWNoZSI6IiIsInNlbmRRdWVyeSI6IiJ9">Azure KeyVault</a></li>
+            </ul>
+          </li>
+        </ul>
       </div>
-    </nav>
+    </div>
+  </nav>
 
     <main class="container">
       <div class="bg-light p-5 rounded">
-        <h1>Query settings</h1>
+        <h1>
+			Query settings
+		</h1>
+
         <form class="query">
+
+          <div class="mb-3 row">
+			<h3>General</h3>
+          </div>
 
           <div class="mb-3 row">
             <label for="endpoint" class="col-sm-2 col-form-label">endpoint</label>
@@ -47,6 +80,26 @@ var WebUiIndexHtml = `
           </div>
 
           <div class="mb-3 row">
+            <label for="template" class="col-sm-2 col-form-label">template</label>
+            <div class="col-sm-10">
+              <input type="text" class="form-control" id="template" value="10" value="{name}_{metric}_{aggregation}_{unit}">
+            <div class="form-text">Metric template support</div>
+            </div>
+          </div>
+
+          <div class="mb-3 row">
+            <label for="cache" class="col-sm-2 col-form-label">cache</label>
+            <div class="col-sm-10">
+              <input type="text" class="form-control" id="cache">
+            <div class="form-text">Specifies how long metric result should be cached (if caching is enabled)</div>
+            </div>
+          </div>
+
+          <div class="mb-3 row">
+			<h3>Service Discovery</h3>
+          </div>
+
+          <div class="mb-3 row">
             <label for="subscription" class="col-sm-2 col-form-label">subscription</label>
             <div class="col-sm-10">
               <textarea class="form-control" id="subscription" rows="3"></textarea>
@@ -54,7 +107,7 @@ var WebUiIndexHtml = `
             </div>
           </div>
 
-          <div class="mb-3 row">
+          <div class="mb-3 row" query-endpoint="/probe/metrics/resource">
             <label for="target" class="col-sm-2 col-form-label">target</label>
             <div class="col-sm-10">
               <input type="text" class="form-control" id="target">
@@ -62,15 +115,15 @@ var WebUiIndexHtml = `
             </div>
           </div>
 
-          <div class="mb-3 row">
+          <div class="mb-3 row" query-endpoint-exclude="/probe/metrics/resource">
             <label for="resourceType" class="col-sm-2 col-form-label">resourceType</label>
             <div class="col-sm-10">
               <input type="text" class="form-control" id="resourceType">
-            <div class="form-text">Azure Resource Type query eg <code>Microsoft.KeyVault/vaults</code>(for service discovery)</div>
+            <div class="form-text">Azure Resource Type query eg <code>Microsoft.KeyVault/vaults</code> (for service discovery)</div>
             </div>
           </div>
 
-          <div class="mb-3 row">
+          <div class="mb-3 row" query-endpoint-exclude="/probe/metrics/resource">
             <label for="filter" class="col-sm-2 col-form-label">filter</label>
             <div class="col-sm-10">
               <input type="text" class="form-control" id="filter">
@@ -92,6 +145,11 @@ var WebUiIndexHtml = `
               <input type="text" class="form-control" id="metricNamespace">
             <div class="form-text">Additional metric namespace for namespaced metrics (eg. Azure StorageAccount sub metrics)</div>
             </div>
+          </div>
+
+
+          <div class="mb-3 row">
+			<h3>Metric settings</h3>
           </div>
 
           <div class="mb-3 row">
@@ -129,6 +187,11 @@ count</textarea>
             </div>
           </div>
 
+
+          <div class="mb-3 row">
+			<h3>Dimension support</h3>
+          </div>
+
           <div class="mb-3 row">
             <label for="metricFilter" class="col-sm-2 col-form-label">metricFilter</label>
             <div class="col-sm-10">
@@ -146,22 +209,6 @@ count</textarea>
           </div>
 
           <div class="mb-3 row">
-            <label for="template" class="col-sm-2 col-form-label">template</label>
-            <div class="col-sm-10">
-              <input type="text" class="form-control" id="template" value="10" value="{name}_{metric}_{aggregation}_{unit}">
-            <div class="form-text">Metric template support</div>
-            </div>
-          </div>
-
-          <div class="mb-3 row">
-            <label for="cache" class="col-sm-2 col-form-label">cache</label>
-            <div class="col-sm-10">
-              <input type="text" class="form-control" id="cache">
-            <div class="form-text">Specifies how long metric result should be cached (if caching is enabled)</div>
-            </div>
-          </div>
-
-          <div class="mb-3 row">
             <div class="offset-sm-2 col-sm-10">
                <button type="button" class="btn btn-primary mb-3" id="sendQuery">Execute query</button>
             </div>
@@ -169,7 +216,7 @@ count</textarea>
         </form>
       </div>
 
-      <div class="bg-light p-5 rounded">
+      <div class="bg-light p-5 rounded queryResult">
         <h2>Result</h2>
 
           <div class="mb-3 row">
@@ -194,12 +241,26 @@ count</textarea>
           </div>
       </div>
 
+      <div class="bg-light p-5 rounded">
+        <h2>Prometheus scrape_config</h2>
+
+          <div class="mb-3 row">
+            <label for="metricTop" class="col-sm-2 col-form-label">scrape_config</label>
+            <div class="col-sm-10">
+              <code id="exporterPrometheusScrapeConfig" style="white-space: pre;"></code>
+            </div>
+          </div>
+      </div>
+
+
     </main>
 
 <script
   src="https://ajax.aspnetcdn.com/ajax/jQuery/jquery-3.6.0.min.js"
   integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4="
   crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-ka7Sk0Gln4gmtz2MlQnikT1wXgYsOg+OMhuP+IlRH9sENBO0LRn5q+8nbTov4+1p" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/js-yaml/4.1.0/js-yaml.min.js" integrity="sha512-CSBhVREyzHAjAFfBlIBakjoRUKp5h7VSweP0InR/pAJyptH7peuhCsqAI/snV+TwZmXZqoUklpXp6R6wMnYf5Q==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 
 <script>
 $( document ).ready(function() {
@@ -234,15 +295,55 @@ $( document ).ready(function() {
                 });
             }
         } catch(e) {}
+
+		formSetVisibility();
     };
 
+	let formSetVisibility = () => {
+		let endpoint = $("#endpoint:input").val().trim();
+		$("form.query div.row").removeClass("hidden");
+		$("form.query div.row[query-endpoint]:not([query-endpoint*=\"" + endpoint + "\"])").addClass("hidden");
+		$("form.query div.row[query-endpoint-exclude][query-endpoint-exclude*=\"" + endpoint + "\"]").addClass("hidden");
+	};
+
+	let buildPrometheusScrapeConfig = (queryEndpoint, queryParams) => {
+		let scrapeConfig = {
+			scrape_configs: [
+				{
+					job_name: "azure-metrics-example",
+					scrape_interval: "1m",
+					metrics_path: queryEndpoint,
+					params: queryParams,
+					static_configs: [
+						{targets: ["url-to-your-azure-metrics-exporter-instance"]}
+					],
+				}
+			]
+		}
+
+		let yamlOpts = {
+			noRefs: true,
+			lineWidth: -1,
+		};
+
+
+
+		$("#exporterPrometheusScrapeConfig").text( jsyaml.dump(scrapeConfig, yamlOpts) );
+	};
+
+	window.onhashchange = () => {
+		loadFromHash();
+	}
     loadFromHash();
+
+    $(document).on("change", "#endpoint:input", formSetVisibility);
 
     $(document).on("click", "#sendQuery", () => {
         let queryParams = {};
+        let queryParamsForPrometheus = {};
         let queryEndpoint = false
 
-        $("form :input").each((num, el) => {
+        $("form :input:visible").each((num, el) => {
             let formEl = $(el);
             let fieldName = formEl.attr("id");
             let fieldValue = formEl.val();
@@ -253,15 +354,21 @@ $( document ).ready(function() {
                     queryEndpoint = fieldValue;
                     break;
                 default:
-                    fieldValue = fieldValue.split(/\r?\n/).join(",");
+					// split by newline
+                    fieldValue = fieldValue.split(/\r?\n/);
+					// filter empty values
+					fieldValue = fieldValue.filter(e =>  e);
                     if (fieldValue.length >= 1) {
-                        queryParams[fieldName] = fieldValue
+                        queryParams[fieldName] = fieldValue.join(",")
+						queryParamsForPrometheus[fieldName] = fieldValue
                     }
                     break;
             }
         });
 
         if (queryEndpoint) {
+			$(".queryResult code").text("");
+
             let jqxhr = $.ajax({
               url: queryEndpoint,
               data: queryParams,
@@ -280,6 +387,8 @@ $( document ).ready(function() {
                 } else {
                     $("#exporterResponseCache").text("");
                 }
+
+				buildPrometheusScrapeConfig(queryEndpoint, queryParamsForPrometheus);
             });
         } else {
             alert("endpoint not selected");
