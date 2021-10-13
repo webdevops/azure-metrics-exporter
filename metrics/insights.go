@@ -184,8 +184,8 @@ func (r *AzureInsightMetricsResult) SendMetricToChannel(channel chan<- Prometheu
 						if len(dimensions) == 1 {
 							// we have only one dimension
 							// add one dimension="foobar" label (backward compatibility)
-							for dimensionName := range dimensions {
-								metricLabels["dimension"] = dimensionName
+							for _, dimensionValue := range dimensions {
+								metricLabels["dimension"] = dimensionValue
 							}
 						} else if len(dimensions) >= 2 {
 							// we have multiple dimensions
