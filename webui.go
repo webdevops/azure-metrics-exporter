@@ -175,16 +175,16 @@ var WebUiIndexHtml = `
           <div class="mb-3 row">
             <label for="template" class="col-sm-2 col-form-label">template</label>
             <div class="col-sm-10">
-              <input type="text" class="form-control" id="template" value="10" value="{name}_{metric}_{aggregation}_{unit}">
-            <div class="form-text">Metric template support</div>
+              <input type="text" class="form-control" id="template" value="{name}_{metric}_{aggregation}_{unit}">
+              <div class="form-text">Metric template support</div>
             </div>
           </div>
 
           <div class="mb-3 row">
             <label for="help" class="col-sm-2 col-form-label">help</label>
             <div class="col-sm-10">
-              <input type="text" class="form-control" id="help" value="10" value="Azure metric {metric} for {aggregation}">
-            <div class="form-text">Help text (with template support)</div>
+              <input type="text" class="form-control" id="help" value="Azure metric {metric} for {aggregation}">
+              <div class="form-text">Help text (with template support)</div>
             </div>
           </div>
 
