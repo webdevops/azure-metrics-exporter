@@ -39,7 +39,7 @@ func (p *MetricProber) MetricsClient(subscriptionId string) *insights.MetricsCli
 	return &client
 }
 
-func (p *MetricProber) FetchMetricsFromTarget(client *insights.MetricsClient, target MetricProbeTarget) (AzureInsightMetricsResult, error) {
+func (p *MetricProber) FetchMetricsFromTarget(client *insights.MetricsClient, target MetricProbeTarget, metrics, aggregations []string) (AzureInsightMetricsResult, error) {
 	ret := AzureInsightMetricsResult{
 		settings: p.settings,
 	}
@@ -49,8 +49,8 @@ func (p *MetricProber) FetchMetricsFromTarget(client *insights.MetricsClient, ta
 		target.ResourceId+p.settings.ResourceSubPath,
 		p.settings.Timespan,
 		p.settings.Interval,
-		strings.Join(target.Metrics, ","),
-		strings.Join(target.Aggregations, ","),
+		strings.Join(metrics, ","),
+		strings.Join(aggregations, ","),
 		p.settings.MetricTop,
 		p.settings.MetricOrderBy,
 		p.settings.MetricFilter,

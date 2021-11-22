@@ -13,6 +13,10 @@ import (
 	"time"
 )
 
+const (
+	AzureMetricApiMaxMetricNumber = 20
+)
+
 type (
 	MetricProber struct {
 		Conf config.Opts
@@ -183,12 +187,21 @@ func (p *MetricProber) collectMetricsFromTargets() {
 					wgSubscriptionResource.Add()
 					go func(target MetricProbeTarget) {
 						defer wgSubscriptionResource.Done()
-						if result, err := p.FetchMetricsFromTarget(client, target); err == nil {
-							result.SendMetricToChannel(metricsChannel)
-						} else {
-							p.logger.WithField("resourceID", target.ResourceId).Warn(err)
-						}
 
+						// request metrics in 20 metrics chunks (azure metric api limitation)
+						for i := 0; i < len(target.Metrics); i += AzureMetricApiMaxMetricNumber {
+							end := i + AzureMetricApiMaxMetricNumber
+							if end > len(target.Metrics) {
+								end = len(target.Metrics)
+							}
+							metricList := target.Metrics[i:end]
+
+							if result, err := p.FetchMetricsFromTarget(client, target, metricList, target.Aggregations); err == nil {
+								result.SendMetricToChannel(metricsChannel)
+							} else {
+								p.logger.WithField("resourceID", target.ResourceId).Warn(err)
+							}
+						}
 					}(target)
 				}
 				wgSubscriptionResource.Wait()
