@@ -7,11 +7,7 @@ import (
 	"fmt"
 	"github.com/Azure/azure-sdk-for-go/profiles/latest/resources/mgmt/resources"
 	resourcegraph "github.com/Azure/azure-sdk-for-go/services/resourcegraph/mgmt/2019-04-01/resourcegraph"
-	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/to"
-	"github.com/prometheus/client_golang/prometheus"
-	"net/http"
-	"strconv"
 	"strings"
 )
 
@@ -32,34 +28,9 @@ type (
 
 func (sd *AzureServiceDiscovery) ResourcesClient(subscriptionId string) *resources.Client {
 	client := resources.NewClientWithBaseURI(sd.prober.Azure.Environment.ResourceManagerEndpoint, subscriptionId)
-	client.Authorizer = sd.prober.Azure.AzureAuthorizer
-	client.ResponseInspector = sd.azureResponseInsepector(subscriptionId)
+	sd.prober.decorateAzureAutoRest(&client.BaseClient.Client)
 
 	return &client
-}
-
-func (sd *AzureServiceDiscovery) azureResponseInsepector(subscriptionId string) autorest.RespondDecorator {
-	apiQuotaMetric := func(r *http.Response, headerName string, labels prometheus.Labels) {
-		ratelimit := r.Header.Get(headerName)
-		if v, err := strconv.ParseInt(ratelimit, 10, 64); err == nil {
-			sd.prober.prometheus.apiQuota.With(labels).Set(float64(v))
-		}
-	}
-
-	return func(p autorest.Responder) autorest.Responder {
-		return autorest.ResponderFunc(func(r *http.Response) error {
-			// subscription rate limits
-			apiQuotaMetric(r, "x-ms-ratelimit-remaining-subscription-reads", prometheus.Labels{"subscriptionID": subscriptionId, "scope": "subscription", "type": "read"})
-			apiQuotaMetric(r, "x-ms-ratelimit-remaining-subscription-resource-requests", prometheus.Labels{"subscriptionID": subscriptionId, "scope": "subscription", "type": "resource-requests"})
-			apiQuotaMetric(r, "x-ms-ratelimit-remaining-subscription-resource-entities-read", prometheus.Labels{"subscriptionID": subscriptionId, "scope": "subscription", "type": "resource-entities-read"})
-
-			// tenant rate limits
-			apiQuotaMetric(r, "x-ms-ratelimit-remaining-tenant-reads", prometheus.Labels{"subscriptionID": subscriptionId, "scope": "tenant", "type": "read"})
-			apiQuotaMetric(r, "x-ms-ratelimit-remaining-tenant-resource-requests", prometheus.Labels{"subscriptionID": subscriptionId, "scope": "tenant", "type": "resource-requests"})
-			apiQuotaMetric(r, "x-ms-ratelimit-remaining-tenant-resource-entities-read", prometheus.Labels{"subscriptionID": subscriptionId, "scope": "tenant", "type": "resource-entities-read"})
-			return nil
-		})
-	}
 }
 
 func (sd *AzureServiceDiscovery) publishTargetList(targetList []MetricProbeTarget) {
@@ -194,8 +165,7 @@ func (sd *AzureServiceDiscovery) FindResourceGraph(ctx context.Context, subscrip
 
 	// Create and authorize a ResourceGraph client
 	resourcegraphClient := resourcegraph.NewWithBaseURI(sd.prober.Azure.Environment.ResourceManagerEndpoint)
-	resourcegraphClient.Authorizer = sd.prober.Azure.AzureAuthorizer
-	resourcegraphClient.ResponseInspector = sd.azureResponseInsepector(subscriptionId)
+	sd.prober.decorateAzureAutoRest(&resourcegraphClient.Client)
 
 	subscriptions := []string{subscriptionId}
 

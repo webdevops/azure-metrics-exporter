@@ -99,12 +99,13 @@ webui is available under url `/query`
 
 ## Metrics
 
-| Metric                                   | Description                                                                    |
-|------------------------------------------|--------------------------------------------------------------------------------|
-| `azurerm_stats_metric_collecttime`       | General exporter stats                                                         |
-| `azurerm_stats_metric_requests`          | Counter of resource metric requests with result (error, success)               |
+| Metric                                   | Description                                                                                     |
+|------------------------------------------|-------------------------------------------------------------------------------------------------|
+| `azurerm_stats_metric_collecttime`       | General exporter stats                                                                          |
+| `azurerm_stats_metric_requests`          | Counter of resource metric requests with result (error, success)                                |
 | `azurerm_resource_metric` (customizable) | Resource metrics exported by probes (can be changed using `name` parameter and template system) |
-| `azurerm_ratelimit`                      | Azure ratelimit metric (only available for uncached /probe requests)           |
+| `azurerm_api_ratelimit`                  | Azure ratelimit metrics (only on /metrics, resets after query)                                  |
+| `azurerm_api_request_*`                  | Azure request count and latency as histogram                                                    |
 
 ### Metric name and help template system
 

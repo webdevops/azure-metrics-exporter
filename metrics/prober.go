@@ -9,6 +9,7 @@ import (
 	"github.com/remeh/sizedwaitgroup"
 	log "github.com/sirupsen/logrus"
 	"github.com/webdevops/azure-metrics-exporter/config"
+	"github.com/webdevops/go-prometheus-common/azuretracing"
 	"net/http"
 	"time"
 )
@@ -25,6 +26,8 @@ type (
 			Environment     azure.Environment
 			AzureAuthorizer autorest.Authorizer
 		}
+
+		userAgent string
 
 		settings *RequestMetricSettings
 
@@ -52,7 +55,6 @@ type (
 
 		prometheus struct {
 			registry *prometheus.Registry
-			apiQuota *prometheus.GaugeVec
 		}
 
 		callbackSubscriptionFishish func(subscriptionId string)
@@ -84,25 +86,17 @@ func (p *MetricProber) Init() {
 	p.targets = map[string][]MetricProbeTarget{}
 
 	p.metricList = NewMetricList()
-	p.prometheus.apiQuota = prometheus.NewGaugeVec(
-		prometheus.GaugeOpts{
-			Name: "azurerm_ratelimit",
-			Help: "Azure ResourceManager ratelimit",
-		},
-		[]string{
-			"subscriptionID",
-			"scope",
-			"type",
-		},
-	)
 }
 func (p *MetricProber) RegisterSubscriptionCollectFinishCallback(callback func(subscriptionId string)) {
 	p.callbackSubscriptionFishish = callback
 }
 
+func (p *MetricProber) SetUserAgent(value string) {
+	p.userAgent = value
+}
+
 func (p *MetricProber) SetPrometheusRegistry(registry *prometheus.Registry) {
 	p.prometheus.registry = registry
-	p.prometheus.registry.MustRegister(p.prometheus.apiQuota)
 }
 
 func (p *MetricProber) SetAzure(environment azure.Environment, authorizer autorest.Authorizer) {
@@ -245,4 +239,12 @@ func (p *MetricProber) publishMetricList() {
 			gauge.With(row.Labels).Set(row.Value)
 		}
 	}
+}
+
+func (p *MetricProber) decorateAzureAutoRest(client *autorest.Client) {
+	client.Authorizer = p.Azure.AzureAuthorizer
+	if err := client.AddToUserAgent(p.userAgent); err != nil {
+		p.logger.Panic(err)
+	}
+	azuretracing.DecoreAzureAutoRest(client)
 }

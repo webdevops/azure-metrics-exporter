@@ -11,6 +11,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	log "github.com/sirupsen/logrus"
 	"github.com/webdevops/azure-metrics-exporter/config"
+	"github.com/webdevops/go-prometheus-common/azuretracing"
 	"net/http"
 	"os"
 	"path"
@@ -21,6 +22,8 @@ import (
 
 const (
 	Author = "webdevops.io"
+
+	UserAgent = "azure-metrics-exporter/"
 
 	MetricsUrl = "/metrics"
 
@@ -145,7 +148,14 @@ func initAzureConnection() {
 
 // start and handle prometheus handler
 func startHttpServer() {
-	http.Handle(MetricsUrl, promhttp.Handler())
+	// healthz
+	http.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
+		if _, err := fmt.Fprint(w, "Ok"); err != nil {
+			log.Error(err)
+		}
+	})
+
+	http.Handle(MetricsUrl, azuretracing.RegisterAzureMetricAutoClean(promhttp.Handler()))
 
 	http.HandleFunc(ProbeMetricsResourceUrl, func(w http.ResponseWriter, r *http.Request) {
 		probeMetricsResourceHandler(w, r)

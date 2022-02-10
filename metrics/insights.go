@@ -35,7 +35,7 @@ type (
 
 func (p *MetricProber) MetricsClient(subscriptionId string) *insights.MetricsClient {
 	client := insights.NewMetricsClientWithBaseURI(p.Azure.Environment.ResourceManagerEndpoint, subscriptionId)
-	client.Authorizer = p.Azure.AzureAuthorizer
+	p.decorateAzureAutoRest(&client.BaseClient.Client)
 	return &client
 }
 

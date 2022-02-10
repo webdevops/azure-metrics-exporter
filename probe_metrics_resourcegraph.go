@@ -46,6 +46,7 @@ func probeMetricsResourceGraphHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	prober := metrics.NewMetricProber(ctx, contextLogger, w, r, &settings, opts)
+	prober.SetUserAgent(UserAgent + gitTag)
 	prober.SetAzure(AzureEnvironment, AzureAuthorizer)
 	prober.SetPrometheusRegistry(registry)
 	if settings.Cache != nil {
