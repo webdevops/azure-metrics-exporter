@@ -1,7 +1,7 @@
 PROJECT_NAME		:= azure-metrics-exporter
 GIT_TAG				:= $(shell git describe --dirty --tags --always)
 GIT_COMMIT			:= $(shell git rev-parse --short HEAD)
-LDFLAGS				:= -X "main.gitTag=$(GIT_TAG)" -X "main.gitCommit=$(GIT_COMMIT)" -extldflags "-static"
+LDFLAGS				:= -X "main.gitTag=$(GIT_TAG)" -X "main.gitCommit=$(GIT_COMMIT)" -linkmode external -extldflags "-static" -s -w
 
 FIRST_GOPATH			:= $(firstword $(subst :, ,$(shell go env GOPATH)))
 GOLANGCI_LINT_BIN		:= $(FIRST_GOPATH)/bin/golangci-lint
@@ -34,12 +34,20 @@ build-push-development:
 test:
 	go test ./...
 
+.PHONY: dependencies
+dependencies:
+	go mod vendor
+
 .PHONY: lint
 lint: $(GOLANGCI_LINT_BIN)
-	$(GOLANGCI_LINT_BIN) run -E exportloopref,gofmt --timeout=10m
+	$(GOLANGCI_LINT_BIN) run -E exportloopref,gofmt --timeout=30m
 
-.PHONY: dependencies
-dependencies: $(GOLANGCI_LINT_BIN)
+.PHONY: gosec
+gosec: $(GOSEC_BIN)
+	$(GOSEC_BIN) ./...
 
 $(GOLANGCI_LINT_BIN):
-	curl -sfL https://install.goreleaser.com/github.com/golangci/golangci-lint.sh | sh -s -- -b $(FIRST_GOPATH)/bin v1.32.2
+	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin
+
+$(GOSEC_BIN):
+	curl -sfL https://raw.githubusercontent.com/securego/gosec/master/install.sh | sh -s -- -b $(FIRST_GOPATH)/bin v2.7.0

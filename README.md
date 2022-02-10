@@ -3,6 +3,7 @@
 [![license](https://img.shields.io/github/license/webdevops/azure-metrics-exporter.svg)](https://github.com/webdevops/azure-metrics-exporter/blob/master/LICENSE)
 [![DockerHub](https://img.shields.io/badge/DockerHub-webdevops%2Fazure--metrics--exporter-blue)](https://hub.docker.com/r/webdevops/azure-metrics-exporter/)
 [![Quay.io](https://img.shields.io/badge/Quay.io-webdevops%2Fazure--metrics--exporter-blue)](https://quay.io/repository/webdevops/azure-metrics-exporter)
+[![Artifact Hub](https://img.shields.io/endpoint?url=https://artifacthub.io/badge/repository/azure-metrics-exporter)](https://artifacthub.io/packages/search?repo=azure-metrics-exporter)
 
 Prometheus exporter for Azure Monitor metrics.
 Supports metrics fetching from all resource with one scrape (automatic service discovery), custom metric names with template system, full dimensions support and caching.
@@ -45,7 +46,7 @@ TOC:
 - Docker image is based on [Google's distroless](https://github.com/GoogleContainerTools/distroless) static image to reduce attack surface (no shell, no other binaries inside image)
 - Available via Docker Hub and Quay (see badges on top)
 - Can run non-root and with readonly root filesystem, doesn't need any capabilities (you can safely use `drop: ["All"]`)
-- Publishes Azure API rate limit metrics (when exporter sends Azure API requests)
+- Publishes Azure API rate limit metrics (when exporter sends Azure API requests, available via `/metrics`)
 
 useful with additional exporters:
 
