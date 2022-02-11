@@ -25,7 +25,7 @@ require (
 	google.golang.org/protobuf v1.27.1 // indirect
 )
 
-require github.com/webdevops/go-prometheus-common v0.0.0-20220210224107-b6332bc4a7c4
+require github.com/webdevops/go-prometheus-common v0.0.0-20220211085101-e22e574ab9ea
 
 require (
 	github.com/Azure/go-autorest v14.2.0+incompatible // indirect
