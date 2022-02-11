@@ -232,8 +232,8 @@ github.com/stretchr/testify v1.2.2/go.mod h1:a8OnRcib4nhh0OaRAV+Yts87kKdq0PP7pXf
 github.com/stretchr/testify v1.3.0/go.mod h1:M5WIy9Dh21IEIfnGCwXGc5bZfKNJtfHm1UVUgZn+9EI=
 github.com/stretchr/testify v1.4.0 h1:2E4SXV/wtOkTonXsotYi4li6zVWxYlZuYNCXe9XRJyk=
 github.com/stretchr/testify v1.4.0/go.mod h1:j7eGeouHqKxXV5pUuKE4zz7dFj8WfuZ+81PSLYec5m4=
-github.com/webdevops/go-prometheus-common v0.0.0-20220211085101-e22e574ab9ea h1:WDmr5sYRO4caY21JSKo4TCtXRnu393cFGv/MVOIk/Os=
-github.com/webdevops/go-prometheus-common v0.0.0-20220211085101-e22e574ab9ea/go.mod h1:naEkgDRh6L+Ef0qzaS9Q60m1GkwN5Mu6xaNd/Ha84Sg=
+github.com/webdevops/go-prometheus-common v0.0.0-20220211101814-4c9913788fe1 h1:wIf6O43jGEarp8ojgInXRIt6jHeQ94JUvsy4O3wqKHY=
+github.com/webdevops/go-prometheus-common v0.0.0-20220211101814-4c9913788fe1/go.mod h1:naEkgDRh6L+Ef0qzaS9Q60m1GkwN5Mu6xaNd/Ha84Sg=
 github.com/yuin/goldmark v1.1.25/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9decYSb74=
 github.com/yuin/goldmark v1.1.27/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9decYSb74=
 github.com/yuin/goldmark v1.1.32/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9decYSb74=
