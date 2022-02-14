@@ -246,5 +246,5 @@ func (p *MetricProber) decorateAzureAutoRest(client *autorest.Client) {
 	if err := client.AddToUserAgent(p.userAgent); err != nil {
 		p.logger.Panic(err)
 	}
-	azuretracing.DecoreAzureAutoRest(client)
+	azuretracing.DecorateAzureAutoRestClient(client)
 }
