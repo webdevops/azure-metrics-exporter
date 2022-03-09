@@ -1,6 +1,10 @@
 package metrics
 
-import "github.com/prometheus/client_golang/prometheus"
+import (
+	"time"
+
+	"github.com/prometheus/client_golang/prometheus"
+)
 
 const (
 	MetricHelpDefault = "Azure monitor insight metric"
@@ -13,8 +17,9 @@ type (
 	}
 
 	MetricRow struct {
-		Labels prometheus.Labels
-		Value  float64
+		Labels    prometheus.Labels
+		Value     float64
+		Timestamp time.Time
 	}
 )
 
@@ -53,6 +58,18 @@ func (l *MetricList) GetMetricHelp(name string) string {
 
 func (l *MetricList) GetMetricList(name string) []MetricRow {
 	return l.List[name]
+}
+
+func (l *MetricList) GetLatestMetric(name string) *MetricRow {
+	var latest *MetricRow
+
+	for _, row := range l.List[name] {
+		if latest == nil || row.Timestamp.After(latest.Timestamp) {
+			latest = &row
+		}
+	}
+
+	return latest
 }
 
 func (l *MetricList) GetMetricLabelNames(name string) []string {
