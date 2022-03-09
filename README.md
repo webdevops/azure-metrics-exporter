@@ -75,6 +75,7 @@ Application Options:
       --azure.servicediscovery.cache=      Duration for caching Azure ServiceDiscovery of workspaces to reduce API
                                            calls (time.Duration) (default: 30m) [$AZURE_SERVICEDISCOVERY_CACHE]
       --metrics.resourceid.lowercase       Publish lowercase Azure Resoruce ID in metrics [$METRIC_RESOURCEID_LOWERCASE]
+      --metrics.set-timestamp              Set timestamp on scraped metrics [$METRIC_SET_TIMESTAMP]
       --metrics.template=                  Template for metric name (default: {name}) [$METRIC_TEMPLATE]
       --metrics.help=                      Metric help (with template support) (default: Azure monitor insight metric)
                                            [$METRIC_HELP]
