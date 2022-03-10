@@ -35,7 +35,7 @@ func NewMetricListCollector(list *MetricList) *metricListCollector {
 			list.GetMetricLabelNames(metricName),
 		)
 
-		for _, metric := range list.GetMetricList(metricName) {
+		for _, metric := range list.GetUniqueMetricList(metricName) {
 			gauge := gaugeVec.With(metric.Labels)
 			gauge.Set(metric.Value)
 
