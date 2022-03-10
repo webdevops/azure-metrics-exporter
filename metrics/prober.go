@@ -211,8 +211,9 @@ func (p *MetricProber) collectMetricsFromTargets() {
 
 	for result := range metricsChannel {
 		metric := MetricRow{
-			Labels: result.Labels,
-			Value:  result.Value,
+			Labels:    result.Labels,
+			Value:     result.Value,
+			Timestamp: result.Timestamp,
 		}
 		p.metricList.Add(result.Name, metric)
 		p.metricList.SetMetricHelp(result.Name, result.Help)
@@ -220,6 +221,11 @@ func (p *MetricProber) collectMetricsFromTargets() {
 }
 
 func (p *MetricProber) publishMetricList() {
+	if p.Conf.Metrics.SetTimestamp {
+		p.prometheus.registry.MustRegister(NewMetricListCollector(p.metricList))
+		return
+	}
+
 	if p.metricList == nil {
 		return
 	}
