@@ -60,18 +60,6 @@ func (l *MetricList) GetMetricList(name string) []MetricRow {
 	return l.List[name]
 }
 
-func (l *MetricList) GetLatestMetric(name string) *MetricRow {
-	var latest *MetricRow
-
-	for _, row := range l.List[name] {
-		if latest == nil || row.Timestamp.After(latest.Timestamp) {
-			latest = &row
-		}
-	}
-
-	return latest
-}
-
 func (l *MetricList) GetMetricLabelNames(name string) []string {
 	var list []string
 	uniqueLabelMap := map[string]string{}

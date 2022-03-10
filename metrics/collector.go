@@ -35,20 +35,20 @@ func NewMetricListCollector(list *MetricList) *metricListCollector {
 			list.GetMetricLabelNames(metricName),
 		)
 
-		latest := list.GetLatestMetric(metricName)
+		for _, metric := range list.GetMetricList(metricName) {
+			gauge := gaugeVec.With(metric.Labels)
+			gauge.Set(metric.Value)
 
-		gauge := gaugeVec.With(latest.Labels)
-		gauge.Set(latest.Value)
+			desc := prometheus.NewDesc(metricName, list.GetMetricHelp(metricName), []string{}, metric.Labels)
 
-		desc := prometheus.NewDesc(metricName, list.GetMetricHelp(metricName), []string{}, latest.Labels)
+			details := &metricListCollectorDetails{
+				gauge,
+				desc,
+				metric.Timestamp,
+			}
 
-		details := &metricListCollectorDetails{
-			gauge,
-			desc,
-			latest.Timestamp,
+			collector.details = append(collector.details, details)
 		}
-
-		collector.details = append(collector.details, details)
 	}
 
 	return collector
