@@ -176,6 +176,7 @@ func startHttpServer() {
 	if opts.Development.WebUi {
 		http.HandleFunc(DevelWebUiUrl, func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Add("Content-Type", "text/html")
+			w.Header().Add("Content-Security-Policy", "default-src 'self'; script-src 'self' 'unsafe-inline'; script-src-elem 'self' 'unsafe-inline' cdnjs.cloudflare.com; style-src * data: 'unsafe-inline'; style-src-elem 'self' data: 'unsafe-inline' cdnjs.cloudflare.com; img-src 'self' data:")
 			_, err := w.Write([]byte(WebUiIndexHtml))
 			if err != nil {
 				log.Error(err)
