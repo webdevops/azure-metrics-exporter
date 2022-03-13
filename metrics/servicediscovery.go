@@ -5,10 +5,11 @@ import (
 	"crypto/sha1" // #nosec G505
 	"encoding/json"
 	"fmt"
+	"strings"
+
 	"github.com/Azure/azure-sdk-for-go/profiles/latest/resources/mgmt/resources"
 	resourcegraph "github.com/Azure/azure-sdk-for-go/services/resourcegraph/mgmt/2019-04-01/resourcegraph"
 	"github.com/Azure/go-autorest/autorest/to"
-	"strings"
 )
 
 const (
@@ -122,6 +123,7 @@ func (sd *AzureServiceDiscovery) FindSubscriptionResources(subscriptionId, filte
 					ResourceId:   to.String(resource.ID),
 					Metrics:      sd.prober.settings.Metrics,
 					Aggregations: sd.prober.settings.Aggregations,
+					Tags:         resource.Tags,
 				},
 			)
 		}
@@ -177,7 +179,7 @@ func (sd *AzureServiceDiscovery) FindResourceGraph(ctx context.Context, subscrip
 Resources
 | where type =~ "%s"
 %s
-| project id
+| project id, tags
 `
 
 	query := strings.TrimSpace(fmt.Sprintf(
@@ -223,6 +225,15 @@ Resources
 				for _, v := range resultList {
 					if resultRow, ok := v.(map[string]interface{}); ok {
 						if val, ok := resultRow["id"]; ok && val != "" {
+
+							tags := map[string]*string{}
+							if resourceTags, ok := resultRow["tags"].(map[string]interface{}); ok {
+								for name, val := range resourceTags {
+									value := val.(string)
+									tags[name] = &value
+								}
+							}
+
 							if resourceId, ok := val.(string); ok {
 
 								targetList = append(
@@ -231,6 +242,7 @@ Resources
 										ResourceId:   resourceId,
 										Metrics:      sd.prober.settings.Metrics,
 										Aggregations: sd.prober.settings.Aggregations,
+										Tags:         tags,
 									},
 								)
 							}

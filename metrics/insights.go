@@ -1,12 +1,13 @@
 package metrics
 
 import (
+	"regexp"
+	"strings"
+
 	"github.com/Azure/azure-sdk-for-go/services/preview/monitor/mgmt/2018-03-01/insights"
 	"github.com/Azure/go-autorest/autorest/azure"
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/prometheus/client_golang/prometheus"
-	"regexp"
-	"strings"
 )
 
 var (
@@ -20,9 +21,9 @@ type (
 	}
 
 	AzureInsightMetricsResult struct {
-		settings   *RequestMetricSettings
-		Result     *insights.Response
-		ResourceID *string
+		settings *RequestMetricSettings
+		target   *MetricProbeTarget
+		Result   *insights.Response
 	}
 
 	PrometheusMetricResult struct {
@@ -42,6 +43,7 @@ func (p *MetricProber) MetricsClient(subscriptionId string) *insights.MetricsCli
 func (p *MetricProber) FetchMetricsFromTarget(client *insights.MetricsClient, target MetricProbeTarget, metrics, aggregations []string) (AzureInsightMetricsResult, error) {
 	ret := AzureInsightMetricsResult{
 		settings: p.settings,
+		target:   &target,
 	}
 
 	result, err := client.List(
@@ -64,7 +66,6 @@ func (p *MetricProber) FetchMetricsFromTarget(client *insights.MetricsClient, ta
 		}
 
 		ret.Result = &result
-		ret.ResourceID = &target.ResourceId
 	}
 
 	return ret, err
@@ -155,7 +156,7 @@ func (r *AzureInsightMetricsResult) SendMetricToChannel(channel chan<- Prometheu
 							}
 						}
 
-						resourceId := to.String(r.ResourceID)
+						resourceId := to.String(&r.target.ResourceId)
 						if r.settings.LowercaseResourceId {
 							resourceId = strings.ToLower(resourceId)
 						}
@@ -194,6 +195,14 @@ func (r *AzureInsightMetricsResult) SendMetricToChannel(channel chan<- Prometheu
 								labelName := "dimension" + strings.Title(strings.ToLower(dimensionName))
 								labelName = metricLabelNotAllowedChars.ReplaceAllString(labelName, "")
 								metricLabels[labelName] = dimensionValue
+							}
+						}
+
+						for _, tag := range r.settings.TagLabels {
+							if val, ok := r.target.Tags[tag]; ok {
+								metricLabels[tag] = *val
+							} else {
+								metricLabels[tag] = ""
 							}
 						}
 

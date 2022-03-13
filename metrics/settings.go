@@ -2,13 +2,14 @@ package metrics
 
 import (
 	"fmt"
-	iso8601 "github.com/ChannelMeter/iso8601duration"
-	log "github.com/sirupsen/logrus"
-	"github.com/webdevops/azure-metrics-exporter/config"
 	"net/http"
 	"strconv"
 	"strings"
 	"time"
+
+	iso8601 "github.com/ChannelMeter/iso8601duration"
+	log "github.com/sirupsen/logrus"
+	"github.com/webdevops/azure-metrics-exporter/config"
 )
 
 const (
@@ -38,6 +39,7 @@ type (
 		HelpTemplate   string
 
 		LowercaseResourceId bool
+		TagLabels           []string
 
 		// cache
 		Cache *time.Duration
@@ -69,6 +71,7 @@ func NewRequestMetricSettings(r *http.Request, opts config.Opts) (RequestMetricS
 	params := r.URL.Query()
 
 	ret.LowercaseResourceId = opts.Metrics.ResourceIdLowercase
+	ret.TagLabels = strings.Split(opts.Metrics.TagLabels, ",")
 
 	// param name
 	ret.Name = paramsGetWithDefault(params, "name", PrometheusMetricNameDefault)

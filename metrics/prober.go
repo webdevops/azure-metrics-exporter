@@ -2,6 +2,9 @@ package metrics
 
 import (
 	"context"
+	"net/http"
+	"time"
+
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure"
 	"github.com/patrickmn/go-cache"
@@ -10,8 +13,6 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/webdevops/azure-metrics-exporter/config"
 	"github.com/webdevops/go-prometheus-common/azuretracing"
-	"net/http"
-	"time"
 )
 
 const (
@@ -66,6 +67,7 @@ type (
 		ResourceId   string
 		Metrics      []string
 		Aggregations []string
+		Tags         map[string]*string
 	}
 )
 
