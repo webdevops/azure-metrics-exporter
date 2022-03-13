@@ -4,11 +4,13 @@ import (
 	"context"
 	"crypto/sha1" // #nosec G505
 	"fmt"
-	"github.com/prometheus/client_golang/prometheus"
-	"github.com/prometheus/client_golang/prometheus/promhttp"
-	"github.com/webdevops/azure-metrics-exporter/metrics"
 	"net/http"
 	"time"
+
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
+
+	"github.com/webdevops/azure-metrics-exporter/metrics"
 )
 
 func probeMetricsResourceHandler(w http.ResponseWriter, r *http.Request) {

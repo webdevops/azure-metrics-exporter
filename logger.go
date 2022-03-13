@@ -2,9 +2,10 @@ package main
 
 import (
 	"fmt"
-	log "github.com/sirupsen/logrus"
 	"net/http"
 	"strings"
+
+	log "github.com/sirupsen/logrus"
 )
 
 func buildContextLoggerFromRequest(r *http.Request) *log.Entry {

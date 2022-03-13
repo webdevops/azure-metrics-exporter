@@ -10,6 +10,7 @@ import (
 	"github.com/Azure/go-autorest/autorest/to"
 	iso8601 "github.com/ChannelMeter/iso8601duration"
 	log "github.com/sirupsen/logrus"
+
 	"github.com/webdevops/azure-metrics-exporter/config"
 )
 
