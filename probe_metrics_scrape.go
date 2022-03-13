@@ -26,7 +26,7 @@ func probeMetricsScrapeHandler(w http.ResponseWriter, r *http.Request) {
 	timeoutSeconds, err = getPrometheusTimeout(r, ProbeMetricsScrapeTimeoutDefault)
 	if err != nil {
 		contextLogger.Error(err)
-		http.Error(w, fmt.Sprintf("failed to parse timeout from Prometheus header: %s", err), http.StatusInternalServerError)
+		http.Error(w, fmt.Sprintf("failed to parse timeout from Prometheus header: %s", err), http.StatusBadRequest)
 		return
 	}
 
