@@ -202,7 +202,7 @@ func (r *AzureInsightMetricsResult) SendMetricToChannel(channel chan<- Prometheu
 						for _, tag := range r.settings.TagLabels {
 							tagLabel := fmt.Sprintf("tag_" + tag)
 							metricLabels[tagLabel] = ""
-							
+
 							if val, ok := r.target.Tags[tag]; ok {
 								metricLabels[tagLabel] = *val
 							}

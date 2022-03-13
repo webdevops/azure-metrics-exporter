@@ -26,7 +26,7 @@ type (
 		}
 
 		Metrics struct {
-			ResourceIdLowercase bool     `long:"metrics.resourceid.lowercase"   env:"METRIC_RESOURCEID_LOWERCASE"                description:"Publish lowercase Azure Resoruce ID in metrics"`
+			ResourceIdLowercase *bool    `long:"metrics.resourceid.lowercase"   env:"METRIC_RESOURCEID_LOWERCASE"                description:"Publish lowercase Azure Resoruce ID in metrics"`
 			TagLabels           []string `long:"metrics.tag.labels"             env:"METRIC_TAG_LABELS"           env-delim:" "  description:"Azure resource labels to add as metric labels (space delimiter)"`
 			Template            string   `long:"metrics.template"               env:"METRIC_TEMPLATE"                            description:"Template for metric name"   default:"{name}"`
 			Help                string   `long:"metrics.help"                   env:"METRIC_HELP"                                description:"Metric help (with template support)"   default:"Azure monitor insight metric"`
