@@ -156,7 +156,7 @@ func (r *AzureInsightMetricsResult) SendMetricToChannel(channel chan<- Prometheu
 							}
 						}
 
-						resourceId := to.String(&r.target.ResourceId)
+						resourceId := r.target.ResourceId
 						if r.settings.LowercaseResourceId {
 							resourceId = strings.ToLower(resourceId)
 						}
