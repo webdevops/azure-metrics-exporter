@@ -71,7 +71,7 @@ func NewRequestMetricSettings(r *http.Request, opts config.Opts) (RequestMetricS
 	params := r.URL.Query()
 
 	ret.LowercaseResourceId = opts.Metrics.ResourceIdLowercase
-	ret.TagLabels = strings.Split(opts.Metrics.TagLabels, ",")
+	ret.TagLabels = opts.Metrics.TagLabels
 
 	// param name
 	ret.Name = paramsGetWithDefault(params, "name", PrometheusMetricNameDefault)
