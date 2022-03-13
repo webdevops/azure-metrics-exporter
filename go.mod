@@ -3,7 +3,7 @@ module github.com/webdevops/azure-metrics-exporter
 go 1.17
 
 require (
-	github.com/Azure/azure-sdk-for-go v61.4.0+incompatible
+	github.com/Azure/azure-sdk-for-go v62.1.0+incompatible
 	github.com/Azure/go-autorest/autorest v0.11.24
 	github.com/Azure/go-autorest/autorest/adal v0.9.18 // indirect
 	github.com/Azure/go-autorest/autorest/azure/auth v0.5.11
@@ -20,8 +20,8 @@ require (
 	github.com/prometheus/procfs v0.7.3 // indirect
 	github.com/remeh/sizedwaitgroup v1.0.0
 	github.com/sirupsen/logrus v1.8.1
-	golang.org/x/crypto v0.0.0-20220210151621-f4118a5b28e2 // indirect
-	golang.org/x/sys v0.0.0-20220209214540-3681064d5158 // indirect
+	golang.org/x/crypto v0.0.0-20220313003712-b769efc7c000 // indirect
+	golang.org/x/sys v0.0.0-20220310020820-b874c991c1a5 // indirect
 	google.golang.org/protobuf v1.27.1 // indirect
 )
 
