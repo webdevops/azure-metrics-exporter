@@ -123,7 +123,7 @@ func (sd *AzureServiceDiscovery) FindSubscriptionResources(subscriptionId, filte
 					ResourceId:   to.String(resource.ID),
 					Metrics:      sd.prober.settings.Metrics,
 					Aggregations: sd.prober.settings.Aggregations,
-					Tags:         resource.Tags,
+					Tags:         to.StringMap(resource.Tags),
 				},
 			)
 		}
@@ -225,24 +225,14 @@ Resources
 				for _, v := range resultList {
 					if resultRow, ok := v.(map[string]interface{}); ok {
 						if val, ok := resultRow["id"]; ok && val != "" {
-
-							tags := map[string]*string{}
-							if resourceTags, ok := resultRow["tags"].(map[string]interface{}); ok {
-								for name, val := range resourceTags {
-									value := val.(string)
-									tags[name] = &value
-								}
-							}
-
 							if resourceId, ok := val.(string); ok {
-
 								targetList = append(
 									targetList,
 									MetricProbeTarget{
 										ResourceId:   resourceId,
 										Metrics:      sd.prober.settings.Metrics,
 										Aggregations: sd.prober.settings.Aggregations,
-										Tags:         tags,
+										Tags:         sd.resourceTagsToStringMap(resultRow["tags"]),
 									},
 								)
 							}
@@ -259,4 +249,30 @@ Resources
 	}
 
 	sd.publishTargetList(targetList)
+}
+
+func (sd *AzureServiceDiscovery) resourceTagsToStringMap(tags interface{}) (ret map[string]string) {
+	ret = map[string]string{}
+
+	switch tagMap := tags.(type) {
+	case map[string]interface{}:
+		for tag, value := range tagMap {
+			switch v := value.(type) {
+			case string:
+				ret[tag] = v
+			case *string:
+				ret[tag] = to.String(v)
+			}
+		}
+	case map[string]string:
+		tags = tagMap
+	case map[string]*string:
+		tags = to.StringMap(tagMap)
+	case map[*string]*string:
+		for tag, value := range tagMap {
+			ret[to.String(tag)] = to.String(value)
+		}
+	}
+
+	return ret
 }

@@ -7,7 +7,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Azure/go-autorest/autorest/to"
 	iso8601 "github.com/ChannelMeter/iso8601duration"
 	log "github.com/sirupsen/logrus"
 
@@ -40,8 +39,7 @@ type (
 		MetricTemplate string
 		HelpTemplate   string
 
-		LowercaseResourceId bool
-		TagLabels           []string
+		TagLabels []string
 
 		// cache
 		Cache *time.Duration
@@ -72,7 +70,6 @@ func NewRequestMetricSettings(r *http.Request, opts config.Opts) (RequestMetricS
 	ret := RequestMetricSettings{}
 	params := r.URL.Query()
 
-	ret.LowercaseResourceId = to.Bool(opts.Metrics.ResourceIdLowercase)
 	ret.TagLabels = opts.Metrics.TagLabels
 
 	// param name

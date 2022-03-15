@@ -1,14 +1,13 @@
 package metrics
 
 import (
-	"fmt"
 	"regexp"
 	"strings"
 
 	"github.com/Azure/azure-sdk-for-go/services/preview/monitor/mgmt/2018-03-01/insights"
-	"github.com/Azure/go-autorest/autorest/azure"
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/prometheus/client_golang/prometheus"
+	prometheusAzure "github.com/webdevops/go-prometheus-common/azure"
 )
 
 var (
@@ -142,8 +141,8 @@ func (r *AzureInsightMetricsResult) buildMetric(labels prometheus.Labels, value 
 func (r *AzureInsightMetricsResult) SendMetricToChannel(channel chan<- PrometheusMetricResult) {
 	if r.Result.Value != nil {
 		// DEBUGGING
-		//data, _ := json.Marshal(r.Result)
-		//fmt.Println(string(data))
+		// data, _ := json.Marshal(r.Result)
+		// fmt.Println(string(data))
 
 		for _, metric := range *r.Result.Value {
 			if metric.Timeseries != nil {
@@ -158,30 +157,26 @@ func (r *AzureInsightMetricsResult) SendMetricToChannel(channel chan<- Prometheu
 						}
 
 						resourceId := r.target.ResourceId
-						if r.settings.LowercaseResourceId {
-							resourceId = strings.ToLower(resourceId)
-						}
-
-						subscriptionId := ""
-						resourceGroup := ""
-						resourceName := ""
-						if resourceInfo, err := azure.ParseResourceID(resourceId); err == nil {
-							subscriptionId = resourceInfo.SubscriptionID
-							resourceGroup = resourceInfo.ResourceGroup
-							resourceName = resourceInfo.ResourceName
-						}
+						azureResource, _ := prometheusAzure.ParseResourceId(resourceId)
 
 						metricLabels := prometheus.Labels{
-							"resourceID":     resourceId,
-							"subscriptionID": subscriptionId,
-							"resourceGroup":  resourceGroup,
-							"resourceName":   resourceName,
+							"resourceID":     strings.ToLower(resourceId),
+							"subscriptionID": azureResource.Subscription,
+							"resourceGroup":  azureResource.ResourceGroup,
+							"resourceName":   azureResource.ResourceName,
 							"metric":         to.String(metric.Name.Value),
 							"unit":           string(metric.Unit),
 							"interval":       to.String(r.settings.Interval),
 							"timespan":       r.settings.Timespan,
 							"aggregation":    "",
 						}
+
+						// add resource tags as labels
+						metricLabels = prometheusAzure.AddResourceTagsToPrometheusLabels(
+							metricLabels,
+							r.target.Tags,
+							r.settings.TagLabels,
+						)
 
 						if len(dimensions) == 1 {
 							// we have only one dimension
@@ -196,15 +191,6 @@ func (r *AzureInsightMetricsResult) SendMetricToChannel(channel chan<- Prometheu
 								labelName := "dimension" + strings.Title(strings.ToLower(dimensionName))
 								labelName = metricLabelNotAllowedChars.ReplaceAllString(labelName, "")
 								metricLabels[labelName] = dimensionValue
-							}
-						}
-
-						for _, tag := range r.settings.TagLabels {
-							tagLabel := fmt.Sprintf("tag_" + tag)
-							metricLabels[tagLabel] = ""
-
-							if val, ok := r.target.Tags[tag]; ok {
-								metricLabels[tagLabel] = *val
 							}
 						}
 

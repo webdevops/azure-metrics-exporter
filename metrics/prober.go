@@ -68,7 +68,7 @@ type (
 		ResourceId   string
 		Metrics      []string
 		Aggregations []string
-		Tags         map[string]*string
+		Tags         map[string]string
 	}
 )
 

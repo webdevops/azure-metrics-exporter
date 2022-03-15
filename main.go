@@ -12,7 +12,6 @@ import (
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure"
 	"github.com/Azure/go-autorest/autorest/azure/auth"
-	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/jessevdk/go-flags"
 	"github.com/patrickmn/go-cache"
 	"github.com/prometheus/client_golang/prometheus"
@@ -125,11 +124,6 @@ func initArgparser() {
 				return funcName, fmt.Sprintf("%s:%d", path.Base(f.File), f.Line)
 			},
 		})
-	}
-
-	// set default lowercase id
-	if opts.Metrics.ResourceIdLowercase == nil {
-		opts.Metrics.ResourceIdLowercase = to.BoolPtr(true)
 	}
 }
 
