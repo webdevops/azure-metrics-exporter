@@ -265,9 +265,9 @@ func (sd *AzureServiceDiscovery) resourceTagsToStringMap(tags interface{}) (ret 
 			}
 		}
 	case map[string]string:
-		tags = tagMap
+		ret = tagMap
 	case map[string]*string:
-		tags = to.StringMap(tagMap)
+		ret = to.StringMap(tagMap)
 	case map[*string]*string:
 		for tag, value := range tagMap {
 			ret[to.String(tag)] = to.String(value)
