@@ -21,11 +21,11 @@ require (
 	github.com/remeh/sizedwaitgroup v1.0.0
 	github.com/sirupsen/logrus v1.8.1
 	golang.org/x/crypto v0.0.0-20220315160706-3147a52a75dd // indirect
-	golang.org/x/sys v0.0.0-20220315194320-039c03cc5b86 // indirect
+	golang.org/x/sys v0.0.0-20220317061510-51cd9980dadf // indirect
 	google.golang.org/protobuf v1.27.1 // indirect
 )
 
-require github.com/webdevops/go-prometheus-common v0.0.0-20220315214756-f0cf0e66c872
+require github.com/webdevops/go-prometheus-common v0.0.0-20220317220816-9e142c2c2f8a
 
 require (
 	github.com/Azure/go-autorest v14.2.0+incompatible // indirect
@@ -36,7 +36,7 @@ require (
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cespare/xxhash/v2 v2.1.2 // indirect
 	github.com/dimchansky/utfbom v1.1.1 // indirect
-	github.com/golang-jwt/jwt/v4 v4.3.0 // indirect
+	github.com/golang-jwt/jwt/v4 v4.4.0 // indirect
 	github.com/mitchellh/go-homedir v1.1.0 // indirect
 	github.com/prometheus/client_model v0.2.0 // indirect
 )
