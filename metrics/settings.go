@@ -70,7 +70,7 @@ func NewRequestMetricSettings(r *http.Request, opts config.Opts) (RequestMetricS
 	ret := RequestMetricSettings{}
 	params := r.URL.Query()
 
-	ret.TagLabels = opts.Metrics.TagLabels
+	ret.TagLabels = opts.Azure.ResourceTags
 
 	// param name
 	ret.Name = paramsGetWithDefault(params, "name", PrometheusMetricNameDefault)

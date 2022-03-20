@@ -23,12 +23,12 @@ type (
 			ServiceDiscovery struct {
 				CacheDuration *time.Duration `long:"azure.servicediscovery.cache"            env:"AZURE_SERVICEDISCOVERY_CACHE"                description:"Duration for caching Azure ServiceDiscovery of workspaces to reduce API calls (time.Duration)" default:"30m"`
 			}
+			ResourceTags []string `long:"azure.resource-tag"      env:"AZURE_RESOURCE_TAG"        env-delim:" "  description:"Azure Resource tags (space delimiter)"                              default:"owner"`
 		}
 
 		Metrics struct {
-			TagLabels []string `long:"metrics.tag.labels"             env:"METRIC_TAG_LABELS"           env-delim:" "  description:"Azure resource labels to add as metric labels (space delimiter)"`
-			Template  string   `long:"metrics.template"               env:"METRIC_TEMPLATE"                            description:"Template for metric name"   default:"{name}"`
-			Help      string   `long:"metrics.help"                   env:"METRIC_HELP"                                description:"Metric help (with template support)"   default:"Azure monitor insight metric"`
+			Template string `long:"metrics.template"               env:"METRIC_TEMPLATE"                            description:"Template for metric name"   default:"{name}"`
+			Help     string `long:"metrics.help"                   env:"METRIC_HELP"                                description:"Metric help (with template support)"   default:"Azure monitor insight metric"`
 		}
 
 		// Prober settings
