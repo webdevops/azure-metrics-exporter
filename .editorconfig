@@ -14,10 +14,7 @@ indent_size = 4
 [Makefile]
 indent_style = tab
 
-[*.yml]
-indent_size = 2
-
-[*.yaml]
+[{*.yml, *.yaml}]
 indent_size = 2
 
 [*.conf]
