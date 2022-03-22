@@ -40,10 +40,6 @@ type (
 
 		// general options
 		ServerBind string `long:"bind"     env:"SERVER_BIND"   description:"Server address"     default:":8080"`
-
-		Development struct {
-			WebUi bool `long:"development.webui"   env:"DEVELOPMENT_WEBUI"       description:"Enable webui on server bind socket, accessible with /query"`
-		}
 	}
 )
 
