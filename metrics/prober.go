@@ -11,7 +11,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/remeh/sizedwaitgroup"
 	log "github.com/sirupsen/logrus"
-	"github.com/webdevops/go-prometheus-common/azuretracing"
+	"github.com/webdevops/go-common/prometheus/azuretracing"
 
 	"github.com/webdevops/azure-metrics-exporter/config"
 )

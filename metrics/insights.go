@@ -7,7 +7,7 @@ import (
 	"github.com/Azure/azure-sdk-for-go/services/preview/monitor/mgmt/2018-03-01/insights"
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/prometheus/client_golang/prometheus"
-	prometheusAzure "github.com/webdevops/go-prometheus-common/azure"
+	azureCommon "github.com/webdevops/go-common/azure"
 )
 
 var (
@@ -157,7 +157,7 @@ func (r *AzureInsightMetricsResult) SendMetricToChannel(channel chan<- Prometheu
 						}
 
 						resourceId := r.target.ResourceId
-						azureResource, _ := prometheusAzure.ParseResourceId(resourceId)
+						azureResource, _ := azureCommon.ParseResourceId(resourceId)
 
 						metricLabels := prometheus.Labels{
 							"resourceID":     strings.ToLower(resourceId),
@@ -172,7 +172,7 @@ func (r *AzureInsightMetricsResult) SendMetricToChannel(channel chan<- Prometheu
 						}
 
 						// add resource tags as labels
-						metricLabels = prometheusAzure.AddResourceTagsToPrometheusLabels(
+						metricLabels = azureCommon.AddResourceTagsToPrometheusLabels(
 							metricLabels,
 							r.target.Tags,
 							r.settings.TagLabels,
