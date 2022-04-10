@@ -76,6 +76,7 @@ func main() {
 	log.Infof("starting http server on %s", opts.ServerBind)
 	startHttpServer()
 }
+
 func initArgparser() {
 	argparser = flags.NewParser(&opts, flags.Default)
 	_, err := argparser.Parse()
