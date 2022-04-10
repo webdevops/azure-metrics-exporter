@@ -29,7 +29,10 @@ image: build
 	docker build -t $(PROJECT_NAME):$(GIT_TAG) .
 
 build-push-development:
-	docker build -t webdevops/$(PROJECT_NAME):development . && docker push webdevops/$(PROJECT_NAME):development
+	docker buildx create --name webdevops-builder
+	docker buildx use webdevops-builder
+	docker buildx inspect --bootstrap
+	docker buildx build -t webdevops/$(PROJECT_NAME):development --platform linux/amd64,linux/arm,linux/arm64 --push .
 
 .PHONY: test
 test:
