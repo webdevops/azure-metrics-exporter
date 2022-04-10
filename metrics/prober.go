@@ -11,7 +11,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/remeh/sizedwaitgroup"
 	log "github.com/sirupsen/logrus"
-	"github.com/webdevops/go-common/prometheus/azuretracing"
+	azureCommon "github.com/webdevops/go-common/azure"
 
 	"github.com/webdevops/azure-metrics-exporter/config"
 )
@@ -24,10 +24,7 @@ type (
 	MetricProber struct {
 		Conf config.Opts
 
-		Azure struct {
-			Environment     azure.Environment
-			AzureAuthorizer autorest.Authorizer
-		}
+		AzureClient *azureCommon.Client
 
 		userAgent string
 
@@ -102,9 +99,8 @@ func (p *MetricProber) SetPrometheusRegistry(registry *prometheus.Registry) {
 	p.prometheus.registry = registry
 }
 
-func (p *MetricProber) SetAzure(environment azure.Environment, authorizer autorest.Authorizer) {
-	p.Azure.Environment = environment
-	p.Azure.AzureAuthorizer = authorizer
+func (p *MetricProber) SetAzureClient(client *azureCommon.Client) {
+	p.AzureClient = client
 }
 
 func (p *MetricProber) EnableMetricsCache(cache *cache.Cache, cacheKey string, cacheDuration *time.Duration) {
@@ -245,9 +241,5 @@ func (p *MetricProber) publishMetricList() {
 }
 
 func (p *MetricProber) decorateAzureAutoRest(client *autorest.Client) {
-	client.Authorizer = p.Azure.AzureAuthorizer
-	if err := client.AddToUserAgent(p.userAgent); err != nil {
-		p.logger.Panic(err)
-	}
-	azuretracing.DecorateAzureAutoRestClient(client)
+	p.AzureClient.DecorateAzureAutorest(client)
 }

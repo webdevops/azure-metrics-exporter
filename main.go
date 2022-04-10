@@ -6,20 +6,17 @@ import (
 	"html/template"
 	"net/http"
 	"os"
-	"path"
 	"runtime"
 	"strings"
 	"time"
 
-	"github.com/Azure/go-autorest/autorest"
-	"github.com/Azure/go-autorest/autorest/azure"
-	"github.com/Azure/go-autorest/autorest/azure/auth"
 	"github.com/google/uuid"
 	"github.com/jessevdk/go-flags"
 	"github.com/patrickmn/go-cache"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	log "github.com/sirupsen/logrus"
+	azureCommon "github.com/webdevops/go-common/azure"
 	"github.com/webdevops/go-common/prometheus/azuretracing"
 
 	"github.com/webdevops/azure-metrics-exporter/config"
@@ -49,8 +46,8 @@ var (
 	argparser *flags.Parser
 	opts      config.Opts
 
-	AzureEnvironment azure.Environment
-	AzureAuthorizer  autorest.Authorizer
+	AzureClient                *azureCommon.Client
+	AzureSubscriptionsIterator *azureCommon.SubscriptionsIterator
 
 	prometheusCollectTime    *prometheus.SummaryVec
 	prometheusMetricRequests *prometheus.CounterVec
@@ -65,6 +62,7 @@ var (
 
 func main() {
 	initArgparser()
+	initLogger()
 
 	log.Infof("starting azure-metrics-exporter v%s (%s; %s; by %v)", gitTag, gitCommit, runtime.Version(), Author)
 	log.Info(string(opts.GetJson()))
@@ -78,8 +76,6 @@ func main() {
 	log.Infof("starting http server on %s", opts.ServerBind)
 	startHttpServer()
 }
-
-// init argparser and parse/validate arguments
 func initArgparser() {
 	argparser = flags.NewParser(&opts, flags.Default)
 	_, err := argparser.Parse()
@@ -89,70 +85,68 @@ func initArgparser() {
 		if flagsErr, ok := err.(*flags.Error); ok && flagsErr.Type == flags.ErrHelp {
 			os.Exit(0)
 		} else {
-			fmt.Println(err)
 			fmt.Println()
 			argparser.WriteHelp(os.Stdout)
 			os.Exit(1)
 		}
 	}
+}
 
+func initLogger() {
 	// verbose level
-	if opts.Logger.Verbose {
+	if opts.Logger.Debug {
 		log.SetLevel(log.DebugLevel)
 	}
 
-	// debug level
-	if opts.Logger.Debug {
+	// trace level
+	if opts.Logger.Trace {
 		log.SetReportCaller(true)
 		log.SetLevel(log.TraceLevel)
 		log.SetFormatter(&log.TextFormatter{
 			CallerPrettyfier: func(f *runtime.Frame) (string, string) {
-				s := strings.Split(f.Function, ".")
+				s := strings.Split(f.Function, "/")
 				funcName := s[len(s)-1]
-				return funcName, fmt.Sprintf("%s:%d", path.Base(f.File), f.Line)
+				return funcName, fmt.Sprintf("%s:%d", f.File, f.Line)
 			},
 		})
 	}
 
 	// json log format
-	if opts.Logger.LogJson {
+	if opts.Logger.Json {
 		log.SetReportCaller(true)
 		log.SetFormatter(&log.JSONFormatter{
 			DisableTimestamp: true,
 			CallerPrettyfier: func(f *runtime.Frame) (string, string) {
-				s := strings.Split(f.Function, ".")
+				s := strings.Split(f.Function, "/")
 				funcName := s[len(s)-1]
-				return funcName, fmt.Sprintf("%s:%d", path.Base(f.File), f.Line)
+				return funcName, fmt.Sprintf("%s:%d", f.File, f.Line)
 			},
 		})
 	}
 }
 
-// Init and build Azure authorzier
 func initAzureConnection() {
 	var err error
-
-	AzureEnvironment, err = azure.EnvironmentFromName(*opts.Azure.Environment)
+	AzureClient, err = azureCommon.NewClientFromEnvironment(*opts.Azure.Environment, log.StandardLogger())
 	if err != nil {
-		log.Panic(err)
+		log.Panic(err.Error())
 	}
 
-	if opts.Azure.AdResourceUrl != nil {
-		AzureEnvironment.ResourceManagerEndpoint = *opts.Azure.AdResourceUrl
-	}
-
-	// setup azure authorizer
-	AzureAuthorizer, err = auth.NewAuthorizerFromEnvironment()
-	if err != nil {
-		log.Panic(err)
-	}
-
+	AzureClient.SetUserAgent(UserAgent + gitTag)
+	AzureSubscriptionsIterator = azureCommon.NewSubscriptionIterator(AzureClient)
 }
 
 // start and handle prometheus handler
 func startHttpServer() {
 	// healthz
 	http.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
+		if _, err := fmt.Fprint(w, "Ok"); err != nil {
+			log.Error(err)
+		}
+	})
+
+	// readyz
+	http.HandleFunc("/readyz", func(w http.ResponseWriter, r *http.Request) {
 		if _, err := fmt.Fprint(w, "Ok"); err != nil {
 			log.Error(err)
 		}

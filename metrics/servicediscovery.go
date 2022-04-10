@@ -28,7 +28,7 @@ type (
 )
 
 func (sd *AzureServiceDiscovery) ResourcesClient(subscriptionId string) *resources.Client {
-	client := resources.NewClientWithBaseURI(sd.prober.Azure.Environment.ResourceManagerEndpoint, subscriptionId)
+	client := resources.NewClientWithBaseURI(sd.prober.AzureClient.Environment.ResourceManagerEndpoint, subscriptionId)
 	sd.prober.decorateAzureAutoRest(&client.BaseClient.Client)
 
 	return &client
@@ -166,7 +166,7 @@ func (sd *AzureServiceDiscovery) FindResourceGraph(ctx context.Context, subscrip
 	var targetList []MetricProbeTarget
 
 	// Create and authorize a ResourceGraph client
-	resourcegraphClient := resourcegraph.NewWithBaseURI(sd.prober.Azure.Environment.ResourceManagerEndpoint)
+	resourcegraphClient := resourcegraph.NewWithBaseURI(sd.prober.AzureClient.Environment.ResourceManagerEndpoint)
 	sd.prober.decorateAzureAutoRest(&resourcegraphClient.Client)
 
 	subscriptions := []string{subscriptionId}
