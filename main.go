@@ -183,7 +183,7 @@ func startHttpServer() {
 		w.Header().Add("X-Content-Type-Options", "nosniff")
 		w.Header().Add("Content-Security-Policy",
 			fmt.Sprintf(
-				"default-src 'self'; script-src-elem 'nonce-%[1]s'; style-src 'nonce-%[1]s'; img-src 'self' data:",
+				"default-src 'self'; script-src 'nonce-%[1]s'; style-src 'nonce-%[1]s'; img-src 'self' data:",
 				cspNonce,
 			),
 		)
