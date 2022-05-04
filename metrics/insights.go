@@ -1,6 +1,7 @@
 package metrics
 
 import (
+	"net/http"
 	"regexp"
 	"strings"
 
@@ -8,6 +9,7 @@ import (
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/prometheus/client_golang/prometheus"
 	azureCommon "github.com/webdevops/go-common/azure"
+	"github.com/webdevops/go-common/prometheus/azuretracing"
 )
 
 var (
@@ -36,7 +38,22 @@ type (
 
 func (p *MetricProber) MetricsClient(subscriptionId string) *insights.MetricsClient {
 	client := insights.NewMetricsClientWithBaseURI(p.AzureClient.Environment.ResourceManagerEndpoint, subscriptionId)
-	p.decorateAzureAutoRest(&client.BaseClient.Client)
+	client.Authorizer = p.AzureClient.Authorizer
+	if err := client.AddToUserAgent(p.userAgent); err != nil {
+		p.logger.Panic(err)
+	}
+
+	requestCallback := func(r *http.Request) (*http.Request, error) {
+		r.Header.Add("cache-control", "no-cache")
+		return r, nil
+	}
+
+	azuretracing.DecorateAzureAutoRestClientWithCallbacks(
+		&client.Client,
+		&requestCallback,
+		nil,
+	)
+
 	return &client
 }
 
