@@ -38,7 +38,7 @@ type (
 
 func (p *MetricProber) MetricsClient(subscriptionId string) *insights.MetricsClient {
 	client := insights.NewMetricsClientWithBaseURI(p.AzureClient.Environment.ResourceManagerEndpoint, subscriptionId)
-	client.Authorizer = p.AzureClient.Authorizer
+	client.Authorizer = p.AzureClient.GetAuthorizer()
 	if err := client.AddToUserAgent(p.userAgent); err != nil {
 		p.logger.Panic(err)
 	}

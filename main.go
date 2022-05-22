@@ -46,8 +46,7 @@ var (
 	argparser *flags.Parser
 	opts      config.Opts
 
-	AzureClient                *azureCommon.Client
-	AzureSubscriptionsIterator *azureCommon.SubscriptionsIterator
+	AzureClient *azureCommon.Client
 
 	prometheusCollectTime    *prometheus.SummaryVec
 	prometheusMetricRequests *prometheus.CounterVec
@@ -134,7 +133,6 @@ func initAzureConnection() {
 	}
 
 	AzureClient.SetUserAgent(UserAgent + gitTag)
-	AzureSubscriptionsIterator = azureCommon.NewSubscriptionIterator(AzureClient)
 }
 
 // start and handle prometheus handler
