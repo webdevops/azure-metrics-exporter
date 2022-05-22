@@ -90,7 +90,10 @@ Help Options:
   -h, --help                               Show this help message
 ```
 
-for Azure API authentication (using ENV vars) see https://docs.microsoft.com/en-us/azure/developer/go/azure-sdk-authentication
+for Azure API authentication (using ENV vars)
+see https://docs.microsoft.com/en-us/azure/developer/go/azure-sdk-authentication
+
+For AzureCLI authentication set `AZURE_AUTH=az`
 
 ## How to test
 
