@@ -9,6 +9,7 @@ import (
 	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/prometheus/client_golang/prometheus"
 	azureCommon "github.com/webdevops/go-common/azure"
+	prometheusCommon "github.com/webdevops/go-common/prometheus"
 	"github.com/webdevops/go-common/prometheus/azuretracing"
 )
 
@@ -205,7 +206,7 @@ func (r *AzureInsightMetricsResult) SendMetricToChannel(channel chan<- Prometheu
 							// we have multiple dimensions
 							// add each dimension as dimensionXzy="foobar" label
 							for dimensionName, dimensionValue := range dimensions {
-								labelName := "dimension" + strings.Title(strings.ToLower(dimensionName))
+								labelName := "dimension" + prometheusCommon.StringToTitle(dimensionName)
 								labelName = metricLabelNotAllowedChars.ReplaceAllString(labelName, "")
 								metricLabels[labelName] = dimensionValue
 							}

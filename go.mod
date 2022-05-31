@@ -27,7 +27,7 @@ require (
 
 require (
 	github.com/google/uuid v1.3.0
-	github.com/webdevops/go-common v0.0.0-20220521200912-e60c528ac8d5
+	github.com/webdevops/go-common v0.0.0-20220531203610-eb2de29828c4
 )
 
 require (
@@ -42,4 +42,5 @@ require (
 	github.com/golang-jwt/jwt/v4 v4.4.1 // indirect
 	github.com/mitchellh/go-homedir v1.1.0 // indirect
 	github.com/prometheus/client_model v0.2.0 // indirect
+	golang.org/x/text v0.3.7 // indirect
 )
