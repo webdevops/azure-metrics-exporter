@@ -5,7 +5,7 @@ import (
 	"net/http"
 
 	log "github.com/sirupsen/logrus"
-	prometheusCommon "github.com/webdevops/go-common/prometheus"
+	stringsCommon "github.com/webdevops/go-common/strings"
 )
 
 func buildContextLoggerFromRequest(r *http.Request) *log.Entry {
@@ -14,7 +14,7 @@ func buildContextLoggerFromRequest(r *http.Request) *log.Entry {
 	}
 
 	for name, value := range r.URL.Query() {
-		fieldName := fmt.Sprintf("param%s", prometheusCommon.StringToTitle(name))
+		fieldName := fmt.Sprintf("param%s", stringsCommon.UppercaseFirst(name))
 		fieldValue := value
 		logFields[fieldName] = fieldValue
 	}
