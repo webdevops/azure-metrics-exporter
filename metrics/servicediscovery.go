@@ -162,14 +162,12 @@ func (sd *AzureServiceDiscovery) FindSubscriptionResourcesWithScrapeTags(ctx con
 	sd.publishTargetList(targetList)
 }
 
-func (sd *AzureServiceDiscovery) FindResourceGraph(ctx context.Context, subscriptionId, resourceType, filter string) {
+func (sd *AzureServiceDiscovery) FindResourceGraph(ctx context.Context, subscriptions []string, resourceType, filter string) {
 	var targetList []MetricProbeTarget
 
 	// Create and authorize a ResourceGraph client
 	resourcegraphClient := resourcegraph.NewWithBaseURI(sd.prober.AzureClient.Environment.ResourceManagerEndpoint)
 	sd.prober.decorateAzureAutoRest(&resourcegraphClient.Client)
-
-	subscriptions := []string{subscriptionId}
 
 	if filter != "" {
 		filter = "| " + filter
