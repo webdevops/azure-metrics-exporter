@@ -27,7 +27,7 @@ require (
 
 require (
 	github.com/google/uuid v1.3.0
-	github.com/webdevops/go-common v0.0.0-20220601204543-8cd933661a41
+	github.com/webdevops/go-common v0.0.0-20220616112601-a22e7e1a99bb
 )
 
 require (
