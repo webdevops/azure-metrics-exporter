@@ -10,6 +10,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 
+	"github.com/webdevops/azure-metrics-exporter/config"
 	"github.com/webdevops/azure-metrics-exporter/metrics"
 )
 
@@ -23,7 +24,7 @@ func probeMetricsScrapeHandler(w http.ResponseWriter, r *http.Request) {
 	registry := prometheus.NewRegistry()
 
 	// If a timeout is configured via the Prometheus header, add it to the request.
-	timeoutSeconds, err = getPrometheusTimeout(r, ProbeMetricsScrapeTimeoutDefault)
+	timeoutSeconds, err = getPrometheusTimeout(r, config.ProbeMetricsScrapeTimeoutDefault)
 	if err != nil {
 		contextLogger.Error(err)
 		http.Error(w, fmt.Sprintf("failed to parse timeout from Prometheus header: %s", err), http.StatusBadRequest)
@@ -74,7 +75,7 @@ func probeMetricsScrapeHandler(w http.ResponseWriter, r *http.Request) {
 			// global stats counter
 			prometheusCollectTime.With(prometheus.Labels{
 				"subscriptionID": subscriptionId,
-				"handler":        ProbeMetricsListUrl,
+				"handler":        config.ProbeMetricsListUrl,
 				"filter":         settings.Filter,
 			}).Observe(time.Since(startTime).Seconds())
 		})
@@ -85,7 +86,7 @@ func probeMetricsScrapeHandler(w http.ResponseWriter, r *http.Request) {
 		for _, subscriptionId := range settings.Subscriptions {
 			prometheusMetricRequests.With(prometheus.Labels{
 				"subscriptionID": subscriptionId,
-				"handler":        ProbeMetricsListUrl,
+				"handler":        config.ProbeMetricsListUrl,
 				"filter":         settings.Filter,
 				"result":         "cached",
 			}).Inc()

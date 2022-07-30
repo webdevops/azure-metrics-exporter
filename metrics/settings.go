@@ -52,7 +52,7 @@ func NewRequestMetricSettingsForAzureResourceApi(r *http.Request, opts config.Op
 		return settings, err
 	}
 
-	if r.URL.Path == "/probe/metrics/resource" {
+	if r.URL.Path == config.ProbeMetricsResourceUrl {
 		return settings, nil
 	} else if settings.ResourceType != "" && settings.Filter != "" {
 		return settings, fmt.Errorf("parameter \"resourceType\" and \"filter\" are mutually exclusive")

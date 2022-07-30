@@ -26,20 +26,6 @@ const (
 	Author = "webdevops.io"
 
 	UserAgent = "azure-metrics-exporter/"
-
-	MetricsUrl = "/metrics"
-
-	ProbeMetricsResourceUrl            = "/probe/metrics/resource"
-	ProbeMetricsResourceTimeoutDefault = 10
-
-	ProbeMetricsListUrl            = "/probe/metrics/list"
-	ProbeMetricsListTimeoutDefault = 120
-
-	ProbeMetricsScrapeUrl            = "/probe/metrics/scrape"
-	ProbeMetricsScrapeTimeoutDefault = 120
-
-	ProbeMetricsResourceGraphUrl            = "/probe/metrics/resourcegraph"
-	ProbeMetricsResourceGraphTimeoutDefault = 120
 )
 
 var (
@@ -151,23 +137,15 @@ func startHttpServer() {
 		}
 	})
 
-	http.Handle(MetricsUrl, azuretracing.RegisterAzureMetricAutoClean(promhttp.Handler()))
+	http.Handle(config.MetricsUrl, azuretracing.RegisterAzureMetricAutoClean(promhttp.Handler()))
 
-	http.HandleFunc(ProbeMetricsResourceUrl, func(w http.ResponseWriter, r *http.Request) {
-		probeMetricsResourceHandler(w, r)
-	})
+	http.HandleFunc(config.ProbeMetricsResourceUrl, probeMetricsResourceHandler)
 
-	http.HandleFunc(ProbeMetricsListUrl, func(w http.ResponseWriter, r *http.Request) {
-		probeMetricsListHandler(w, r)
-	})
+	http.HandleFunc(config.ProbeMetricsListUrl, probeMetricsListHandler)
 
-	http.HandleFunc(ProbeMetricsScrapeUrl, func(w http.ResponseWriter, r *http.Request) {
-		probeMetricsScrapeHandler(w, r)
-	})
+	http.HandleFunc(config.ProbeMetricsScrapeUrl, probeMetricsScrapeHandler)
 
-	http.HandleFunc(ProbeMetricsResourceGraphUrl, func(w http.ResponseWriter, r *http.Request) {
-		probeMetricsResourceGraphHandler(w, r)
-	})
+	http.HandleFunc(config.ProbeMetricsResourceGraphUrl, probeMetricsResourceGraphHandler)
 
 	// report
 	reportTmpl := template.Must(template.ParseFiles("./templates/query.html"))
