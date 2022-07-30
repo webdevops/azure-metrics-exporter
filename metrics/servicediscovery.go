@@ -9,7 +9,7 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/profiles/latest/resources/mgmt/resources"
 	resourcegraph "github.com/Azure/azure-sdk-for-go/services/resourcegraph/mgmt/2019-04-01/resourcegraph"
-	"github.com/Azure/go-autorest/autorest/to"
+	"github.com/webdevops/go-common/utils/to"
 )
 
 const (
@@ -22,8 +22,9 @@ type (
 	}
 
 	AzureResource struct {
-		ID   *string
-		Tags map[string]*string
+		ID       string
+		Location string
+		Tags     map[string]string
 	}
 )
 
@@ -58,8 +59,8 @@ func (sd *AzureServiceDiscovery) fetchResourceList(subscriptionId, filter string
 			resourceList = append(
 				resourceList,
 				AzureResource{
-					ID:   val.ID,
-					Tags: val.Tags,
+					ID:   to.String(val.ID),
+					Tags: to.StringMap(val.Tags),
 				},
 			)
 
@@ -120,10 +121,10 @@ func (sd *AzureServiceDiscovery) FindSubscriptionResources(subscriptionId, filte
 			targetList = append(
 				targetList,
 				MetricProbeTarget{
-					ResourceId:   to.String(resource.ID),
+					ResourceId:   resource.ID,
 					Metrics:      sd.prober.settings.Metrics,
 					Aggregations: sd.prober.settings.Aggregations,
-					Tags:         to.StringMap(resource.Tags),
+					Tags:         resource.Tags,
 				},
 			)
 		}
@@ -140,14 +141,14 @@ func (sd *AzureServiceDiscovery) FindSubscriptionResourcesWithScrapeTags(ctx con
 
 	if resourceList, err := sd.fetchResourceList(subscriptionId, filter); err == nil {
 		for _, resource := range resourceList {
-			if metrics, ok := resource.Tags[metricTagName]; ok && metrics != nil {
-				if aggregations, ok := resource.Tags[aggregationTagName]; ok && aggregations != nil {
+			if metrics, ok := resource.Tags[metricTagName]; ok && metrics != "" {
+				if aggregations, ok := resource.Tags[aggregationTagName]; ok && aggregations != "" {
 					targetList = append(
 						targetList,
 						MetricProbeTarget{
-							ResourceId:   to.String(resource.ID),
-							Metrics:      stringToStringList(to.String(metrics), ","),
-							Aggregations: stringToStringList(to.String(aggregations), ","),
+							ResourceId:   resource.ID,
+							Metrics:      stringToStringList(metrics, ","),
+							Aggregations: stringToStringList(aggregations, ","),
 						},
 					)
 

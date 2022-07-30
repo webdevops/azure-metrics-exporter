@@ -6,11 +6,11 @@ import (
 	"strings"
 
 	"github.com/Azure/azure-sdk-for-go/services/preview/monitor/mgmt/2018-03-01/insights"
-	"github.com/Azure/go-autorest/autorest/to"
 	"github.com/prometheus/client_golang/prometheus"
 	azureCommon "github.com/webdevops/go-common/azure"
 	"github.com/webdevops/go-common/prometheus/azuretracing"
 	stringsCommon "github.com/webdevops/go-common/strings"
+	"github.com/webdevops/go-common/utils/to"
 )
 
 var (
