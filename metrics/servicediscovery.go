@@ -50,7 +50,10 @@ func (sd *AzureServiceDiscovery) fetchResourceList(subscriptionId, filter string
 			return resourceList, err
 		}
 
-		pager := client.NewListPager(nil)
+		opts := armresources.ClientListOptions{
+			Filter: to.StringPtr(filter),
+		}
+		pager := client.NewListPager(&opts)
 
 		for pager.More() {
 			result, err := pager.NextPage(sd.prober.ctx)
@@ -182,12 +185,7 @@ func (sd *AzureServiceDiscovery) FindResourceGraph(ctx context.Context, subscrip
 		filter = "| " + filter
 	}
 
-	queryTemplate := `
-Resources
-| where type =~ "%s"
-%s
-| project id, tags
-`
+	queryTemplate := `Resources | where type =~ "%s" %s | project id, tags`
 
 	query := strings.TrimSpace(fmt.Sprintf(
 		queryTemplate,
@@ -221,27 +219,23 @@ Resources
 			}
 
 			for _, v := range resultList {
-				if resultList, ok := v.(map[string]interface{}); ok {
+				if resultRow, ok := v.(map[string]interface{}); ok {
 					// check if we got data, otherwise break the for loop
 					if len(resultList) == 0 {
 						break
 					}
 
-					for _, v := range resultList {
-						if resultRow, ok := v.(map[string]interface{}); ok {
-							if val, ok := resultRow["id"]; ok && val != "" {
-								if resourceId, ok := val.(string); ok {
-									targetList = append(
-										targetList,
-										MetricProbeTarget{
-											ResourceId:   resourceId,
-											Metrics:      sd.prober.settings.Metrics,
-											Aggregations: sd.prober.settings.Aggregations,
-											Tags:         sd.resourceTagsToStringMap(resultRow["tags"]),
-										},
-									)
-								}
-							}
+					if val, ok := resultRow["id"]; ok && val != "" {
+						if resourceId, ok := val.(string); ok {
+							targetList = append(
+								targetList,
+								MetricProbeTarget{
+									ResourceId:   resourceId,
+									Metrics:      sd.prober.settings.Metrics,
+									Aggregations: sd.prober.settings.Aggregations,
+									Tags:         sd.resourceTagsToStringMap(resultRow["tags"]),
+								},
+							)
 						}
 					}
 				}
