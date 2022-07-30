@@ -16,8 +16,8 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	log "github.com/sirupsen/logrus"
-	azureCommon "github.com/webdevops/go-common/azure"
-	"github.com/webdevops/go-common/prometheus/azuretracing"
+	"github.com/webdevops/go-common/azuresdk/armclient"
+	"github.com/webdevops/go-common/azuresdk/prometheus/tracing"
 
 	"github.com/webdevops/azure-metrics-exporter/config"
 )
@@ -32,7 +32,7 @@ var (
 	argparser *flags.Parser
 	opts      config.Opts
 
-	AzureClient *azureCommon.Client
+	AzureClient *armclient.ArmClient
 
 	prometheusCollectTime    *prometheus.SummaryVec
 	prometheusMetricRequests *prometheus.CounterVec
@@ -113,7 +113,7 @@ func initLogger() {
 
 func initAzureConnection() {
 	var err error
-	AzureClient, err = azureCommon.NewClientFromEnvironment(*opts.Azure.Environment, log.StandardLogger())
+	AzureClient, err = armclient.NewArmClientWithCloudName(*opts.Azure.Environment, log.StandardLogger())
 	if err != nil {
 		log.Panic(err.Error())
 	}
@@ -137,7 +137,7 @@ func startHttpServer() {
 		}
 	})
 
-	http.Handle(config.MetricsUrl, azuretracing.RegisterAzureMetricAutoClean(promhttp.Handler()))
+	http.Handle(config.MetricsUrl, tracing.RegisterAzureMetricAutoClean(promhttp.Handler()))
 
 	http.HandleFunc(config.ProbeMetricsResourceUrl, probeMetricsResourceHandler)
 

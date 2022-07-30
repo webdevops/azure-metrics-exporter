@@ -7,8 +7,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/Azure/azure-sdk-for-go/profiles/latest/resources/mgmt/resources"
-	resourcegraph "github.com/Azure/azure-sdk-for-go/services/resourcegraph/mgmt/2019-04-01/resourcegraph"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resourcegraph/armresourcegraph"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armresources"
 	"github.com/webdevops/go-common/utils/to"
 )
 
@@ -28,11 +28,8 @@ type (
 	}
 )
 
-func (sd *AzureServiceDiscovery) ResourcesClient(subscriptionId string) *resources.Client {
-	client := resources.NewClientWithBaseURI(sd.prober.AzureClient.Environment.ResourceManagerEndpoint, subscriptionId)
-	sd.prober.decorateAzureAutoRest(&client.BaseClient.Client)
-
-	return &client
+func (sd *AzureServiceDiscovery) ResourcesClient(subscriptionId string) (*armresources.Client, error) {
+	return armresources.NewClient(subscriptionId, sd.prober.AzureClient.GetCred(), sd.prober.AzureClient.NewArmClientOptions())
 }
 
 func (sd *AzureServiceDiscovery) publishTargetList(targetList []MetricProbeTarget) {
@@ -47,25 +44,35 @@ func (sd *AzureServiceDiscovery) fetchResourceList(subscriptionId, filter string
 
 	// try to fetch info from cache
 	if cachedResourceList, ok := sd.fetchFromCache(cacheKey); !ok {
-		list, azureErr := sd.ResourcesClient(subscriptionId).ListComplete(context.Background(), filter, "", nil)
-		if azureErr != nil {
-			err = fmt.Errorf("servicediscovery failed: %s", azureErr.Error())
-			return
+		client, err := sd.ResourcesClient(subscriptionId)
+		if err != nil {
+			err = fmt.Errorf("servicediscovery failed: %s", err.Error())
+			return resourceList, err
 		}
 
-		for list.NotDone() {
-			val := list.Value()
+		pager := client.NewListPager(nil)
 
-			resourceList = append(
-				resourceList,
-				AzureResource{
-					ID:   to.String(val.ID),
-					Tags: to.StringMap(val.Tags),
-				},
-			)
+		for pager.More() {
+			result, err := pager.NextPage(sd.prober.ctx)
+			if err != nil {
+				err = fmt.Errorf("servicediscovery failed: %s", err.Error())
+				return resourceList, err
+			}
 
-			if list.NextWithContext(sd.prober.ctx) != nil {
-				break
+			if result.Value == nil {
+				continue
+			}
+
+			for _, row := range result.Value {
+				resource := row
+
+				resourceList = append(
+					resourceList,
+					AzureResource{
+						ID:   to.String(resource.ID),
+						Tags: to.StringMap(resource.Tags),
+					},
+				)
 			}
 		}
 
@@ -163,12 +170,13 @@ func (sd *AzureServiceDiscovery) FindSubscriptionResourcesWithScrapeTags(ctx con
 	sd.publishTargetList(targetList)
 }
 
-func (sd *AzureServiceDiscovery) FindResourceGraph(ctx context.Context, subscriptions []string, resourceType, filter string) {
+func (sd *AzureServiceDiscovery) FindResourceGraph(ctx context.Context, subscriptions []string, resourceType, filter string) error {
 	var targetList []MetricProbeTarget
 
-	// Create and authorize a ResourceGraph client
-	resourcegraphClient := resourcegraph.NewWithBaseURI(sd.prober.AzureClient.Environment.ResourceManagerEndpoint)
-	sd.prober.decorateAzureAutoRest(&resourcegraphClient.Client)
+	client, err := armresourcegraph.NewClient(sd.prober.AzureClient.GetCred(), sd.prober.AzureClient.NewArmClientOptions())
+	if err != nil {
+		return err
+	}
 
 	if filter != "" {
 		filter = "| " + filter
@@ -189,51 +197,50 @@ Resources
 
 	sd.prober.logger.WithField("query", query).Debugf("using Kusto query")
 
-	requestQueryTop := int32(ResourceGraphQueryTop)
-	requestQuerySkip := int32(0)
-
-	// Set options
-	RequestOptions := resourcegraph.QueryRequestOptions{
-		ResultFormat: "objectArray",
-		Top:          &requestQueryTop,
-		Skip:         &requestQuerySkip,
+	queryFormat := armresourcegraph.ResultFormatObjectArray
+	queryTop := int32(ResourceGraphQueryTop)
+	queryRequest := armresourcegraph.QueryRequest{
+		Query: to.StringPtr(query),
+		Options: &armresourcegraph.QueryRequestOptions{
+			ResultFormat: &queryFormat,
+			Top:          &queryTop,
+		},
+		Subscriptions: to.SlicePtr(subscriptions),
 	}
 
-	// Run the query and get the results
-	resultTotalRecords := int32(0)
+	result, err := client.Resources(ctx, queryRequest, nil)
+	if err != nil {
+		return err
+	}
+
 	for {
-		// Create the query request
-		Request := resourcegraph.QueryRequest{
-			Subscriptions: &subscriptions,
-			Query:         &query,
-			Options:       &RequestOptions,
-		}
+		if resultList, ok := result.Data.([]interface{}); ok {
+			// check if we got data, otherwise break the for loop
+			if len(resultList) == 0 {
+				break
+			}
 
-		var results, queryErr = resourcegraphClient.Resources(ctx, Request)
-		if results.TotalRecords != nil {
-			resultTotalRecords = int32(*results.TotalRecords)
-		}
+			for _, v := range resultList {
+				if resultList, ok := v.(map[string]interface{}); ok {
+					// check if we got data, otherwise break the for loop
+					if len(resultList) == 0 {
+						break
+					}
 
-		if queryErr == nil {
-			if resultList, ok := results.Data.([]interface{}); ok {
-				// check if we got data, otherwise break the for loop
-				if len(resultList) == 0 {
-					break
-				}
-
-				for _, v := range resultList {
-					if resultRow, ok := v.(map[string]interface{}); ok {
-						if val, ok := resultRow["id"]; ok && val != "" {
-							if resourceId, ok := val.(string); ok {
-								targetList = append(
-									targetList,
-									MetricProbeTarget{
-										ResourceId:   resourceId,
-										Metrics:      sd.prober.settings.Metrics,
-										Aggregations: sd.prober.settings.Aggregations,
-										Tags:         sd.resourceTagsToStringMap(resultRow["tags"]),
-									},
-								)
+					for _, v := range resultList {
+						if resultRow, ok := v.(map[string]interface{}); ok {
+							if val, ok := resultRow["id"]; ok && val != "" {
+								if resourceId, ok := val.(string); ok {
+									targetList = append(
+										targetList,
+										MetricProbeTarget{
+											ResourceId:   resourceId,
+											Metrics:      sd.prober.settings.Metrics,
+											Aggregations: sd.prober.settings.Aggregations,
+											Tags:         sd.resourceTagsToStringMap(resultRow["tags"]),
+										},
+									)
+								}
 							}
 						}
 					}
@@ -241,13 +248,19 @@ Resources
 			}
 		}
 
-		*RequestOptions.Skip += requestQueryTop
-		if *RequestOptions.Skip >= resultTotalRecords {
+		if result.SkipToken != nil {
+			queryRequest.Options.SkipToken = result.SkipToken
+			result, err = client.Resources(ctx, queryRequest, nil)
+			if err != nil {
+				return err
+			}
+		} else {
 			break
 		}
 	}
 
 	sd.publishTargetList(targetList)
+	return nil
 }
 
 func (sd *AzureServiceDiscovery) resourceTagsToStringMap(tags interface{}) (ret map[string]string) {

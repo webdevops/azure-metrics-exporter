@@ -5,13 +5,12 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/Azure/go-autorest/autorest"
 	"github.com/Azure/go-autorest/autorest/azure"
 	"github.com/patrickmn/go-cache"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/remeh/sizedwaitgroup"
 	log "github.com/sirupsen/logrus"
-	azureCommon "github.com/webdevops/go-common/azure"
+	"github.com/webdevops/go-common/azuresdk/armclient"
 
 	"github.com/webdevops/azure-metrics-exporter/config"
 )
@@ -24,7 +23,7 @@ type (
 	MetricProber struct {
 		Conf config.Opts
 
-		AzureClient *azureCommon.Client
+		AzureClient *armclient.ArmClient
 
 		userAgent string
 
@@ -99,7 +98,7 @@ func (p *MetricProber) SetPrometheusRegistry(registry *prometheus.Registry) {
 	p.prometheus.registry = registry
 }
 
-func (p *MetricProber) SetAzureClient(client *azureCommon.Client) {
+func (p *MetricProber) SetAzureClient(client *armclient.ArmClient) {
 	p.AzureClient = client
 }
 
@@ -174,7 +173,12 @@ func (p *MetricProber) collectMetricsFromTargets() {
 				defer wgSubscription.Done()
 
 				wgSubscriptionResource := sizedwaitgroup.New(p.Conf.Prober.ConcurrencySubscriptionResource)
-				client := p.MetricsClient(subscriptionId)
+				client, err := p.MetricsClient(subscriptionId)
+				if err != nil {
+					// FIXME: find a better way to report errors
+					p.logger.Error(err)
+					return
+				}
 
 				for _, target := range targetList {
 					wgSubscriptionResource.Add()
@@ -238,11 +242,4 @@ func (p *MetricProber) publishMetricList() {
 			gauge.With(row.Labels).Set(row.Value)
 		}
 	}
-}
-
-func (p *MetricProber) decorateAzureAutoRest(client *autorest.Client) {
-	if err := client.AddToUserAgent(p.userAgent); err != nil {
-		p.logger.Panic(err)
-	}
-	p.AzureClient.DecorateAzureAutorest(client)
 }

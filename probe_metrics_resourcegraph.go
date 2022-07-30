@@ -62,7 +62,12 @@ func probeMetricsResourceGraphHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if !prober.FetchFromCache() {
-		prober.ServiceDiscovery.FindResourceGraph(ctx, settings.Subscriptions, resourceType, settings.Filter)
+		err := prober.ServiceDiscovery.FindResourceGraph(ctx, settings.Subscriptions, resourceType, settings.Filter)
+		if err != nil {
+			contextLogger.Errorln(err)
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
 
 		prober.RegisterSubscriptionCollectFinishCallback(func(subscriptionId string) {
 			// global stats counter

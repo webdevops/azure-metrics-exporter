@@ -1,14 +1,12 @@
 package metrics
 
 import (
-	"net/http"
 	"regexp"
 	"strings"
 
-	"github.com/Azure/azure-sdk-for-go/services/preview/monitor/mgmt/2018-03-01/insights"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/monitor/armmonitor"
 	"github.com/prometheus/client_golang/prometheus"
-	azureCommon "github.com/webdevops/go-common/azure"
-	"github.com/webdevops/go-common/prometheus/azuretracing"
+	"github.com/webdevops/go-common/azuresdk/armclient"
 	stringsCommon "github.com/webdevops/go-common/strings"
 	"github.com/webdevops/go-common/utils/to"
 )
@@ -26,7 +24,7 @@ type (
 	AzureInsightMetricsResult struct {
 		settings *RequestMetricSettings
 		target   *MetricProbeTarget
-		Result   *insights.Response
+		Result   *armmonitor.MetricsClientListResponse
 	}
 
 	PrometheusMetricResult struct {
@@ -37,52 +35,53 @@ type (
 	}
 )
 
-func (p *MetricProber) MetricsClient(subscriptionId string) *insights.MetricsClient {
-	client := insights.NewMetricsClientWithBaseURI(p.AzureClient.Environment.ResourceManagerEndpoint, subscriptionId)
-	client.Authorizer = p.AzureClient.GetAuthorizer()
-	if err := client.AddToUserAgent(p.userAgent); err != nil {
-		p.logger.Panic(err)
-	}
-
-	requestCallback := func(r *http.Request) (*http.Request, error) {
-		r.Header.Add("cache-control", "no-cache")
-		return r, nil
-	}
-
-	azuretracing.DecorateAzureAutoRestClientWithCallbacks(
-		&client.Client,
-		&requestCallback,
-		nil,
+func (p *MetricProber) MetricsClient(subscriptionId string) (*armmonitor.MetricsClient, error) {
+	clientOpts := p.AzureClient.NewArmClientOptions()
+	clientOpts.PerRetryPolicies = append(
+		clientOpts.PerRetryPolicies,
+		noCachePolicy{},
 	)
-
-	return &client
+	return armmonitor.NewMetricsClient(p.AzureClient.GetCred(), clientOpts)
 }
 
-func (p *MetricProber) FetchMetricsFromTarget(client *insights.MetricsClient, target MetricProbeTarget, metrics, aggregations []string) (AzureInsightMetricsResult, error) {
+func (p *MetricProber) FetchMetricsFromTarget(client *armmonitor.MetricsClient, target MetricProbeTarget, metrics, aggregations []string) (AzureInsightMetricsResult, error) {
 	ret := AzureInsightMetricsResult{
 		settings: p.settings,
 		target:   &target,
 	}
 
+	resultType := armmonitor.ResultTypeData
+	opts := armmonitor.MetricsClientListOptions{
+		Interval:    p.settings.Interval,
+		ResultType:  &resultType,
+		Timespan:    to.StringPtr(p.settings.Timespan),
+		Metricnames: to.StringPtr(strings.Join(metrics, ",")),
+		Top:         p.settings.MetricTop,
+	}
+
+	if len(aggregations) >= 1 {
+		opts.Aggregation = to.StringPtr(strings.Join(aggregations, ","))
+	}
+
+	if len(p.settings.MetricFilter) >= 1 {
+		opts.Filter = to.StringPtr(p.settings.MetricFilter)
+	}
+
+	if len(p.settings.MetricNamespace) >= 1 {
+		opts.Metricnamespace = to.StringPtr(p.settings.MetricNamespace)
+	}
+
+	if len(p.settings.MetricOrderBy) >= 1 {
+		opts.Orderby = to.StringPtr(p.settings.MetricOrderBy)
+	}
+
 	result, err := client.List(
 		p.ctx,
 		target.ResourceId+p.settings.ResourceSubPath,
-		p.settings.Timespan,
-		p.settings.Interval,
-		strings.Join(metrics, ","),
-		strings.Join(aggregations, ","),
-		p.settings.MetricTop,
-		p.settings.MetricOrderBy,
-		p.settings.MetricFilter,
-		insights.Data,
-		p.settings.MetricNamespace,
+		&opts,
 	)
 
 	if err == nil {
-		if result.Request.URL != nil {
-			p.logger.Debugf("sent request to %s", result.Request.URL.String())
-		}
-
 		ret.Result = &result
 	}
 
@@ -162,20 +161,25 @@ func (r *AzureInsightMetricsResult) SendMetricToChannel(channel chan<- Prometheu
 		// data, _ := json.Marshal(r.Result)
 		// fmt.Println(string(data))
 
-		for _, metric := range *r.Result.Value {
+		for _, metric := range r.Result.Value {
 			if metric.Timeseries != nil {
-				for _, timeseries := range *metric.Timeseries {
+				for _, timeseries := range metric.Timeseries {
 					if timeseries.Data != nil {
 						// get dimension name (optional)
 						dimensions := map[string]string{}
 						if timeseries.Metadatavalues != nil {
-							for _, dimensionRow := range *timeseries.Metadatavalues {
+							for _, dimensionRow := range timeseries.Metadatavalues {
 								dimensions[to.String(dimensionRow.Name.Value)] = to.String(dimensionRow.Value)
 							}
 						}
 
 						resourceId := r.target.ResourceId
-						azureResource, _ := azureCommon.ParseResourceId(resourceId)
+						azureResource, _ := armclient.ParseResourceId(resourceId)
+
+						metricUnit := ""
+						if metric.Unit != nil {
+							metricUnit = string(*metric.Unit)
+						}
 
 						metricLabels := prometheus.Labels{
 							"resourceID":     strings.ToLower(resourceId),
@@ -183,14 +187,14 @@ func (r *AzureInsightMetricsResult) SendMetricToChannel(channel chan<- Prometheu
 							"resourceGroup":  azureResource.ResourceGroup,
 							"resourceName":   azureResource.ResourceName,
 							"metric":         to.String(metric.Name.Value),
-							"unit":           string(metric.Unit),
+							"unit":           metricUnit,
 							"interval":       to.String(r.settings.Interval),
 							"timespan":       r.settings.Timespan,
 							"aggregation":    "",
 						}
 
 						// add resource tags as labels
-						metricLabels = azureCommon.AddResourceTagsToPrometheusLabels(
+						metricLabels = armclient.AddResourceTagsToPrometheusLabels(
 							metricLabels,
 							r.target.Tags,
 							r.settings.TagLabels,
@@ -212,7 +216,7 @@ func (r *AzureInsightMetricsResult) SendMetricToChannel(channel chan<- Prometheu
 							}
 						}
 
-						for _, timeseriesData := range *timeseries.Data {
+						for _, timeseriesData := range timeseries.Data {
 							if timeseriesData.Total != nil {
 								metricLabels["aggregation"] = "total"
 								channel <- r.buildMetric(
