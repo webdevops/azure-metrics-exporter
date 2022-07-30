@@ -65,8 +65,8 @@ Usage:
   azure-metrics-exporter [OPTIONS]
 
 Application Options:
-      --debug                              debug mode [$DEBUG]
-  -v, --verbose                            verbose mode [$VERBOSE]
+      --log.debug                          debug mode [$LOG_DEBUG]
+      --log.trace                          trace mode [$LOG_TRACE]
       --log.json                           Switch log output to json format [$LOG_JSON]
       --azure-environment=                 Azure environment name (default: AZUREPUBLICCLOUD) [$AZURE_ENVIRONMENT]
       --azure-ad-resource-url=             Specifies the AAD resource ID to use. If not set, it defaults to
