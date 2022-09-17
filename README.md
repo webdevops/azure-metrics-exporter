@@ -72,19 +72,19 @@ Application Options:
       --azure-ad-resource-url=             Specifies the AAD resource ID to use. If not set, it defaults to
                                            ResourceManagerEndpoint for operations with Azure Resource Manager
                                            [$AZURE_AD_RESOURCE]
-      --azure.servicediscovery.cache=      Duration for caching Azure ServiceDiscovery of workspaces to reduce API
-                                           calls (time.Duration) (default: 30m) [$AZURE_SERVICEDISCOVERY_CACHE]
-      --metrics.resourceid.lowercase       Publish lowercase Azure Resoruce ID in metrics [$METRIC_RESOURCEID_LOWERCASE]
+      --azure.servicediscovery.cache=      Duration for caching Azure ServiceDiscovery of workspaces to reduce API calls
+                                           (time.Duration) (default: 30m) [$AZURE_SERVICEDISCOVERY_CACHE]
+      --azure.resource-tag=                Azure Resource tags (space delimiter) (default: owner) [$AZURE_RESOURCE_TAG]
       --metrics.template=                  Template for metric name (default: {name}) [$METRIC_TEMPLATE]
       --metrics.help=                      Metric help (with template support) (default: Azure monitor insight metric)
                                            [$METRIC_HELP]
       --concurrency.subscription=          Concurrent subscription fetches (default: 5) [$CONCURRENCY_SUBSCRIPTION]
-      --concurrency.subscription.resource= Concurrent requests per resource (inside subscription requests) (default:
-                                           10) [$CONCURRENCY_SUBSCRIPTION_RESOURCE]
+      --concurrency.subscription.resource= Concurrent requests per resource (inside subscription requests) (default: 10)
+                                           [$CONCURRENCY_SUBSCRIPTION_RESOURCE]
       --enable-caching                     Enable internal caching [$ENABLE_CACHING]
-      --bind=                              Server address (default: :8080) [$SERVER_BIND]
-      --development.webui                  Enable webui on server bind socket, accessible with /query
-                                           [$DEVELOPMENT_WEBUI]
+      --server.bind=                       Server address (default: :8080) [$SERVER_BIND]
+      --server.timeout.read=               Server read timeout (default: 5s) [$SERVER_TIMEOUT_READ]
+      --server.timeout.write=              Server write timeout (default: 10s) [$SERVER_TIMEOUT_WRITE]
 
 Help Options:
   -h, --help                               Show this help message
