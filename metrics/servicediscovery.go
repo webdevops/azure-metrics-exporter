@@ -46,7 +46,7 @@ func (sd *AzureServiceDiscovery) fetchResourceList(subscriptionId, filter string
 	if cachedResourceList, ok := sd.fetchFromCache(cacheKey); !ok {
 		client, err := sd.ResourcesClient(subscriptionId)
 		if err != nil {
-			err = fmt.Errorf("servicediscovery failed: %s", err.Error())
+			err = fmt.Errorf("servicediscovery failed: %w", err)
 			return resourceList, err
 		}
 
@@ -58,7 +58,7 @@ func (sd *AzureServiceDiscovery) fetchResourceList(subscriptionId, filter string
 		for pager.More() {
 			result, err := pager.NextPage(sd.prober.ctx)
 			if err != nil {
-				err = fmt.Errorf("servicediscovery failed: %s", err.Error())
+				err = fmt.Errorf("servicediscovery failed: %w", err)
 				return resourceList, err
 			}
 

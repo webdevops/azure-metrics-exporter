@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/base64"
+	"errors"
 	"fmt"
 	"html/template"
 	"net/http"
@@ -58,7 +59,7 @@ func main() {
 	initAzureConnection()
 	initMetricCollector()
 
-	log.Infof("starting http server on %s", opts.ServerBind)
+	log.Infof("starting http server on %s", opts.Server.Bind)
 	startHttpServer()
 }
 
@@ -68,7 +69,8 @@ func initArgparser() {
 
 	// check if there is an parse error
 	if err != nil {
-		if flagsErr, ok := err.(*flags.Error); ok && flagsErr.Type == flags.ErrHelp {
+		var flagsErr *flags.Error
+		if ok := errors.As(err, &flagsErr); ok && flagsErr.Type == flags.ErrHelp {
 			os.Exit(0)
 		} else {
 			fmt.Println()
@@ -123,33 +125,35 @@ func initAzureConnection() {
 
 // start and handle prometheus handler
 func startHttpServer() {
+	mux := http.NewServeMux()
+
 	// healthz
-	http.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
 		if _, err := fmt.Fprint(w, "Ok"); err != nil {
 			log.Error(err)
 		}
 	})
 
 	// readyz
-	http.HandleFunc("/readyz", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/readyz", func(w http.ResponseWriter, r *http.Request) {
 		if _, err := fmt.Fprint(w, "Ok"); err != nil {
 			log.Error(err)
 		}
 	})
 
-	http.Handle(config.MetricsUrl, tracing.RegisterAzureMetricAutoClean(promhttp.Handler()))
+	mux.Handle(config.MetricsUrl, tracing.RegisterAzureMetricAutoClean(promhttp.Handler()))
 
-	http.HandleFunc(config.ProbeMetricsResourceUrl, probeMetricsResourceHandler)
+	mux.HandleFunc(config.ProbeMetricsResourceUrl, probeMetricsResourceHandler)
 
-	http.HandleFunc(config.ProbeMetricsListUrl, probeMetricsListHandler)
+	mux.HandleFunc(config.ProbeMetricsListUrl, probeMetricsListHandler)
 
-	http.HandleFunc(config.ProbeMetricsScrapeUrl, probeMetricsScrapeHandler)
+	mux.HandleFunc(config.ProbeMetricsScrapeUrl, probeMetricsScrapeHandler)
 
-	http.HandleFunc(config.ProbeMetricsResourceGraphUrl, probeMetricsResourceGraphHandler)
+	mux.HandleFunc(config.ProbeMetricsResourceGraphUrl, probeMetricsResourceGraphHandler)
 
 	// report
 	reportTmpl := template.Must(template.ParseFiles("./templates/query.html"))
-	http.HandleFunc("/query", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/query", func(w http.ResponseWriter, r *http.Request) {
 		cspNonce := base64.StdEncoding.EncodeToString([]byte(uuid.New().String()))
 
 		w.Header().Add("Content-Type", "text/html")
@@ -175,7 +179,13 @@ func startHttpServer() {
 		}
 	})
 
-	log.Fatal(http.ListenAndServe(opts.ServerBind, nil))
+	srv := &http.Server{
+		Addr:         opts.Server.Bind,
+		Handler:      mux,
+		ReadTimeout:  opts.Server.ReadTimeout,
+		WriteTimeout: opts.Server.WriteTimeout,
+	}
+	log.Fatal(srv.ListenAndServe())
 }
 
 func initMetricCollector() {
