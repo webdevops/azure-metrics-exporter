@@ -1,6 +1,7 @@
 package main
 
 import (
+	"embed"
 	"encoding/base64"
 	"errors"
 	"fmt"
@@ -40,6 +41,9 @@ var (
 
 	metricsCache *cache.Cache
 	azureCache   *cache.Cache
+
+	//go:embed templates/*.html
+	templates embed.FS
 
 	// Git version information
 	gitCommit = "<unknown>"
@@ -152,7 +156,7 @@ func startHttpServer() {
 	mux.HandleFunc(config.ProbeMetricsResourceGraphUrl, probeMetricsResourceGraphHandler)
 
 	// report
-	reportTmpl := template.Must(template.ParseFiles("./templates/query.html"))
+	tmpl := template.Must(template.ParseFS(templates, "templates/*.html"))
 	mux.HandleFunc("/query", func(w http.ResponseWriter, r *http.Request) {
 		cspNonce := base64.StdEncoding.EncodeToString([]byte(uuid.New().String()))
 
@@ -174,7 +178,7 @@ func startHttpServer() {
 			Nonce: cspNonce,
 		}
 
-		if err := reportTmpl.Execute(w, templatePayload); err != nil {
+		if err := tmpl.ExecuteTemplate(w, "query.html", templatePayload); err != nil {
 			log.Error(err)
 		}
 	})
