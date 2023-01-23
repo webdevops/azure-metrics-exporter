@@ -1,6 +1,7 @@
 package metrics
 
 import (
+	"fmt"
 	"regexp"
 	"strings"
 
@@ -75,9 +76,17 @@ func (p *MetricProber) FetchMetricsFromTarget(client *armmonitor.MetricsClient, 
 		opts.Orderby = to.StringPtr(p.settings.MetricOrderBy)
 	}
 
+	resourceURI := target.ResourceId
+	if strings.HasPrefix(strings.ToLower(p.settings.MetricNamespace), "microsoft.storage/storageaccounts/") {
+		splitNamespace := strings.Split(p.settings.MetricNamespace, "/")
+		// Storage accounts have an extra requirement that their ResourceURI include <type>/default
+		storageAccountType := splitNamespace[len(splitNamespace)-1]
+		resourceURI = resourceURI + fmt.Sprintf("/%s/default", storageAccountType)
+	}
+
 	result, err := client.List(
 		p.ctx,
-		target.ResourceId+p.settings.ResourceSubPath,
+		resourceURI,
 		&opts,
 	)
 
