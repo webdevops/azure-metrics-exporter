@@ -41,7 +41,7 @@ func probeMetricsResourceHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	prober := metrics.NewMetricProber(ctx, contextLogger, w, r, &settings, opts)
+	prober := metrics.NewMetricProber(ctx, contextLogger, w, &settings, opts)
 	prober.SetUserAgent(UserAgent + gitTag)
 	prober.SetAzureClient(AzureClient)
 	prober.SetPrometheusRegistry(registry)
