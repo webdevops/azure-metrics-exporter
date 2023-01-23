@@ -326,10 +326,9 @@ azurerm_ratelimit{scope="subscription",subscriptionID="...",type="read"} 11999
 |------------------------|---------------------------|----------|----------|----------------------------------------------------------------------|
 | `subscription`         |                           | **yes**  | **yes**  | Azure Subscription ID                                                |
 | `target`               |                           | **yes**  | **yes**  | Azure Resource URI                                                   |
-| `resourceSubPath`      |                           | no       | no       | Additional resource path which will be appended to Resource ID       |
 | `timespan`             | `PT1M`                    | no       | no       | Metric timespan                                                      |
 | `interval`             |                           | no       | no       | Metric timespan                                                      |
-| `metricNamespace`      |                           | no       | **yes**  | Metric namespace (might need also `resourceSubPath`)                 |
+| `metricNamespace`      |                           | no       | **yes**  | Metric namespace                  |
 | `metric`               |                           | no       | **yes**  | Metric name                                                          |
 | `aggregation`          |                           | no       | **yes**  | Metric aggregation (`minimum`, `maximum`, `average`, `total`, `count`, multiple possible separated with `,`) |
 | `name`                 | `azurerm_resource_metric` | no       | no       | Prometheus metric name                                               |
@@ -350,10 +349,9 @@ HINT: service discovery information is cached for duration set by `$AZURE_SERVIC
 |----------------------------|---------------------------|----------|----------|----------------------------------------------------------------------|
 | `subscription`             |                           | **yes**  | **yes**  | Azure Subscription ID (or multiple separate by comma)                |
 | `resourceType` or `filter` |                           | **yes**  | no       | Azure Resource type or filter query (https://docs.microsoft.com/en-us/rest/api/resources/resources/list) |
-| `resourceSubPath`          |                           | no       | no       | Additional resource path which will be appended to Resource ID       |
 | `timespan`                 | `PT1M`                    | no       | no       | Metric timespan                                                      |
 | `interval`                 |                           | no       | no       | Metric timespan                                                      |
-| `metricNamespace`          |                           | no       | **yes**  | Metric namespace (might need also `resourceSubPath`)                 |
+| `metricNamespace`          |                           | no       | **yes**  | Metric namespace                  |
 | `metric`                   |                           | no       | **yes**  | Metric name                                                          |
 | `aggregation`              |                           | no       | **yes**  | Metric aggregation (`minimum`, `maximum`, `average`, `total`, `count`, multiple possible separated with `,`) |
 | `name`                     | `azurerm_resource_metric` | no       | no       | Prometheus metric name                                               |
@@ -374,12 +372,11 @@ HINT: service discovery information is cached for duration set by `$AZURE_SERVIC
 |----------------------------|---------------------------|----------|----------|----------------------------------------------------------------------|
 | `subscription`             |                           | **yes**  | **yes**  | Azure Subscription ID  (or multiple separate by comma)               |
 | `resourceType` or `filter` |                           | **yes**  | no       | Azure Resource type or filter query (https://docs.microsoft.com/en-us/rest/api/resources/resources/list) |
-| `resourceSubPath`          |                           | no       | no       | Additional resource path which will be appended to Resource ID       |
 | `metricTagName`            |                           | **yes**  | no       | Resource tag name for getting "metrics" list                         |
 | `aggregationTagName`       |                           | **yes**  | no       | Resource tag name for getting "aggregations" list                    |
 | `timespan`                 | `PT1M`                    | no       | no       | Metric timespan                                                      |
 | `interval`                 |                           | no       | no       | Metric timespan                                                      |
-| `metricNamespace`          |                           | no       | **yes**  | Metric namespace (might need also `resourceSubPath`)                 |
+| `metricNamespace`          |                           | no       | **yes**  | Metric namespace                  |
 | `metric`                   |                           | no       | **yes**  | Metric name                                                          |
 | `aggregation`              |                           | no       | **yes**  | Metric aggregation (`minimum`, `maximum`, `average`, `total`, multiple possible separated with `,`)  |
 | `name`                     | `azurerm_resource_metric` | no       | no       | Prometheus metric name                                               |
@@ -404,10 +401,9 @@ HINT: service discovery information is cached for duration set by `$AZURE_SERVIC
 | `subscription`             |                           | **yes**  | **yes**  | Azure Subscription ID (or multiple separate by comma)                |
 | `resourceType`             |                           | **yes**  | no       | Azure Resource type                                                  |
 | `filter`                   |                           | no       | no       | Additional Kusto query part (eg. `where id contains "/xzy/"`)        |
-| `resourceSubPath`          |                           | no       | no       | Additional resource path which will be appended to Resource ID       |
 | `timespan`                 | `PT1M`                    | no       | no       | Metric timespan                                                      |
 | `interval`                 |                           | no       | no       | Metric timespan                                                      |
-| `metricNamespace`          |                           | no       | **yes**  | Metric namespace (might need also `resourceSubPath`)                 |
+| `metricNamespace`          |                           | no       | **yes**  | Metric namespace                  |
 | `metric`                   |                           | no       | **yes**  | Metric name                                                          |
 | `aggregation`              |                           | no       | **yes**  | Metric aggregation (`minimum`, `maximum`, `average`, `total`, `count`, multiple possible separated with `,`) |
 | `name`                     | `azurerm_resource_metric` | no       | no       | Prometheus metric name                                               |
@@ -620,7 +616,6 @@ Virtual Gateway connection metrics (dimension support)
     subscription:
     - xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
     resourceType: ["Microsoft.Storage/storageAccounts"]
-    resourceSubPath: ["blobServices/default"] # will be appened to resource ID
     metricNamespace: ["Microsoft.Storage/storageAccounts/blobServices"]
     metric:
     - BlobCapacity
