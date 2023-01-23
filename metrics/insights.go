@@ -102,7 +102,7 @@ func (r *AzureInsightMetricsResult) buildMetric(labels prometheus.Labels, value 
 	}
 
 	// fallback if template is empty (should not be)
-	if r.settings.Name == "" {
+	if r.settings.MetricTemplate == "" {
 		metric.Name = r.settings.Name
 	}
 
