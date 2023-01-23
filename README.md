@@ -312,12 +312,13 @@ azurerm_ratelimit{scope="subscription",subscriptionID="...",type="read"} 11999
 
 ## HTTP Endpoints
 
-| Endpoint                       | Description                                                                         |
-|--------------------------------|-------------------------------------------------------------------------------------|
-| `/metrics`                     | Default prometheus golang metrics                                                   |
-| `/probe/metrics/resource`      | Probe metrics for one resource (see `azurerm_resource_metric`)                      |
-| `/probe/metrics/list`          | Probe metrics for list of resources (see `azurerm_resource_metric`)                 |
-| `/probe/metrics/scrape`        | Probe metrics for list of resources and config on resource by tag name (see `azurerm_resource_metric`) |
+| Endpoint                      | Description                                                                                            |
+|-------------------------------|--------------------------------------------------------------------------------------------------------|
+| `/metrics`                    | Default prometheus golang metrics                                                                      |
+| `/probe/metrics/resource`     | Probe metrics for one resource (see `azurerm_resource_metric`)                                         |
+| `/probe/metrics/list`         | Probe metrics for list of resources (see `azurerm_resource_metric`)                                    |
+| `/probe/metrics/scrape`       | Probe metrics for list of resources and config on resource by tag name (see `azurerm_resource_metric`) |
+| `/probe/metrics/resourcegraph`        | Probe metrics for list of resources based on a kusto query and the resource graph API                  |
 
 ### /probe/metrics/resource parameters
 
