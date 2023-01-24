@@ -159,15 +159,16 @@ Help recommendation: `Azure metrics for {metric} with aggregation {aggregation} 
 
 Following templates are available:
 
-| Template         |  Description                                                                                      |
-|------------------|---------------------------------------------------------------------------------------------------|
-| `{name}`         | Name of template specified by request parameter `name`                                            |
-| `{metric}`       | Name of Azure monitor metric                                                                      |
-| `{dimension}`    | Dimension value of Azure monitor metric (if dimension is used)                                    |
-| `{unit}`         | Unit name of Azure monitor metric (eg `count`, `percent`, ...)                                    |
-| `{aggregation}`  | Aggregation of Azure monitor metric (eg `total`, `average`)                                       |
-| `{interval}`     | Interval of requested Azure monitor metric                                                        |
-| `{timespan}`     | Timespan of requested Azure monitor metric                                                        |
+| Template        | Description                                                                               |
+|-----------------|-------------------------------------------------------------------------------------------|
+| `{name}`        | Name of template specified by request parameter `name`                                    |
+| `{type}`        | The ResourceType or MetricNamespace specified in the request (not applicable to all APIs) |
+| `{metric}`      | Name of Azure monitor metric                                                              |
+| `{dimension}`   | Dimension value of Azure monitor metric (if dimension is used)                            |
+| `{unit}`        | Unit name of Azure monitor metric (eg `count`, `percent`, ...)                            |
+| `{aggregation}` | Aggregation of Azure monitor metric (eg `total`, `average`)                               |
+| `{interval}`    | Interval of requested Azure monitor metric                                                |
+| `{timespan}`    | Timespan of requested Azure monitor metric                                                |
 
 #### default template
 

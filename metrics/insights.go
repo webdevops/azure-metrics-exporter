@@ -16,6 +16,7 @@ var (
 	metricNamePlaceholders     = regexp.MustCompile(`{([^}]+)}`)
 	metricNameNotAllowedChars  = regexp.MustCompile(`[^a-zA-Z0-9_:]`)
 	metricLabelNotAllowedChars = regexp.MustCompile(`[^a-zA-Z0-9_]`)
+	metricNameReplacer         = strings.NewReplacer("-", "_", " ", "_", "/", "_", ".", "_")
 )
 
 type (
@@ -115,6 +116,12 @@ func (r *AzureInsightMetricsResult) buildMetric(labels prometheus.Labels, value 
 		metric.Name = r.settings.Name
 	}
 
+	resourceType := r.settings.ResourceType
+	// MetricNamespace is more descriptive than type
+	if r.settings.MetricNamespace != "" {
+		resourceType = r.settings.MetricNamespace
+	}
+
 	// set help
 	metric.Help = r.settings.HelpTemplate
 	if metricNamePlaceholders.MatchString(metric.Help) {
@@ -125,6 +132,8 @@ func (r *AzureInsightMetricsResult) buildMetric(labels prometheus.Labels, value 
 				switch fieldName {
 				case "name":
 					return r.settings.Name
+				case "type":
+					return resourceType
 				default:
 					if fieldValue, exists := metric.Labels[fieldName]; exists {
 						return fieldValue
@@ -143,6 +152,8 @@ func (r *AzureInsightMetricsResult) buildMetric(labels prometheus.Labels, value 
 				switch fieldName {
 				case "name":
 					return r.settings.Name
+				case "type":
+					return resourceType
 				default:
 					if fieldValue, exists := metric.Labels[fieldName]; exists {
 						// remove label, when we add it to metric name
@@ -156,8 +167,7 @@ func (r *AzureInsightMetricsResult) buildMetric(labels prometheus.Labels, value 
 	}
 
 	// sanitize metric name
-	metric.Name = strings.ReplaceAll(metric.Name, "-", "_")
-	metric.Name = strings.ReplaceAll(metric.Name, " ", "_")
+	metric.Name = metricNameReplacer.Replace(metric.Name)
 	metric.Name = strings.ToLower(metric.Name)
 	metric.Name = metricNameNotAllowedChars.ReplaceAllString(metric.Name, "")
 
