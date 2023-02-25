@@ -21,7 +21,6 @@ type (
 	RequestMetricSettings struct {
 		Name            string
 		Subscriptions   []string
-		ResourceSubPath string
 		ResourceType    string
 		Filter          string
 		Timespan        string
@@ -29,7 +28,6 @@ type (
 		Metrics         []string
 		MetricNamespace string
 		Aggregations    []string
-		Target          []string
 
 		// needed for dimension support
 		MetricTop     *int32
@@ -87,13 +85,6 @@ func NewRequestMetricSettings(r *http.Request, opts config.Opts) (RequestMetricS
 		return ret, err
 	}
 
-	// param metricNamespace
-	ret.ResourceSubPath = paramsGetWithDefault(params, "resourceSubPath", "")
-	ret.ResourceSubPath = fmt.Sprintf(
-		"/%s",
-		strings.TrimLeft(ret.ResourceSubPath, "/"),
-	)
-
 	// param filter
 	ret.ResourceType = paramsGetWithDefault(params, "resourceType", "")
 	ret.Filter = paramsGetWithDefault(params, "filter", "")
@@ -119,13 +110,6 @@ func NewRequestMetricSettings(r *http.Request, opts config.Opts) (RequestMetricS
 	// param aggregation
 	if val, err := paramsGetList(params, "aggregation"); err == nil {
 		ret.Aggregations = val
-	} else {
-		return ret, err
-	}
-
-	// param target
-	if val, err := paramsGetList(params, "target"); err == nil {
-		ret.Target = val
 	} else {
 		return ret, err
 	}

@@ -1,6 +1,7 @@
 package metrics
 
 import (
+	"fmt"
 	"regexp"
 	"strings"
 
@@ -15,6 +16,7 @@ var (
 	metricNamePlaceholders     = regexp.MustCompile(`{([^}]+)}`)
 	metricNameNotAllowedChars  = regexp.MustCompile(`[^a-zA-Z0-9_:]`)
 	metricLabelNotAllowedChars = regexp.MustCompile(`[^a-zA-Z0-9_]`)
+	metricNameReplacer         = strings.NewReplacer("-", "_", " ", "_", "/", "_", ".", "_")
 )
 
 type (
@@ -75,9 +77,17 @@ func (p *MetricProber) FetchMetricsFromTarget(client *armmonitor.MetricsClient, 
 		opts.Orderby = to.StringPtr(p.settings.MetricOrderBy)
 	}
 
+	resourceURI := target.ResourceId
+	if strings.HasPrefix(strings.ToLower(p.settings.MetricNamespace), "microsoft.storage/storageaccounts/") {
+		splitNamespace := strings.Split(p.settings.MetricNamespace, "/")
+		// Storage accounts have an extra requirement that their ResourceURI include <type>/default
+		storageAccountType := splitNamespace[len(splitNamespace)-1]
+		resourceURI = resourceURI + fmt.Sprintf("/%s/default", storageAccountType)
+	}
+
 	result, err := client.List(
 		p.ctx,
-		target.ResourceId+p.settings.ResourceSubPath,
+		resourceURI,
 		&opts,
 	)
 
@@ -102,8 +112,14 @@ func (r *AzureInsightMetricsResult) buildMetric(labels prometheus.Labels, value 
 	}
 
 	// fallback if template is empty (should not be)
-	if r.settings.Name == "" {
+	if r.settings.MetricTemplate == "" {
 		metric.Name = r.settings.Name
+	}
+
+	resourceType := r.settings.ResourceType
+	// MetricNamespace is more descriptive than type
+	if r.settings.MetricNamespace != "" {
+		resourceType = r.settings.MetricNamespace
 	}
 
 	// set help
@@ -116,6 +132,8 @@ func (r *AzureInsightMetricsResult) buildMetric(labels prometheus.Labels, value 
 				switch fieldName {
 				case "name":
 					return r.settings.Name
+				case "type":
+					return resourceType
 				default:
 					if fieldValue, exists := metric.Labels[fieldName]; exists {
 						return fieldValue
@@ -134,6 +152,8 @@ func (r *AzureInsightMetricsResult) buildMetric(labels prometheus.Labels, value 
 				switch fieldName {
 				case "name":
 					return r.settings.Name
+				case "type":
+					return resourceType
 				default:
 					if fieldValue, exists := metric.Labels[fieldName]; exists {
 						// remove label, when we add it to metric name
@@ -147,8 +167,7 @@ func (r *AzureInsightMetricsResult) buildMetric(labels prometheus.Labels, value 
 	}
 
 	// sanitize metric name
-	metric.Name = strings.ReplaceAll(metric.Name, "-", "_")
-	metric.Name = strings.ReplaceAll(metric.Name, " ", "_")
+	metric.Name = metricNameReplacer.Replace(metric.Name)
 	metric.Name = strings.ToLower(metric.Name)
 	metric.Name = metricNameNotAllowedChars.ReplaceAllString(metric.Name, "")
 

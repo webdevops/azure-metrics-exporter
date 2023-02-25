@@ -68,10 +68,9 @@ type (
 	}
 )
 
-func NewMetricProber(ctx context.Context, logger *log.Entry, w http.ResponseWriter, r *http.Request, settings *RequestMetricSettings, conf config.Opts) *MetricProber {
+func NewMetricProber(ctx context.Context, logger *log.Entry, w http.ResponseWriter, settings *RequestMetricSettings, conf config.Opts) *MetricProber {
 	prober := MetricProber{}
 	prober.ctx = ctx
-	prober.request = r
 	prober.response = w
 	prober.logger = logger
 	prober.settings = settings
