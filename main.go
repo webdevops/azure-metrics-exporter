@@ -19,6 +19,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	log "github.com/sirupsen/logrus"
 	"github.com/webdevops/go-common/azuresdk/armclient"
+	"github.com/webdevops/go-common/azuresdk/azidentity"
 	"github.com/webdevops/go-common/azuresdk/prometheus/tracing"
 
 	"github.com/webdevops/azure-metrics-exporter/config"
@@ -119,12 +120,22 @@ func initLogger() {
 
 func initAzureConnection() {
 	var err error
-	AzureClient, err = armclient.NewArmClientWithCloudName(*opts.Azure.Environment, log.StandardLogger())
+
+	if opts.Azure.Environment != nil {
+		if err := os.Setenv(azidentity.EnvAzureEnvironment, *opts.Azure.Environment); err != nil {
+			log.Warnf(`unable to set envvar "%s": %v`, azidentity.EnvAzureEnvironment, err.Error())
+		}
+	}
+
+	AzureClient, err = armclient.NewArmClientFromEnvironment(log.StandardLogger())
 	if err != nil {
 		log.Panic(err.Error())
 	}
-
 	AzureClient.SetUserAgent(UserAgent + gitTag)
+
+	if err := AzureClient.Connect(); err != nil {
+		log.Panic(err.Error())
+	}
 }
 
 // start and handle prometheus handler
