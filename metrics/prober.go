@@ -29,7 +29,6 @@ type (
 
 		settings *RequestMetricSettings
 
-		request  *http.Request
 		response http.ResponseWriter
 
 		ctx context.Context
