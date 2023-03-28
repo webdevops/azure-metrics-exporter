@@ -9,7 +9,6 @@ import (
 	"net/http"
 	"os"
 	"runtime"
-	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -17,7 +16,6 @@ import (
 	"github.com/patrickmn/go-cache"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
-	log "github.com/sirupsen/logrus"
 	"github.com/webdevops/go-common/azuresdk/armclient"
 	"github.com/webdevops/go-common/azuresdk/azidentity"
 	"github.com/webdevops/go-common/azuresdk/prometheus/tracing"
@@ -55,16 +53,16 @@ func main() {
 	initArgparser()
 	initLogger()
 
-	log.Infof("starting azure-metrics-exporter v%s (%s; %s; by %v)", gitTag, gitCommit, runtime.Version(), Author)
-	log.Info(string(opts.GetJson()))
+	logger.Infof("starting azure-metrics-exporter v%s (%s; %s; by %v)", gitTag, gitCommit, runtime.Version(), Author)
+	logger.Info(string(opts.GetJson()))
 	metricsCache = cache.New(1*time.Minute, 1*time.Minute)
 	azureCache = cache.New(1*time.Minute, 1*time.Minute)
 
-	log.Infof("init Azure connection")
+	logger.Infof("init Azure connection")
 	initAzureConnection()
 	initMetricCollector()
 
-	log.Infof("starting http server on %s", opts.Server.Bind)
+	logger.Infof("starting http server on %s", opts.Server.Bind)
 	startHttpServer()
 }
 
@@ -85,56 +83,23 @@ func initArgparser() {
 	}
 }
 
-func initLogger() {
-	// verbose level
-	if opts.Logger.Debug {
-		log.SetLevel(log.DebugLevel)
-	}
-
-	// trace level
-	if opts.Logger.Trace {
-		log.SetReportCaller(true)
-		log.SetLevel(log.TraceLevel)
-		log.SetFormatter(&log.TextFormatter{
-			CallerPrettyfier: func(f *runtime.Frame) (string, string) {
-				s := strings.Split(f.Function, "/")
-				funcName := s[len(s)-1]
-				return funcName, fmt.Sprintf("%s:%d", f.File, f.Line)
-			},
-		})
-	}
-
-	// json log format
-	if opts.Logger.Json {
-		log.SetReportCaller(true)
-		log.SetFormatter(&log.JSONFormatter{
-			DisableTimestamp: true,
-			CallerPrettyfier: func(f *runtime.Frame) (string, string) {
-				s := strings.Split(f.Function, "/")
-				funcName := s[len(s)-1]
-				return funcName, fmt.Sprintf("%s:%d", f.File, f.Line)
-			},
-		})
-	}
-}
-
 func initAzureConnection() {
 	var err error
 
 	if opts.Azure.Environment != nil {
 		if err := os.Setenv(azidentity.EnvAzureEnvironment, *opts.Azure.Environment); err != nil {
-			log.Warnf(`unable to set envvar "%s": %v`, azidentity.EnvAzureEnvironment, err.Error())
+			logger.Warnf(`unable to set envvar "%s": %v`, azidentity.EnvAzureEnvironment, err.Error())
 		}
 	}
 
-	AzureClient, err = armclient.NewArmClientFromEnvironment(log.StandardLogger())
+	AzureClient, err = armclient.NewArmClientFromEnvironment(logger)
 	if err != nil {
-		log.Panic(err.Error())
+		logger.Fatal(err.Error())
 	}
 	AzureClient.SetUserAgent(UserAgent + gitTag)
 
 	if err := AzureClient.Connect(); err != nil {
-		log.Panic(err.Error())
+		logger.Fatal(err.Error())
 	}
 }
 
@@ -145,14 +110,14 @@ func startHttpServer() {
 	// healthz
 	mux.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
 		if _, err := fmt.Fprint(w, "Ok"); err != nil {
-			log.Error(err)
+			logger.Error(err)
 		}
 	})
 
 	// readyz
 	mux.HandleFunc("/readyz", func(w http.ResponseWriter, r *http.Request) {
 		if _, err := fmt.Fprint(w, "Ok"); err != nil {
-			log.Error(err)
+			logger.Error(err)
 		}
 	})
 
@@ -190,7 +155,7 @@ func startHttpServer() {
 		}
 
 		if err := tmpl.ExecuteTemplate(w, "query.html", templatePayload); err != nil {
-			log.Error(err)
+			logger.Error(err)
 		}
 	})
 
@@ -200,7 +165,7 @@ func startHttpServer() {
 		ReadTimeout:  opts.Server.ReadTimeout,
 		WriteTimeout: opts.Server.WriteTimeout,
 	}
-	log.Fatal(srv.ListenAndServe())
+	logger.Fatal(srv.ListenAndServe())
 }
 
 func initMetricCollector() {

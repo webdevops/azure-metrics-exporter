@@ -43,7 +43,7 @@ func (p *MetricProber) MetricsClient(subscriptionId string) (*armmonitor.Metrics
 		clientOpts.PerRetryPolicies,
 		noCachePolicy{},
 	)
-	return armmonitor.NewMetricsClient(p.AzureClient.GetCred(), clientOpts)
+	return armmonitor.NewMetricsClient(subscriptionId, p.AzureClient.GetCred(), clientOpts)
 }
 
 func (p *MetricProber) FetchMetricsFromTarget(client *armmonitor.MetricsClient, target MetricProbeTarget, metrics, aggregations []string) (AzureInsightMetricsResult, error) {

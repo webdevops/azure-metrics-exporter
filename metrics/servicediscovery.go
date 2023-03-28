@@ -10,6 +10,7 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resourcegraph/armresourcegraph"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armresources"
 	"github.com/webdevops/go-common/utils/to"
+	"go.uber.org/zap"
 )
 
 const (
@@ -193,7 +194,7 @@ func (sd *AzureServiceDiscovery) FindResourceGraph(ctx context.Context, subscrip
 		filter,
 	))
 
-	sd.prober.logger.WithField("query", query).Debugf("using Kusto query")
+	sd.prober.logger.With(zap.String("query", query)).Debugf("using Kusto query")
 
 	queryFormat := armresourcegraph.ResultFormatObjectArray
 	queryTop := int32(ResourceGraphQueryTop)

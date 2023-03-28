@@ -9,8 +9,8 @@ import (
 	"github.com/patrickmn/go-cache"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/remeh/sizedwaitgroup"
-	log "github.com/sirupsen/logrus"
 	"github.com/webdevops/go-common/azuresdk/armclient"
+	"go.uber.org/zap"
 
 	"github.com/webdevops/azure-metrics-exporter/config"
 )
@@ -33,7 +33,7 @@ type (
 
 		ctx context.Context
 
-		logger *log.Entry
+		logger *zap.SugaredLogger
 
 		metricsCache struct {
 			cache         *cache.Cache
@@ -67,7 +67,7 @@ type (
 	}
 )
 
-func NewMetricProber(ctx context.Context, logger *log.Entry, w http.ResponseWriter, settings *RequestMetricSettings, conf config.Opts) *MetricProber {
+func NewMetricProber(ctx context.Context, logger *zap.SugaredLogger, w http.ResponseWriter, settings *RequestMetricSettings, conf config.Opts) *MetricProber {
 	prober := MetricProber{}
 	prober.ctx = ctx
 	prober.response = w
@@ -194,7 +194,7 @@ func (p *MetricProber) collectMetricsFromTargets() {
 							if result, err := p.FetchMetricsFromTarget(client, target, metricList, target.Aggregations); err == nil {
 								result.SendMetricToChannel(metricsChannel)
 							} else {
-								p.logger.WithField("resourceID", target.ResourceId).Warn(err)
+								p.logger.With(zap.String("resourceID", target.ResourceId)).Warn(err)
 							}
 						}
 					}(target)

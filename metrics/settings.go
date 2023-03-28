@@ -8,7 +8,6 @@ import (
 	"time"
 
 	iso8601 "github.com/ChannelMeter/iso8601duration"
-	log "github.com/sirupsen/logrus"
 
 	"github.com/webdevops/azure-metrics-exporter/config"
 )
@@ -151,7 +150,6 @@ func NewRequestMetricSettings(r *http.Request, opts config.Opts) (RequestMetricS
 			if val, err := time.ParseDuration(cacheDurationString); err == nil {
 				ret.Cache = &val
 			} else {
-				log.Error(err.Error())
 				return ret, err
 			}
 		}
