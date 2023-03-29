@@ -39,8 +39,8 @@ type (
 
 func (p *MetricProber) MetricsClient(subscriptionId string) (*armmonitor.MetricsClient, error) {
 	clientOpts := p.AzureClient.NewArmClientOptions()
-	clientOpts.PerRetryPolicies = append(
-		clientOpts.PerRetryPolicies,
+	clientOpts.PerCallPolicies = append(
+		clientOpts.PerCallPolicies,
 		noCachePolicy{},
 	)
 	return armmonitor.NewMetricsClient(subscriptionId, p.AzureClient.GetCred(), clientOpts)
