@@ -27,6 +27,7 @@ type (
 		Metrics         []string
 		MetricNamespace string
 		Aggregations    []string
+		Regions         []string
 
 		// needed for dimension support
 		MetricTop     *int32
@@ -80,6 +81,13 @@ func NewRequestMetricSettings(r *http.Request, opts config.Opts) (RequestMetricS
 			subscription = strings.TrimSpace(subscription)
 			ret.Subscriptions = append(ret.Subscriptions, subscription)
 		}
+	} else {
+		return ret, err
+	}
+
+	// param region
+	if val, err := paramsGetList(params, "region"); err == nil {
+		ret.Regions = val
 	} else {
 		return ret, err
 	}

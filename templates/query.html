@@ -152,6 +152,7 @@
                 <div class="col-sm-10">
                     <select id="endpoint" class="form-select" aria-label="endpoint">
                         <option selected value="">- select endpoint -</option>
+                        <option>/probe/metrics</option>
                         <option>/probe/metrics/resource</option>
                         <option>/probe/metrics/list</option>
                         <option>/probe/metrics/scrape</option>
@@ -221,7 +222,15 @@
                 </div>
             </div>
 
-            <div class="mb-3 row" query-endpoint-exclude="/probe/metrics/resource">
+            <div class="mb-3 row" query-endpoint="/probe/metrics">
+                <label for="target" class="col-sm-2 col-form-label">region</label>
+                <div class="col-sm-10">
+                    <textarea class="form-control" id="region" rows="3"></textarea>
+                    <div class="form-text">Regions (eg. global, westeurope, northeurope)</div>
+                </div>
+            </div>
+
+            <div class="mb-3 row" query-endpoint-exclude="/probe/metrics/resource /probe/metrics">
                 <label for="filter" class="col-sm-2 col-form-label">filter</label>
                 <div class="col-sm-10">
                     <input type="text" class="form-control" id="filter">
@@ -390,8 +399,8 @@ count</textarea>
         let formSetVisibility = () => {
             let endpoint = $("#endpoint:input").val().trim();
             $("form.query div.row").removeClass("hidden");
-            $("form.query div.row[query-endpoint]:not([query-endpoint*=\"" + endpoint + "\"])").addClass("hidden");
-            $("form.query div.row[query-endpoint-exclude][query-endpoint-exclude*=\"" + endpoint + "\"]").addClass("hidden");
+            $("form.query div.row[query-endpoint]:not([query-endpoint~=\"" + endpoint + "\"])").addClass("hidden");
+            $("form.query div.row[query-endpoint-exclude][query-endpoint-exclude~=\"" + endpoint + "\"]").addClass("hidden");
         };
 
         let buildPrometheusScrapeConfig = (queryEndpoint, queryParams) => {

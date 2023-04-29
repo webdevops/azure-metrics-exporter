@@ -3,13 +3,16 @@ package metrics
 import (
 	"context"
 	"net/http"
+	"strings"
 	"time"
 
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/monitor/armmonitor"
 	"github.com/Azure/go-autorest/autorest/azure"
 	"github.com/patrickmn/go-cache"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/remeh/sizedwaitgroup"
 	"github.com/webdevops/go-common/azuresdk/armclient"
+	"github.com/webdevops/go-common/utils/to"
 	"go.uber.org/zap"
 
 	"github.com/webdevops/azure-metrics-exporter/config"
@@ -157,6 +160,94 @@ func (p *MetricProber) Run() {
 	p.collectMetricsFromTargets()
 	p.SaveToCache()
 	p.publishMetricList()
+}
+
+func (p *MetricProber) RunOnSubscriptionScope() {
+	p.collectMetricsFromSubscriptions()
+	p.SaveToCache()
+	p.publishMetricList()
+}
+
+func (p *MetricProber) collectMetricsFromSubscriptions() {
+	metricsChannel := make(chan PrometheusMetricResult)
+
+	wgSubscription := sizedwaitgroup.New(p.Conf.Prober.ConcurrencySubscription)
+
+	go func() {
+		for _, subscriptionId := range p.settings.Subscriptions {
+			for _, region := range p.settings.Regions {
+				wgSubscription.Add()
+				go func(subscriptionId, region string) {
+					defer wgSubscription.Done()
+
+					client, err := p.MetricsClient(subscriptionId)
+					if err != nil {
+						// FIXME: find a better way to report errors
+						p.logger.Error(err)
+						return
+					}
+
+					resultType := armmonitor.MetricResultTypeData
+					opts := armmonitor.MetricsClientListAtSubscriptionScopeOptions{
+						Interval:            p.settings.Interval,
+						Timespan:            to.StringPtr(p.settings.Timespan),
+						Metricnames:         to.StringPtr(strings.Join(p.settings.Metrics, ",")),
+						Metricnamespace:     to.StringPtr(p.settings.ResourceType),
+						Top:                 p.settings.MetricTop,
+						AutoAdjustTimegrain: to.BoolPtr(true),
+						ResultType:          &resultType,
+						Filter:              to.StringPtr(`Microsoft.ResourceId eq '*'`),
+					}
+
+					if len(p.settings.Aggregations) >= 1 {
+						opts.Aggregation = to.StringPtr(strings.Join(p.settings.Aggregations, ","))
+					}
+
+					if len(p.settings.MetricFilter) >= 1 {
+						opts.Filter = to.StringPtr(*opts.Filter + " and " + p.settings.MetricFilter)
+					}
+					//
+					// if len(p.settings.MetricNamespace) >= 1 {
+					// 	opts.Metricnamespace = to.StringPtr(p.settings.MetricNamespace)
+					// }
+
+					if len(p.settings.MetricOrderBy) >= 1 {
+						opts.Orderby = to.StringPtr(p.settings.MetricOrderBy)
+					}
+
+					response, err := client.ListAtSubscriptionScope(p.ctx, region, &opts)
+					if err != nil {
+						// FIXME: find a better way to report errors
+						p.logger.Error(err)
+						return
+					}
+
+					result := AzureInsightSubscriptionMetricsResult{
+						AzureInsightBaseMetricsResult: AzureInsightBaseMetricsResult{
+							settings: p.settings,
+						},
+						subscriptionID: subscriptionId,
+						Result:         &response}
+					result.SendMetricToChannel(metricsChannel)
+
+					if p.callbackSubscriptionFishish != nil {
+						p.callbackSubscriptionFishish(subscriptionId)
+					}
+				}(subscriptionId, region)
+			}
+		}
+		wgSubscription.Wait()
+		close(metricsChannel)
+	}()
+
+	for result := range metricsChannel {
+		metric := MetricRow{
+			Labels: result.Labels,
+			Value:  result.Value,
+		}
+		p.metricList.Add(result.Name, metric)
+		p.metricList.SetMetricHelp(result.Name, result.Help)
+	}
 }
 
 func (p *MetricProber) collectMetricsFromTargets() {

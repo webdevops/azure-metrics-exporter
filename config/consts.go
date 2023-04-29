@@ -9,6 +9,9 @@ const (
 	ProbeMetricsListUrl            = "/probe/metrics/list"
 	ProbeMetricsListTimeoutDefault = 120
 
+	ProbeMetricsSubscriptionUrl            = "/probe/metrics"
+	ProbeMetricsSubscriptionTimeoutDefault = 120
+
 	ProbeMetricsScrapeUrl            = "/probe/metrics/scrape"
 	ProbeMetricsScrapeTimeoutDefault = 120
 

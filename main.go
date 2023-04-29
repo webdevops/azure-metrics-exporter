@@ -127,6 +127,8 @@ func startHttpServer() {
 
 	mux.HandleFunc(config.ProbeMetricsListUrl, probeMetricsListHandler)
 
+	mux.HandleFunc(config.ProbeMetricsSubscriptionUrl, probeMetricsSubscriptionHandler)
+
 	mux.HandleFunc(config.ProbeMetricsScrapeUrl, probeMetricsScrapeHandler)
 
 	mux.HandleFunc(config.ProbeMetricsResourceGraphUrl, probeMetricsResourceGraphHandler)
