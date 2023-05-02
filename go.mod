@@ -26,7 +26,7 @@ require (
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resourcegraph/armresourcegraph v0.7.1
 	github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armresources v1.1.1
 	github.com/google/uuid v1.3.0
-	github.com/webdevops/go-common v0.0.0-20230425195838-2b3ad6880230
+	github.com/webdevops/go-common v0.0.0-20230502000651-d37d46be8ee7
 	go.uber.org/zap v1.24.0
 )
 

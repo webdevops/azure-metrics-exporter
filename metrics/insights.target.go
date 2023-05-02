@@ -13,6 +13,7 @@ import (
 type (
 	AzureInsightMetricsResult struct {
 		AzureInsightBaseMetricsResult
+
 		target *MetricProbeTarget
 		Result *armmonitor.MetricsClientListResponse
 	}
@@ -51,17 +52,13 @@ func (r *AzureInsightMetricsResult) SendMetricToChannel(channel chan<- Prometheu
 							"resourceName":   azureResource.ResourceName,
 							"metric":         to.String(metric.Name.Value),
 							"unit":           metricUnit,
-							"interval":       to.String(r.settings.Interval),
-							"timespan":       r.settings.Timespan,
+							"interval":       to.String(r.prober.settings.Interval),
+							"timespan":       r.prober.settings.Timespan,
 							"aggregation":    "",
 						}
 
 						// add resource tags as labels
-						metricLabels = armclient.AddResourceTagsToPrometheusLabels(
-							metricLabels,
-							r.target.Tags,
-							r.settings.TagLabels,
-						)
+						metricLabels = r.prober.AzureResourceTagManager.AddResourceTagsToPrometheusLabels(r.prober.ctx, metricLabels, resourceId)
 
 						if len(dimensions) == 1 {
 							// we have only one dimension

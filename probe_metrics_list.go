@@ -44,6 +44,7 @@ func probeMetricsListHandler(w http.ResponseWriter, r *http.Request) {
 	prober := metrics.NewMetricProber(ctx, contextLogger, w, &settings, opts)
 	prober.SetUserAgent(UserAgent + gitTag)
 	prober.SetAzureClient(AzureClient)
+	prober.SetAzureResourceTagManager(AzureResourceTagManager)
 	prober.SetPrometheusRegistry(registry)
 	if settings.Cache != nil {
 		cacheKey := fmt.Sprintf("list:%x", sha1.Sum([]byte(r.URL.String()))) // #nosec G401

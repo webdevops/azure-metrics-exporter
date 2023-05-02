@@ -8,7 +8,7 @@ import (
 
 type (
 	AzureInsightBaseMetricsResult struct {
-		settings *RequestMetricSettings
+		prober *MetricProber
 	}
 )
 
@@ -20,24 +20,24 @@ func (r *AzureInsightBaseMetricsResult) buildMetric(labels prometheus.Labels, va
 	}
 
 	metric = PrometheusMetricResult{
-		Name:   r.settings.MetricTemplate,
+		Name:   r.prober.settings.MetricTemplate,
 		Labels: metricLabels,
 		Value:  value,
 	}
 
 	// fallback if template is empty (should not be)
-	if r.settings.MetricTemplate == "" {
-		metric.Name = r.settings.Name
+	if r.prober.settings.MetricTemplate == "" {
+		metric.Name = r.prober.settings.Name
 	}
 
-	resourceType := r.settings.ResourceType
+	resourceType := r.prober.settings.ResourceType
 	// MetricNamespace is more descriptive than type
-	if r.settings.MetricNamespace != "" {
-		resourceType = r.settings.MetricNamespace
+	if r.prober.settings.MetricNamespace != "" {
+		resourceType = r.prober.settings.MetricNamespace
 	}
 
 	// set help
-	metric.Help = r.settings.HelpTemplate
+	metric.Help = r.prober.settings.HelpTemplate
 	if metricNamePlaceholders.MatchString(metric.Help) {
 		metric.Help = metricNamePlaceholders.ReplaceAllStringFunc(
 			metric.Help,
@@ -45,7 +45,7 @@ func (r *AzureInsightBaseMetricsResult) buildMetric(labels prometheus.Labels, va
 				fieldName = strings.Trim(fieldName, "{}")
 				switch fieldName {
 				case "name":
-					return r.settings.Name
+					return r.prober.settings.Name
 				case "type":
 					return resourceType
 				default:
@@ -65,7 +65,7 @@ func (r *AzureInsightBaseMetricsResult) buildMetric(labels prometheus.Labels, va
 				fieldName = strings.Trim(fieldName, "{}")
 				switch fieldName {
 				case "name":
-					return r.settings.Name
+					return r.prober.settings.Name
 				case "type":
 					return resourceType
 				default:

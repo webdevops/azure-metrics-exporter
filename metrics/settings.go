@@ -37,8 +37,6 @@ type (
 		MetricTemplate string
 		HelpTemplate   string
 
-		TagLabels []string
-
 		// cache
 		Cache *time.Duration
 	}
@@ -69,8 +67,6 @@ func NewRequestMetricSettingsForAzureResourceApi(r *http.Request, opts config.Op
 func NewRequestMetricSettings(r *http.Request, opts config.Opts) (RequestMetricSettings, error) {
 	ret := RequestMetricSettings{}
 	params := r.URL.Query()
-
-	ret.TagLabels = opts.Azure.ResourceTags
 
 	// param name
 	ret.Name = paramsGetWithDefault(params, "name", PrometheusMetricNameDefault)

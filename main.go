@@ -33,7 +33,8 @@ var (
 	argparser *flags.Parser
 	opts      config.Opts
 
-	AzureClient *armclient.ArmClient
+	AzureClient             *armclient.ArmClient
+	AzureResourceTagManager *armclient.ResourceTagManager
 
 	prometheusCollectTime    *prometheus.SummaryVec
 	prometheusMetricRequests *prometheus.CounterVec
@@ -100,6 +101,11 @@ func initAzureConnection() {
 
 	if err := AzureClient.Connect(); err != nil {
 		logger.Fatal(err.Error())
+	}
+
+	AzureResourceTagManager, err = AzureClient.TagManager.ParseTagConfig(opts.Azure.ResourceTags)
+	if err != nil {
+		logger.Fatalf(`unable to parse resourceTag configuration "%s": %v"`, opts.Azure.ResourceTags, err.Error())
 	}
 }
 

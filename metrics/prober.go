@@ -26,7 +26,8 @@ type (
 	MetricProber struct {
 		Conf config.Opts
 
-		AzureClient *armclient.ArmClient
+		AzureClient             *armclient.ArmClient
+		AzureResourceTagManager *armclient.ResourceTagManager
 
 		userAgent string
 
@@ -101,6 +102,10 @@ func (p *MetricProber) SetPrometheusRegistry(registry *prometheus.Registry) {
 
 func (p *MetricProber) SetAzureClient(client *armclient.ArmClient) {
 	p.AzureClient = client
+}
+
+func (p *MetricProber) SetAzureResourceTagManager(client *armclient.ResourceTagManager) {
+	p.AzureResourceTagManager = client
 }
 
 func (p *MetricProber) EnableMetricsCache(cache *cache.Cache, cacheKey string, cacheDuration *time.Duration) {
@@ -224,7 +229,7 @@ func (p *MetricProber) collectMetricsFromSubscriptions() {
 
 					result := AzureInsightSubscriptionMetricsResult{
 						AzureInsightBaseMetricsResult: AzureInsightBaseMetricsResult{
-							settings: p.settings,
+							prober: p,
 						},
 						subscriptionID: subscriptionId,
 						Result:         &response}

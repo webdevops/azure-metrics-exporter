@@ -21,6 +21,10 @@ type (
 
 func (r *AzureInsightSubscriptionMetricsResult) SendMetricToChannel(channel chan<- PrometheusMetricResult) {
 	if r.Result.Value != nil {
+		// DEBUGGING
+		// data, _ := json.Marshal(r.Result)
+		// fmt.Println(string(data))
+
 		for _, metric := range r.Result.Value {
 			if metric.Timeseries != nil {
 				for _, timeseries := range metric.Timeseries {
@@ -55,17 +59,13 @@ func (r *AzureInsightSubscriptionMetricsResult) SendMetricToChannel(channel chan
 							"resourceName":   azureResource.ResourceName,
 							"metric":         to.String(metric.Name.Value),
 							"unit":           metricUnit,
-							"interval":       to.String(r.settings.Interval),
-							"timespan":       r.settings.Timespan,
+							"interval":       to.String(r.prober.settings.Interval),
+							"timespan":       r.prober.settings.Timespan,
 							"aggregation":    "",
 						}
 
-						// // add resource tags as labels
-						// metricLabels = armclient.AddResourceTagsToPrometheusLabels(
-						// 	metricLabels,
-						// 	r.target.Tags,
-						// 	r.settings.TagLabels,
-						// )
+						// add resource tags as labels
+						metricLabels = r.prober.AzureResourceTagManager.AddResourceTagsToPrometheusLabels(r.prober.ctx, metricLabels, resourceId)
 
 						if len(dimensions) == 1 {
 							// we have only one dimension

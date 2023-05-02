@@ -38,7 +38,7 @@ func (p *MetricProber) MetricsClient(subscriptionId string) (*armmonitor.Metrics
 func (p *MetricProber) FetchMetricsFromTarget(client *armmonitor.MetricsClient, target MetricProbeTarget, metrics, aggregations []string) (AzureInsightMetricsResult, error) {
 	ret := AzureInsightMetricsResult{
 		AzureInsightBaseMetricsResult: AzureInsightBaseMetricsResult{
-			settings: p.settings,
+			prober: p,
 		},
 		target: &target,
 	}
