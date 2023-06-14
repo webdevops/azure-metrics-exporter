@@ -211,10 +211,6 @@ func (p *MetricProber) collectMetricsFromSubscriptions() {
 					if len(p.settings.MetricFilter) >= 1 {
 						opts.Filter = to.StringPtr(*opts.Filter + " and " + p.settings.MetricFilter)
 					}
-					//
-					// if len(p.settings.MetricNamespace) >= 1 {
-					// 	opts.Metricnamespace = to.StringPtr(p.settings.MetricNamespace)
-					// }
 
 					if len(p.settings.MetricOrderBy) >= 1 {
 						opts.Orderby = to.StringPtr(p.settings.MetricOrderBy)
