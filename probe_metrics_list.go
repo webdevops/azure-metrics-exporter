@@ -25,7 +25,7 @@ func probeMetricsListHandler(w http.ResponseWriter, r *http.Request) {
 	// If a timeout is configured via the Prometheus header, add it to the request.
 	timeoutSeconds, err = getPrometheusTimeout(r, config.ProbeMetricsListTimeoutDefault)
 	if err != nil {
-		contextLogger.Error(err)
+		contextLogger.Warnln(err)
 		http.Error(w, fmt.Sprintf("failed to parse timeout from Prometheus header: %s", err), http.StatusBadRequest)
 		return
 	}
@@ -36,7 +36,13 @@ func probeMetricsListHandler(w http.ResponseWriter, r *http.Request) {
 
 	var settings metrics.RequestMetricSettings
 	if settings, err = metrics.NewRequestMetricSettingsForAzureResourceApi(r, opts); err != nil {
-		contextLogger.Errorln(err)
+		contextLogger.Warnln(err)
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	if _, err = paramsGetListRequired(r.URL.Query(), "subscription"); err != nil {
+		contextLogger.Warnln(err)
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
