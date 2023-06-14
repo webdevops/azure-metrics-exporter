@@ -192,44 +192,53 @@ func (p *MetricProber) collectMetricsFromSubscriptions() {
 						return
 					}
 
-					resultType := armmonitor.MetricResultTypeData
-					opts := armmonitor.MetricsClientListAtSubscriptionScopeOptions{
-						Interval:            p.settings.Interval,
-						Timespan:            to.StringPtr(p.settings.Timespan),
-						Metricnames:         to.StringPtr(strings.Join(p.settings.Metrics, ",")),
-						Metricnamespace:     to.StringPtr(p.settings.ResourceType),
-						Top:                 p.settings.MetricTop,
-						AutoAdjustTimegrain: to.BoolPtr(true),
-						ResultType:          &resultType,
-						Filter:              to.StringPtr(`Microsoft.ResourceId eq '*'`),
-					}
+					// request metrics in 20 metrics chunks (azure metric api limitation)
+					for i := 0; i < len(p.settings.Metrics); i += AzureMetricApiMaxMetricNumber {
+						end := i + AzureMetricApiMaxMetricNumber
+						if end > len(p.settings.Metrics) {
+							end = len(p.settings.Metrics)
+						}
+						metricList := p.settings.Metrics[i:end]
 
-					if len(p.settings.Aggregations) >= 1 {
-						opts.Aggregation = to.StringPtr(strings.Join(p.settings.Aggregations, ","))
-					}
+						resultType := armmonitor.MetricResultTypeData
+						opts := armmonitor.MetricsClientListAtSubscriptionScopeOptions{
+							Interval:            p.settings.Interval,
+							Timespan:            to.StringPtr(p.settings.Timespan),
+							Metricnames:         to.StringPtr(strings.Join(metricList, ",")),
+							Metricnamespace:     to.StringPtr(p.settings.ResourceType),
+							Top:                 p.settings.MetricTop,
+							AutoAdjustTimegrain: to.BoolPtr(true),
+							ResultType:          &resultType,
+							Filter:              to.StringPtr(`Microsoft.ResourceId eq '*'`),
+						}
 
-					if len(p.settings.MetricFilter) >= 1 {
-						opts.Filter = to.StringPtr(*opts.Filter + " and " + p.settings.MetricFilter)
-					}
+						if len(p.settings.Aggregations) >= 1 {
+							opts.Aggregation = to.StringPtr(strings.Join(p.settings.Aggregations, ","))
+						}
 
-					if len(p.settings.MetricOrderBy) >= 1 {
-						opts.Orderby = to.StringPtr(p.settings.MetricOrderBy)
-					}
+						if len(p.settings.MetricFilter) >= 1 {
+							opts.Filter = to.StringPtr(*opts.Filter + " and " + p.settings.MetricFilter)
+						}
 
-					response, err := client.ListAtSubscriptionScope(p.ctx, region, &opts)
-					if err != nil {
-						// FIXME: find a better way to report errors
-						p.logger.Error(err)
-						return
-					}
+						if len(p.settings.MetricOrderBy) >= 1 {
+							opts.Orderby = to.StringPtr(p.settings.MetricOrderBy)
+						}
 
-					result := AzureInsightSubscriptionMetricsResult{
-						AzureInsightBaseMetricsResult: AzureInsightBaseMetricsResult{
-							prober: p,
-						},
-						subscriptionID: subscriptionId,
-						Result:         &response}
-					result.SendMetricToChannel(metricsChannel)
+						response, err := client.ListAtSubscriptionScope(p.ctx, region, &opts)
+						if err != nil {
+							// FIXME: find a better way to report errors
+							p.logger.Error(err)
+							return
+						}
+
+						result := AzureInsightSubscriptionMetricsResult{
+							AzureInsightBaseMetricsResult: AzureInsightBaseMetricsResult{
+								prober: p,
+							},
+							subscriptionID: subscriptionId,
+							Result:         &response}
+						result.SendMetricToChannel(metricsChannel)
+					}
 
 					if p.callbackSubscriptionFishish != nil {
 						p.callbackSubscriptionFishish(subscriptionId)
