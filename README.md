@@ -20,6 +20,7 @@ TOC:
         - [template `{name}_{metric}_{unit}`](#template-name_metric_unit)
         - [template `{name}_{metric}_{aggregation}_{unit}`](#template-name_metric_aggregation_unit)
 * [HTTP Endpoints](#http-endpoints)
+    + [/probe/metrics parameters](#probemetrics-parameters)
     + [/probe/metrics/resource parameters](#probemetricsresource-parameters)
     + [/probe/metrics/list parameters](#probemetricslist-parameters)
     + [/probe/metrics/scrape parameters](#probemetricsscrape-parameters)
@@ -66,18 +67,16 @@ Usage:
 
 Application Options:
       --log.debug                          debug mode [$LOG_DEBUG]
-      --log.trace                          trace mode [$LOG_TRACE]
+      --log.devel                          development mode [$LOG_DEVEL]
       --log.json                           Switch log output to json format [$LOG_JSON]
       --azure-environment=                 Azure environment name (default: AZUREPUBLICCLOUD) [$AZURE_ENVIRONMENT]
-      --azure-ad-resource-url=             Specifies the AAD resource ID to use. If not set, it defaults to
-                                           ResourceManagerEndpoint for operations with Azure Resource Manager
-                                           [$AZURE_AD_RESOURCE]
-      --azure.servicediscovery.cache=      Duration for caching Azure ServiceDiscovery of workspaces to reduce API calls
-                                           (time.Duration) (default: 30m) [$AZURE_SERVICEDISCOVERY_CACHE]
+      --azure-ad-resource-url=             Specifies the AAD resource ID to use. If not set, it defaults to ResourceManagerEndpoint for
+                                           operations with Azure Resource Manager [$AZURE_AD_RESOURCE]
+      --azure.servicediscovery.cache=      Duration for caching Azure ServiceDiscovery of workspaces to reduce API calls (time.Duration)
+                                           (default: 30m) [$AZURE_SERVICEDISCOVERY_CACHE]
       --azure.resource-tag=                Azure Resource tags (space delimiter) (default: owner) [$AZURE_RESOURCE_TAG]
       --metrics.template=                  Template for metric name (default: {name}) [$METRIC_TEMPLATE]
-      --metrics.help=                      Metric help (with template support) (default: Azure monitor insight metric)
-                                           [$METRIC_HELP]
+      --metrics.help=                      Metric help (with template support) (default: Azure monitor insight metric) [$METRIC_HELP]
       --concurrency.subscription=          Concurrent subscription fetches (default: 5) [$CONCURRENCY_SUBSCRIPTION]
       --concurrency.subscription.resource= Concurrent requests per resource (inside subscription requests) (default: 10)
                                            [$CONCURRENCY_SUBSCRIPTION_RESOURCE]
@@ -111,38 +110,14 @@ webui is available under url `/query`
 | `azurerm_api_ratelimit`                  | Azure ratelimit metrics (only on /metrics, resets after query)                                  |
 | `azurerm_api_request_*`                  | Azure request count and latency as histogram                                                    |
 
-## AzureTracing metrics
+### ResourceTags handling
 
-(with 22.2.0 and later)
+see [armclient tagmanager documentation](https://github.com/webdevops/go-common/blob/main/azuresdk/README.md#tag-manager)
 
-Azuretracing metrics collects latency and latency from azure-sdk-for-go and creates metrics and is controllable using
-environment variables (eg. setting buckets, disabling metrics or disable autoreset).
+### AzureTracing metrics
 
-| Metric                                   | Description                                                                            |
-|------------------------------------------|----------------------------------------------------------------------------------------|
-| `azurerm_api_ratelimit`                  | Azure ratelimit metrics (only on /metrics, resets after query due to limited validity) |
-| `azurerm_api_request_*`                  | Azure request count and latency as histogram                                           |
-
-### Settings
-
-| Environment variable                     | Example                            | Description                                                    |
-|------------------------------------------|------------------------------------|----------------------------------------------------------------|
-| `METRIC_AZURERM_API_REQUEST_BUCKETS`     | `1, 2.5, 5, 10, 30, 60, 90, 120`   | Sets buckets for `azurerm_api_request` histogram metric        |
-| `METRIC_AZURERM_API_REQUEST_ENABLE`      | `false`                            | Enables/disables `azurerm_api_request_*` metric                |
-| `METRIC_AZURERM_API_REQUEST_LABELS`      | `apiEndpoint, method, statusCode`  | Controls labels of `azurerm_api_request_*` metric              |
-| `METRIC_AZURERM_API_RATELIMIT_ENABLE`    | `false`                            | Enables/disables `azurerm_api_ratelimit` metric                |
-| `METRIC_AZURERM_API_RATELIMIT_AUTORESET` | `false`                            | Enables/disables `azurerm_api_ratelimit` autoreset after fetch |
-
-
-| `azurerm_api_request` label | Status             | Description                                                                                              |
-|-----------------------------|--------------------|----------------------------------------------------------------------------------------------------------|
-| `apiEndpoint`               | enabled by default | hostname of endpoint (max 3 parts)                                                                       |
-| `routingRegion`             | enabled by default | detected region for API call, either routing region from Azure Management API or Azure resource location |
-| `subscriptionID`            | enabled by default | detected subscriptionID                                                                                  |
-| `tenantID`                  | enabled by default | detected tenantID (extracted from jwt auth token)                                                        |
-| `resourceProvider`          | enabled by default | detected Azure Management API provider                                                                   |
-| `method`                    | enabled by default | HTTP method                                                                                              |
-| `statusCode`                | enabled by default | HTTP status code                                                                                         |
+see [armclient tracing documentation](https://github.com/webdevops/go-common/blob/main/azuresdk/README.md#azuretracing-metrics)
+                                                                                 |
 
 ### Metric name and help template system
 
@@ -313,16 +288,41 @@ azurerm_ratelimit{scope="subscription",subscriptionID="...",type="read"} 11999
 
 ## HTTP Endpoints
 
-| Endpoint                       | Description                                                                                            |
-|--------------------------------|--------------------------------------------------------------------------------------------------------|
-| `/metrics`                     | Default prometheus golang metrics                                                                      |
-| `/probe/metrics/resource`      | Probe metrics for one resource (see `azurerm_resource_metric`)                                         |
-| `/probe/metrics/list`          | Probe metrics for list of resources (see `azurerm_resource_metric`)                                    |
-| `/probe/metrics/scrape`        | Probe metrics for list of resources and config on resource by tag name (see `azurerm_resource_metric`) |
-| `/probe/metrics/resourcegraph` | Probe metrics for list of resources based on a kusto query and the resource graph API                  |
+| Endpoint                       | Description                                                                                                                        |
+|--------------------------------|------------------------------------------------------------------------------------------------------------------------------------|
+| `/metrics`                     | Default prometheus golang metrics                                                                                                  |
+| `/probe/metrics`               | Probe metrics by subscription and region, split by resource (one query per subscription and region; see `azurerm_resource_metric`) |
+| `/probe/metrics/resource`      | Probe metrics for one resource (one query per resource; see `azurerm_resource_metric`)                                             |
+| `/probe/metrics/list`          | Probe metrics for list of resources (sone query per resource; see `azurerm_resource_metric`)                                       |
+| `/probe/metrics/scrape`        | Probe metrics for list of resources and config on resource by tag name (one query per resource; see `azurerm_resource_metric`)     |
+| `/probe/metrics/resourcegraph` | Probe metrics for list of resources based on a kusto query and the resource graph API (one query per resource)                     |
+
+### /probe/metrics parameters
+
+one metric request per subscription and region
+
+| GET parameter   | Default                   | Required | Multiple | Description                                                                                                                                          |
+|-----------------|---------------------------|----------|----------|------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `subscription`  |                           | **yes**  | **yes**  | Azure Subscription ID                                                                                                                                |
+| `region`        |                           | **yes**  | **yes**  | Azure Regions (eg. `westeurope`, `northeurope`)                                                                                                      |
+| `resourceType`  |                           | **yes**  | no       | Azure Resource type                                                                                                                                  |
+| `timespan`      | `PT1M`                    | no       | no       | Metric timespan                                                                                                                                      |
+| `interval`      |                           | no       | no       | Metric timespan                                                                                                                                      |
+| `metric`        |                           | no       | **yes**  | Metric name                                                                                                                                          |
+| `aggregation`   |                           | no       | **yes**  | Metric aggregation (`minimum`, `maximum`, `average`, `total`, `count`, multiple possible separated with `,`)                                         |
+| `name`          | `azurerm_resource_metric` | no       | no       | Prometheus metric name                                                                                                                               |
+| `metricFilter`  |                           | no       | no       | Prometheus metric filter (dimension support; supports only 2 filters in subscription query mode as the first filter is used to split by resource id) |
+| `metricTop`     |                           | no       | no       | Prometheus metric dimension count (dimension support)                                                                                                |
+| `metricOrderBy` |                           | no       | no       | Prometheus metric order by (dimension support)                                                                                                       |
+| `cache`         | (same as timespan)        | no       | no       | Use of internal metrics caching                                                                                                                      |
+| `template`      | set to `$METRIC_TEMPLATE` | no       | no       | see [metric name and help template system](#metric-name-and-help-template-system)                                                                    |
+| `help`          | set to `$METRIC_HELP`     | no       | no       | see [metric name and help template system](#metric-name-and-help-template-system)                                                                    |
+
+*Hint: Multiple values can be specified multiple times or with a comma in a single value.*
 
 ### /probe/metrics/resource parameters
 
+metrics are requested per resource in chunks of 20 metric names (35 metric names = 2 requests per resource)
 
 | GET parameter      | Default                   | Required | Multiple | Description                                                                                                  |
 |--------------------|---------------------------|----------|----------|--------------------------------------------------------------------------------------------------------------|
@@ -344,6 +344,8 @@ azurerm_ratelimit{scope="subscription",subscriptionID="...",type="read"} 11999
 *Hint: Multiple values can be specified multiple times or with a comma in a single value.*
 
 ### /probe/metrics/list parameters
+
+metrics are requested per resource in chunks of 20 metric names (35 metric names = 2 requests per resource)
 
 HINT: service discovery information is cached for duration set by `$AZURE_SERVICEDISCOVERY_CACHE` (set to `0` to disable)
 
@@ -395,6 +397,8 @@ HINT: service discovery information is cached for duration set by `$AZURE_SERVIC
 ### /probe/metrics/resourcegraph parameters
 
 This endpoint is using Azure ResoruceGraph API for servicediscovery (with 21.9.0 and later)
+
+metrics are requested per resource in chunks of 20 metric names (35 metric names = 2 requests per resource)
 
 HINT: service discovery information is cached for duration set by `$AZURE_SERVICEDISCOVERY_CACHE` (set to `0` to disable)
 
@@ -639,7 +643,5 @@ The [List of supported metrics](https://docs.microsoft.com/en-us/azure/azure-mon
 
 ### Development and testing query webui
 
-(with 21.10.0-beta1 and later)
-
-if azure-metrics-exporter is started with `--development.webui` there is a webui at `http://url-to-exporter/query`.
-Here you can test different query settings and get the generated prometheus scrape_config.
+azure-metrics-exporter provides a query webui at `http://url-to-exporter/query` where you can
+test different query settings and endpoints. the query webui also generates an example prometheus scrape_config.
