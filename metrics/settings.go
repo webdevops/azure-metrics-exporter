@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	iso8601 "github.com/ChannelMeter/iso8601duration"
+	iso8601 "github.com/channelmeter/iso8601duration"
 
 	"github.com/webdevops/azure-metrics-exporter/config"
 )
