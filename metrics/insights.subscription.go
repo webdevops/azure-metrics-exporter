@@ -4,6 +4,7 @@ import (
 	"strings"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/monitor/armmonitor"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armsubscriptions"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/webdevops/go-common/azuresdk/armclient"
 	stringsCommon "github.com/webdevops/go-common/strings"
@@ -14,8 +15,8 @@ type (
 	AzureInsightSubscriptionMetricsResult struct {
 		AzureInsightBaseMetricsResult
 
-		subscriptionID string
-		Result         *armmonitor.MetricsClientListAtSubscriptionScopeResponse
+		subscription *armsubscriptions.Subscription
+		Result       *armmonitor.MetricsClientListAtSubscriptionScopeResponse
 	}
 )
 
@@ -53,15 +54,16 @@ func (r *AzureInsightSubscriptionMetricsResult) SendMetricToChannel(channel chan
 						}
 
 						metricLabels := prometheus.Labels{
-							"resourceID":     strings.ToLower(resourceId),
-							"subscriptionID": azureResource.Subscription,
-							"resourceGroup":  azureResource.ResourceGroup,
-							"resourceName":   azureResource.ResourceName,
-							"metric":         to.String(metric.Name.Value),
-							"unit":           metricUnit,
-							"interval":       to.String(r.prober.settings.Interval),
-							"timespan":       r.prober.settings.Timespan,
-							"aggregation":    "",
+							"resourceID":       strings.ToLower(resourceId),
+							"subscriptionID":   azureResource.Subscription,
+							"subscriptionName": to.String(r.subscription.DisplayName),
+							"resourceGroup":    azureResource.ResourceGroup,
+							"resourceName":     azureResource.ResourceName,
+							"metric":           to.String(metric.Name.Value),
+							"unit":             metricUnit,
+							"interval":         to.String(r.prober.settings.Interval),
+							"timespan":         r.prober.settings.Timespan,
+							"aggregation":      "",
 						}
 
 						// add resource tags as labels

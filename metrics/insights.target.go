@@ -45,16 +45,22 @@ func (r *AzureInsightMetricsResult) SendMetricToChannel(channel chan<- Prometheu
 							metricUnit = string(*metric.Unit)
 						}
 
+						subscriptionName := ""
+						if subscription, err := r.prober.AzureClient.GetCachedSubscription(r.prober.ctx, azureResource.Subscription); err == nil && subscription != nil {
+							subscriptionName = to.String(subscription.DisplayName)
+						}
+
 						metricLabels := prometheus.Labels{
-							"resourceID":     strings.ToLower(resourceId),
-							"subscriptionID": azureResource.Subscription,
-							"resourceGroup":  azureResource.ResourceGroup,
-							"resourceName":   azureResource.ResourceName,
-							"metric":         to.String(metric.Name.Value),
-							"unit":           metricUnit,
-							"interval":       to.String(r.prober.settings.Interval),
-							"timespan":       r.prober.settings.Timespan,
-							"aggregation":    "",
+							"resourceID":       strings.ToLower(resourceId),
+							"subscriptionID":   azureResource.Subscription,
+							"subscriptionName": subscriptionName,
+							"resourceGroup":    azureResource.ResourceGroup,
+							"resourceName":     azureResource.ResourceName,
+							"metric":           to.String(metric.Name.Value),
+							"unit":             metricUnit,
+							"interval":         to.String(r.prober.settings.Interval),
+							"timespan":         r.prober.settings.Timespan,
+							"aggregation":      "",
 						}
 
 						// add resource tags as labels
