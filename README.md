@@ -612,7 +612,6 @@ Virtual Gateway connection metrics (dimension support)
 
 ### StorageAccount (metric namespace and dimension support)
 
-Virtual Gateway connection metrics (dimension support)
 ```yaml
 - job_name: azure-metrics-virtualNetworkGateways-connections
   scrape_interval: 1m
