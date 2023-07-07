@@ -208,6 +208,7 @@ func (p *MetricProber) collectMetricsFromSubscriptions() {
 						Top:                 p.settings.MetricTop,
 						AutoAdjustTimegrain: to.BoolPtr(true),
 						ResultType:          &resultType,
+						ValidateDimensions:  to.BoolPtr(p.settings.ValidateDimensions),
 						Filter:              to.StringPtr(`Microsoft.ResourceId eq '*'`),
 					}
 

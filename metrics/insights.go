@@ -51,6 +51,7 @@ func (p *MetricProber) FetchMetricsFromTarget(client *armmonitor.MetricsClient, 
 		Metricnames:         to.StringPtr(strings.Join(metrics, ",")),
 		Top:                 p.settings.MetricTop,
 		AutoAdjustTimegrain: to.BoolPtr(true),
+		ValidateDimensions:  to.BoolPtr(p.settings.ValidateDimensions),
 	}
 
 	if len(aggregations) >= 1 {

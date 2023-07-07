@@ -34,6 +34,8 @@ type (
 		MetricFilter  string
 		MetricOrderBy string
 
+		ValidateDimensions bool
+
 		MetricTemplate string
 		HelpTemplate   string
 
@@ -91,6 +93,11 @@ func NewRequestMetricSettings(r *http.Request, opts config.Opts) (RequestMetricS
 	// param filter
 	ret.ResourceType = paramsGetWithDefault(params, "resourceType", "")
 	ret.Filter = paramsGetWithDefault(params, "filter", "")
+	if val, err := strconv.ParseBool(paramsGetWithDefault(params, "validateDimensions", "true")); err == nil {
+		ret.ValidateDimensions = val
+	} else {
+		return ret, err
+	}
 
 	// param timespan
 	ret.Timespan = paramsGetWithDefault(params, "timespan", "PT1M")
