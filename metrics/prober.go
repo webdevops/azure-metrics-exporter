@@ -223,6 +223,10 @@ func (p *MetricProber) collectMetricsFromSubscriptions() {
 						opts.Orderby = to.StringPtr(p.settings.MetricOrderBy)
 					}
 
+					if len(p.settings.MetricNamespace) >= 1 {
+						opts.Metricnamespace = to.StringPtr(p.settings.MetricNamespace)
+					}
+
 					response, err := client.ListAtSubscriptionScope(p.ctx, region, &opts)
 					if err != nil {
 						// FIXME: find a better way to report errors
