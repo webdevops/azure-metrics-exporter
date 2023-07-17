@@ -308,6 +308,17 @@ count</textarea>
             </div>
 
             <div class="mb-3 row">
+                <label for="validateDimensions" class="col-sm-2 col-form-label">validateDimensions</label>
+                <div class="col-sm-10">
+                    <select class="form-select"  id="validateDimensions">
+                        <option value="false">false</option>
+                        <option value="true" selected>true</option>
+                    </select>
+                    <div class="form-text">Dimension support: disable server side validation for dimensions</div>
+                </div>
+            </div>
+
+            <div class="mb-3 row">
                 <div class="offset-sm-2 col-sm-10">
                     <button type="button" class="btn btn-primary mb-3" id="sendQuery">Execute query</button>
                 </div>
