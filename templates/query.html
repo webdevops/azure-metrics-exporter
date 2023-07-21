@@ -378,9 +378,7 @@ count</textarea>
                 let formEl = $(el);
                 let fieldName = formEl.attr("id");
                 let fieldValue = formEl.val();
-                fieldValue = fieldValue.trim();
-
-                formData[fieldName] = fieldValue;
+                formData[fieldName] = fieldValue ? fieldValue.trim() : ""
             });
 
             let hashString = btoa(JSON.stringify(formData));
@@ -408,7 +406,8 @@ count</textarea>
         };
 
         let formSetVisibility = () => {
-            let endpoint = $("#endpoint:input").val().trim();
+            let endpoint = $("#endpoint:input").val()
+            endpoint = endpoint ? endpoint.trim() : ""
             $("form.query div.row").removeClass("hidden");
             $("form.query div.row[query-endpoint]:not([query-endpoint~=\"" + endpoint + "\"])").addClass("hidden");
             $("form.query div.row[query-endpoint-exclude][query-endpoint-exclude~=\"" + endpoint + "\"]").addClass("hidden");
@@ -453,7 +452,7 @@ count</textarea>
                 let formEl = $(el);
                 let fieldName = formEl.attr("id");
                 let fieldValue = formEl.val();
-                fieldValue = fieldValue.trim();
+                fieldValue = fieldValue ? fieldValue.trim(): "";
 
                 switch (fieldName) {
                     case "endpoint":
