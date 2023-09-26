@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore/runtime"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resourcegraph/armresourcegraph"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armresources"
 	"github.com/webdevops/go-common/utils/to"
@@ -55,40 +56,10 @@ func (sd *AzureServiceDiscovery) fetchResourceList(subscriptionId, filter string
 			Filter: to.StringPtr(filter),
 		}
 		pager := client.NewListPager(&opts)
-
-		for pager.More() {
-			result, err := pager.NextPage(sd.prober.ctx)
-			if err != nil {
-				err = fmt.Errorf("servicediscovery failed: %w", err)
-				return resourceList, err
-			}
-
-			if result.Value == nil {
-				continue
-			}
-
-			for _, row := range result.Value {
-				resource := row
-
-				rt := sd.prober.settings.ResourceType
-				if rt != "" && resource.Type != nil && *resource.Type != rt {
-					// if ResourceType was configfured and the queried ResourceType
-					// does not match it, filter it out.
-					// we have to do this filtering locally due to ARM API limitations:
-					// https://github.com/Azure/azure-rest-api-specs/issues/21324
-					continue
-				}
-
-				resourceList = append(
-					resourceList,
-					AzureResource{
-						ID:   to.String(resource.ID),
-						Tags: to.StringMap(resource.Tags),
-					},
-				)
-			}
+		resourceList, err = sd.processResourcePage(pager)
+		if err != nil {
+			return resourceList, err
 		}
-
 		// store to cache (if enabled)
 		sd.saveToCache(cacheKey, resourceList)
 	} else {
@@ -97,6 +68,37 @@ func (sd *AzureServiceDiscovery) fetchResourceList(subscriptionId, filter string
 	}
 
 	return
+}
+
+func (sd *AzureServiceDiscovery) processResourcePage(pager *runtime.Pager[armresources.ClientListResponse]) (resourceList []AzureResource, err error) {
+	for pager.More() {
+		result, err := pager.NextPage(sd.prober.ctx)
+		if err != nil {
+			err = fmt.Errorf("servicediscovery failed: %w", err)
+			return resourceList, err
+		}
+
+		for _, row := range result.Value {
+			resource := row
+
+			rt := sd.prober.settings.ResourceType
+			if rt != "" && resource.Type != nil && *resource.Type != rt {
+				// if ResourceType was configfured and the queried ResourceType
+				// does not match it, filter it out.
+				// we have to do this filtering locally due to ARM API limitations:
+				// https://github.com/Azure/azure-rest-api-specs/issues/21324
+				continue
+			}
+
+			resourceList = append(
+				resourceList,
+				AzureResource{
+					ID:   to.String(resource.ID),
+					Tags: to.StringMap(resource.Tags),
+				},
+			)
+		}
+	}
 }
 
 func (sd *AzureServiceDiscovery) fetchFromCache(cacheKey string) (resourceList []AzureResource, status bool) {
