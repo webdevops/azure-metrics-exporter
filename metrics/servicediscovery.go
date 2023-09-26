@@ -70,6 +70,15 @@ func (sd *AzureServiceDiscovery) fetchResourceList(subscriptionId, filter string
 			for _, row := range result.Value {
 				resource := row
 
+				rt := sd.prober.settings.ResourceType
+				if rt != "" && resource.Type != nil && *resource.Type != rt {
+					// if ResourceType was configfured and the queried ResourceType
+					// does not match it, filter it out.
+					// we have to do this filtering locally due to ARM API limitations:
+					// https://github.com/Azure/azure-rest-api-specs/issues/21324
+					continue
+				}
+
 				resourceList = append(
 					resourceList,
 					AzureResource{

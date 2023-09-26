@@ -352,23 +352,23 @@ metrics are requested per resource in chunks of 20 metric names (35 metric names
 
 HINT: service discovery information is cached for duration set by `$AZURE_SERVICEDISCOVERY_CACHE` (set to `0` to disable)
 
-| GET parameter              | Default                   | Required | Multiple | Description                                                                                                  |
-|----------------------------|---------------------------|----------|----------|--------------------------------------------------------------------------------------------------------------|
-| `subscription`             |                           | **yes**  | **yes**  | Azure Subscription ID (or multiple separate by comma)                                                        |
-| `resourceType` or `filter` |                           | **yes**  | no       | Azure Resource type or filter query (https://docs.microsoft.com/en-us/rest/api/resources/resources/list)     |
-| `timespan`                 | `PT1M`                    | no       | no       | Metric timespan                                                                                              |
-| `interval`                 |                           | no       | no       | Metric timespan                                                                                              |
-| `metricNamespace`          |                           | no       | **yes**  | Metric namespace                                                                                             |
-| `metric`                   |                           | no       | **yes**  | Metric name                                                                                                  |
-| `aggregation`              |                           | no       | **yes**  | Metric aggregation (`minimum`, `maximum`, `average`, `total`, `count`, multiple possible separated with `,`) |
-| `name`                     | `azurerm_resource_metric` | no       | no       | Prometheus metric name                                                                                       |
-| `metricFilter`             |                           | no       | no       | Prometheus metric filter (dimension support)                                                                 |
-| `metricTop`                |                           | no       | no       | Prometheus metric dimension count (dimension support)                                                        |
-| `metricOrderBy`            |                           | no       | no       | Prometheus metric order by (dimension support)                                                               |
-| `validateDimensions`       | `true`                    | no       | no       | When set to false, invalid filter parameter values will be ignored.                                          |
-| `cache`                    | (same as timespan)        | no       | no       | Use of internal metrics caching                                                                              |
-| `template`                 | set to `$METRIC_TEMPLATE` | no       | no       | see [metric name and help template system](#metric-name-and-help-template-system)                            |
-| `help`                     | set to `$METRIC_HELP`     | no       | no       | see [metric name and help template system](#metric-name-and-help-template-system)                            |
+| GET parameter              | Default                   | Required | Multiple | Description                                                                                                                                                                     |
+|----------------------------|---------------------------|----------|----------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `subscription`             |                           | **yes**  | **yes**  | Azure Subscription ID (or multiple separate by comma)                                                                                                                           |
+| `resourceType` or `filter` |                           | **yes**  | no       | Azure Resource type or filter query (https://docs.microsoft.com/en-us/rest/api/resources/resources/list). When both are specified, the `resourceType` filtering occurs locally. |
+| `timespan`                 | `PT1M`                    | no       | no       | Metric timespan                                                                                                                                                                 |
+| `interval`                 |                           | no       | no       | Metric timespan                                                                                                                                                                 |
+| `metricNamespace`          |                           | no       | **yes**  | Metric namespace                                                                                                                                                                |
+| `metric`                   |                           | no       | **yes**  | Metric name                                                                                                                                                                     |
+| `aggregation`              |                           | no       | **yes**  | Metric aggregation (`minimum`, `maximum`, `average`, `total`, `count`, multiple possible separated with `,`)                                                                    |
+| `name`                     | `azurerm_resource_metric` | no       | no       | Prometheus metric name                                                                                                                                                          |
+| `metricFilter`             |                           | no       | no       | Prometheus metric filter (dimension support)                                                                                                                                    |
+| `metricTop`                |                           | no       | no       | Prometheus metric dimension count (dimension support)                                                                                                                           |
+| `metricOrderBy`            |                           | no       | no       | Prometheus metric order by (dimension support)                                                                                                                                  |
+| `validateDimensions`       | `true`                    | no       | no       | When set to false, invalid filter parameter values will be ignored.                                                                                                             |
+| `cache`                    | (same as timespan)        | no       | no       | Use of internal metrics caching                                                                                                                                                 |
+| `template`                 | set to `$METRIC_TEMPLATE` | no       | no       | see [metric name and help template system](#metric-name-and-help-template-system)                                                                                               |
+| `help`                     | set to `$METRIC_HELP`     | no       | no       | see [metric name and help template system](#metric-name-and-help-template-system)                                                                                               |
 
 *Hint: Multiple values can be specified multiple times or with a comma in a single value.*
 
@@ -376,25 +376,25 @@ HINT: service discovery information is cached for duration set by `$AZURE_SERVIC
 
 HINT: service discovery information is cached for duration set by `$AZURE_SERVICEDISCOVERY_CACHE` (set to `0` to disable)
 
-| GET parameter              | Default                   | Required | Multiple | Description                                                                                              |
-|----------------------------|---------------------------|----------|----------|----------------------------------------------------------------------------------------------------------|
-| `subscription`             |                           | **yes**  | **yes**  | Azure Subscription ID  (or multiple separate by comma)                                                   |
-| `resourceType` or `filter` |                           | **yes**  | no       | Azure Resource type or filter query (https://docs.microsoft.com/en-us/rest/api/resources/resources/list) |
-| `metricTagName`            |                           | **yes**  | no       | Resource tag name for getting "metrics" list                                                             |
-| `aggregationTagName`       |                           | **yes**  | no       | Resource tag name for getting "aggregations" list                                                        |
-| `timespan`                 | `PT1M`                    | no       | no       | Metric timespan                                                                                          |
-| `interval`                 |                           | no       | no       | Metric timespan                                                                                          |
-| `metricNamespace`          |                           | no       | **yes**  | Metric namespace                                                                                         |
-| `metric`                   |                           | no       | **yes**  | Metric name                                                                                              |
-| `aggregation`              |                           | no       | **yes**  | Metric aggregation (`minimum`, `maximum`, `average`, `total`, multiple possible separated with `,`)      |
-| `name`                     | `azurerm_resource_metric` | no       | no       | Prometheus metric name                                                                                   |
-| `metricFilter`             |                           | no       | no       | Prometheus metric filter (dimension support)                                                             |
-| `metricTop`                |                           | no       | no       | Prometheus metric dimension count (integer, dimension support)                                           |
-| `metricOrderBy`            |                           | no       | no       | Prometheus metric order by (dimension support)                                                           |
-| `validateDimensions`       | `true`                    | no       | no       | When set to false, invalid filter parameter values will be ignored.                                      |
-| `cache`                    | (same as timespan)        | no       | no       | Use of internal metrics caching                                                                          |
-| `template`                 | set to `$METRIC_TEMPLATE` | no       | no       | see [metric name and help template system](#metric-name-and-help-template-system)                        |
-| `help`                     | set to `$METRIC_HELP`     | no       | no       | see [metric name and help template system](#metric-name-and-help-template-system)                        |
+| GET parameter              | Default                   | Required | Multiple | Description                                                                                                                                                                     |
+|----------------------------|---------------------------|----------|----------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `subscription`             |                           | **yes**  | **yes**  | Azure Subscription ID  (or multiple separate by comma)                                                                                                                          |
+| `resourceType` or `filter` |                           | **yes**  | no       | Azure Resource type or filter query (https://docs.microsoft.com/en-us/rest/api/resources/resources/list). When both are specified, the `resourceType` filtering occurs locally. |
+| `metricTagName`            |                           | **yes**  | no       | Resource tag name for getting "metrics" list                                                                                                                                    |
+| `aggregationTagName`       |                           | **yes**  | no       | Resource tag name for getting "aggregations" list                                                                                                                               |
+| `timespan`                 | `PT1M`                    | no       | no       | Metric timespan                                                                                                                                                                 |
+| `interval`                 |                           | no       | no       | Metric timespan                                                                                                                                                                 |
+| `metricNamespace`          |                           | no       | **yes**  | Metric namespace                                                                                                                                                                |
+| `metric`                   |                           | no       | **yes**  | Metric name                                                                                                                                                                     |
+| `aggregation`              |                           | no       | **yes**  | Metric aggregation (`minimum`, `maximum`, `average`, `total`, multiple possible separated with `,`)                                                                             |
+| `name`                     | `azurerm_resource_metric` | no       | no       | Prometheus metric name                                                                                                                                                          |
+| `metricFilter`             |                           | no       | no       | Prometheus metric filter (dimension support)                                                                                                                                    |
+| `metricTop`                |                           | no       | no       | Prometheus metric dimension count (integer, dimension support)                                                                                                                  |
+| `metricOrderBy`            |                           | no       | no       | Prometheus metric order by (dimension support)                                                                                                                                  |
+| `validateDimensions`       | `true`                    | no       | no       | When set to false, invalid filter parameter values will be ignored.                                                                                                             |
+| `cache`                    | (same as timespan)        | no       | no       | Use of internal metrics caching                                                                                                                                                 |
+| `template`                 | set to `$METRIC_TEMPLATE` | no       | no       | see [metric name and help template system](#metric-name-and-help-template-system)                                                                                               |
+| `help`                     | set to `$METRIC_HELP`     | no       | no       | see [metric name and help template system](#metric-name-and-help-template-system)                                                                                               |
 
 *Hint: Multiple values can be specified multiple times or with a comma in a single value.*
 
