@@ -38,10 +38,11 @@ func (sd *AzureServiceDiscovery) publishTargetList(targetList []MetricProbeTarge
 }
 
 func (sd *AzureServiceDiscovery) fetchResourceList(subscriptionId, filter string) (resourceList []AzureResource, err error) {
+	// nolint:gosec
 	cacheKey := fmt.Sprintf(
 		"%x",
 		string(sha1.New().Sum([]byte(fmt.Sprintf("%v:%v", subscriptionId, filter)))),
-	) // #nosec G401
+	)
 
 	// try to fetch info from cache
 	if cachedResourceList, ok := sd.fetchFromCache(cacheKey); !ok {
