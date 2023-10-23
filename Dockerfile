@@ -28,9 +28,9 @@ COPY --from=build /go/src/github.com/webdevops/azure-metrics-exporter/azure-metr
 RUN ["./azure-metrics-exporter", "--help"]
 
 #############################################
-# Final
+# final-static
 #############################################
-FROM gcr.io/distroless/static
+FROM gcr.io/distroless/static as final-static
 ENV LOG_JSON=1
 WORKDIR /
 COPY --from=test /app .
