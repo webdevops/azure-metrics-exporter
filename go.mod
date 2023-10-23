@@ -1,6 +1,6 @@
 module github.com/webdevops/azure-metrics-exporter
 
-go 1.20
+go 1.21
 
 require (
 	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.8.0-beta.1
