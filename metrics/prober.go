@@ -2,6 +2,7 @@ package metrics
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"strings"
 	"time"
@@ -181,9 +182,24 @@ func (p *MetricProber) collectMetricsFromSubscriptions() {
 	subscriptionIterator.SetConcurrency(p.Conf.Prober.ConcurrencySubscription)
 
 	go func() {
+		regions := map[string][]string{}
+		if len(p.settings.Regions) == 0 {
+			var err error
+
+			regions, err = p.ServiceDiscovery.FindResourceGraphLocations(p.ctx, p.settings.Subscriptions, p.settings.ResourceType)
+			if err != nil {
+				p.logger.Error(fmt.Errorf("error getting subscription locations: %w", err))
+				return
+			}
+		}
 
 		err := subscriptionIterator.ForEachAsync(p.logger, func(subscription *armsubscriptions.Subscription, logger *zap.SugaredLogger) {
-			for _, region := range p.settings.Regions {
+			subscriptionRegions, ok := regions[*subscription.SubscriptionID]
+			if !ok {
+				subscriptionRegions = p.settings.Regions
+			}
+
+			for _, region := range subscriptionRegions {
 				client, err := p.MetricsClient(*subscription.SubscriptionID)
 				if err != nil {
 					// FIXME: find a better way to report errors

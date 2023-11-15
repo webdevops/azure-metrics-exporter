@@ -47,12 +47,6 @@ func probeMetricsSubscriptionHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if _, err = paramsGetListRequired(r.URL.Query(), "region"); err != nil {
-		contextLogger.Warnln(err)
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-
 	prober := metrics.NewMetricProber(ctx, contextLogger, w, &settings, opts)
 	prober.SetUserAgent(UserAgent + gitTag)
 	prober.SetAzureClient(AzureClient)

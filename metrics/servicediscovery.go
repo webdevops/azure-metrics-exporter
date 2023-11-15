@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/sha1" // #nosec G505
 	"encoding/json"
+	"errors"
 	"fmt"
 	"strings"
 
@@ -173,6 +174,95 @@ func (sd *AzureServiceDiscovery) FindSubscriptionResourcesWithScrapeTags(ctx con
 	}
 
 	sd.publishTargetList(targetList)
+}
+
+func (sd *AzureServiceDiscovery) FindResourceGraphLocations(ctx context.Context, subscriptions []string, resourceType string) (map[string][]string, error) {
+	regionList := map[string][]string{}
+
+	client, err := armresourcegraph.NewClient(sd.prober.AzureClient.GetCred(), sd.prober.AzureClient.NewArmClientOptions())
+	if err != nil {
+		return regionList, err
+	}
+	queryTemplate := `Resources | where type == "%s" | summarize count() by subscriptionId, location`
+
+	query := strings.TrimSpace(fmt.Sprintf(
+		queryTemplate,
+		strings.ToLower(strings.ReplaceAll(resourceType, "'", "\\'")),
+	))
+
+	sd.prober.logger.With(zap.String("query", query)).Debugf("using Kusto query")
+
+	queryFormat := armresourcegraph.ResultFormatObjectArray
+	queryTop := int32(ResourceGraphQueryTop)
+	queryRequest := armresourcegraph.QueryRequest{
+		Query: to.StringPtr(query),
+		Options: &armresourcegraph.QueryRequestOptions{
+			ResultFormat: &queryFormat,
+			Top:          &queryTop,
+		},
+		Subscriptions: to.SlicePtr(subscriptions),
+	}
+
+	result, err := client.Resources(ctx, queryRequest, nil)
+	if err != nil {
+		return regionList, err
+	}
+
+	for {
+		if resultList, ok := result.Data.([]interface{}); ok {
+			// check if we got data, otherwise break the for loop
+			if len(resultList) == 0 {
+				break
+			}
+
+			for _, v := range resultList {
+				if resultRow, ok := v.(map[string]interface{}); ok {
+					// check if we got data, otherwise break the for loop
+					if len(resultList) == 0 {
+						break
+					}
+
+					subscriptionIdRow, ok := resultRow["subscriptionId"]
+					if !ok {
+						return regionList, errors.New("missing subscriptionId")
+					}
+
+					subscriptionId, ok := subscriptionIdRow.(string)
+					if !ok {
+						return regionList, errors.New("subscriptionId is not a string")
+					}
+
+					locationRow, ok := resultRow["location"]
+					if !ok {
+						return regionList, errors.New("missing location")
+					}
+
+					location, ok := locationRow.(string)
+					if !ok {
+						return regionList, errors.New("location is not a string")
+					}
+
+					if _, ok = regionList[subscriptionId]; !ok {
+						regionList[subscriptionId] = []string{}
+					}
+
+					regionList[subscriptionId] = append(regionList[subscriptionId], location)
+				}
+			}
+		}
+
+		if result.SkipToken != nil {
+			queryRequest.Options.SkipToken = result.SkipToken
+			result, err = client.Resources(ctx, queryRequest, nil)
+			if err != nil {
+				return regionList, err
+			}
+		} else {
+			break
+		}
+	}
+
+	return regionList, nil
 }
 
 func (sd *AzureServiceDiscovery) FindResourceGraph(ctx context.Context, subscriptions []string, resourceType, filter string) error {
