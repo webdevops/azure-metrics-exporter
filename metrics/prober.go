@@ -182,22 +182,14 @@ func (p *MetricProber) collectMetricsFromSubscriptions() {
 	subscriptionIterator.SetConcurrency(p.Conf.Prober.ConcurrencySubscription)
 
 	go func() {
-		regions := map[string][]string{}
-		if len(p.settings.Regions) == 0 {
-			var err error
-
-			regions, err = p.ServiceDiscovery.FindResourceGraphLocations(p.ctx, p.settings.Subscriptions, p.settings.ResourceType)
-			if err != nil {
-				p.logger.Error(fmt.Errorf("error getting subscription locations: %w", err))
-				return
-			}
+		regions, err := p.discoverResourceRegions()
+		if err != nil {
+			p.logger.Error(fmt.Errorf("error getting subscription locations: %w", err))
+			return
 		}
 
-		err := subscriptionIterator.ForEachAsync(p.logger, func(subscription *armsubscriptions.Subscription, logger *zap.SugaredLogger) {
-			subscriptionRegions, ok := regions[*subscription.SubscriptionID]
-			if !ok {
-				subscriptionRegions = p.settings.Regions
-			}
+		err = subscriptionIterator.ForEachAsync(p.logger, func(subscription *armsubscriptions.Subscription, logger *zap.SugaredLogger) {
+			subscriptionRegions := regions[*subscription.SubscriptionID]
 
 			for _, region := range subscriptionRegions {
 				client, err := p.MetricsClient(*subscription.SubscriptionID)
@@ -281,6 +273,38 @@ func (p *MetricProber) collectMetricsFromSubscriptions() {
 		p.metricList.Add(result.Name, metric)
 		p.metricList.SetMetricHelp(result.Name, result.Help)
 	}
+}
+
+func (p *MetricProber) discoverResourceRegions() (map[string][]string, error) {
+	regions := map[string][]string{}
+
+	for _, subscriptionId := range p.settings.Subscriptions {
+		if len(p.settings.Regions) == 0 {
+			regions[subscriptionId] = []string{}
+		} else {
+			regions[subscriptionId] = p.settings.Regions
+		}
+	}
+
+	if len(p.settings.Regions) != 0 {
+		return regions, nil
+	}
+
+	query := fmt.Sprintf(`Resources | where type == "%s" | summarize count() by subscriptionId, location`, strings.ToLower(p.settings.ResourceType))
+
+	results, err := p.AzureClient.ExecuteResourceGraphQuery(p.ctx, p.settings.Subscriptions, query)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, row := range results {
+		subscriptionId := row["subscriptionId"].(string)
+		location := row["location"].(string)
+
+		regions[subscriptionId] = append(regions[subscriptionId], location)
+	}
+
+	return regions, nil
 }
 
 func (p *MetricProber) collectMetricsFromTargets() {
