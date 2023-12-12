@@ -2,6 +2,7 @@ package metrics
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"strings"
 	"time"
@@ -181,9 +182,16 @@ func (p *MetricProber) collectMetricsFromSubscriptions() {
 	subscriptionIterator.SetConcurrency(p.Conf.Prober.ConcurrencySubscription)
 
 	go func() {
+		regions, err := p.discoverResourceRegions()
+		if err != nil {
+			p.logger.Error(fmt.Errorf("error getting subscription locations: %w", err))
+			return
+		}
 
-		err := subscriptionIterator.ForEachAsync(p.logger, func(subscription *armsubscriptions.Subscription, logger *zap.SugaredLogger) {
-			for _, region := range p.settings.Regions {
+		err = subscriptionIterator.ForEachAsync(p.logger, func(subscription *armsubscriptions.Subscription, logger *zap.SugaredLogger) {
+			subscriptionRegions := regions[*subscription.SubscriptionID]
+
+			for _, region := range subscriptionRegions {
 				client, err := p.MetricsClient(*subscription.SubscriptionID)
 				if err != nil {
 					// FIXME: find a better way to report errors
@@ -265,6 +273,38 @@ func (p *MetricProber) collectMetricsFromSubscriptions() {
 		p.metricList.Add(result.Name, metric)
 		p.metricList.SetMetricHelp(result.Name, result.Help)
 	}
+}
+
+func (p *MetricProber) discoverResourceRegions() (map[string][]string, error) {
+	regions := map[string][]string{}
+
+	for _, subscriptionId := range p.settings.Subscriptions {
+		if len(p.settings.Regions) == 0 {
+			regions[subscriptionId] = []string{}
+		} else {
+			regions[subscriptionId] = p.settings.Regions
+		}
+	}
+
+	if len(p.settings.Regions) != 0 {
+		return regions, nil
+	}
+
+	query := fmt.Sprintf(`Resources | where type == "%s" | summarize count() by subscriptionId, location`, strings.ToLower(p.settings.ResourceType))
+
+	results, err := p.AzureClient.ExecuteResourceGraphQuery(p.ctx, p.settings.Subscriptions, query)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, row := range results {
+		subscriptionId := row["subscriptionId"].(string)
+		location := row["location"].(string)
+
+		regions[subscriptionId] = append(regions[subscriptionId], location)
+	}
+
+	return regions, nil
 }
 
 func (p *MetricProber) collectMetricsFromTargets() {
