@@ -15,7 +15,7 @@ jobs:
         with:
           swap-size-gb: 12
 
-      - uses: actions/setup-go@v4
+      - uses: actions/setup-go@v5
         with:
           go-version: '1.21'
           check-latest: true
