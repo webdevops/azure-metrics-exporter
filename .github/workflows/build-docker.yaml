@@ -19,7 +19,7 @@ jobs:
           swap-size-gb: 12
 
       - name: Run Golangci lint
-        uses: golangci/golangci-lint-action@v3
+        uses: golangci/golangci-lint-action@v4
         with:
           version: latest
           args: --print-resources-usage
