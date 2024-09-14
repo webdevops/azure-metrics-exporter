@@ -31,7 +31,7 @@ const (
 
 var (
 	argparser *flags.Parser
-	opts      config.Opts
+	Opts      config.Opts
 
 	AzureClient             *armclient.ArmClient
 	AzureResourceTagManager *armclient.ResourceTagManager
@@ -55,7 +55,8 @@ func main() {
 	initLogger()
 
 	logger.Infof("starting azure-metrics-exporter v%s (%s; %s; by %v)", gitTag, gitCommit, runtime.Version(), Author)
-	logger.Info(string(opts.GetJson()))
+	logger.Info(string(Opts.GetJson()))
+	initSystem()
 	metricsCache = cache.New(1*time.Minute, 1*time.Minute)
 	azureCache = cache.New(1*time.Minute, 1*time.Minute)
 
@@ -63,12 +64,12 @@ func main() {
 	initAzureConnection()
 	initMetricCollector()
 
-	logger.Infof("starting http server on %s", opts.Server.Bind)
+	logger.Infof("starting http server on %s", Opts.Server.Bind)
 	startHttpServer()
 }
 
 func initArgparser() {
-	argparser = flags.NewParser(&opts, flags.Default)
+	argparser = flags.NewParser(&Opts, flags.Default)
 	_, err := argparser.Parse()
 
 	// check if there is an parse error
@@ -87,8 +88,8 @@ func initArgparser() {
 func initAzureConnection() {
 	var err error
 
-	if opts.Azure.Environment != nil {
-		if err := os.Setenv(azidentity.EnvAzureEnvironment, *opts.Azure.Environment); err != nil {
+	if Opts.Azure.Environment != nil {
+		if err := os.Setenv(azidentity.EnvAzureEnvironment, *Opts.Azure.Environment); err != nil {
 			logger.Warnf(`unable to set envvar "%s": %v`, azidentity.EnvAzureEnvironment, err.Error())
 		}
 	}
@@ -103,9 +104,9 @@ func initAzureConnection() {
 		logger.Fatal(err.Error())
 	}
 
-	AzureResourceTagManager, err = AzureClient.TagManager.ParseTagConfig(opts.Azure.ResourceTags)
+	AzureResourceTagManager, err = AzureClient.TagManager.ParseTagConfig(Opts.Azure.ResourceTags)
 	if err != nil {
-		logger.Fatalf(`unable to parse resourceTag configuration "%s": %v"`, opts.Azure.ResourceTags, err.Error())
+		logger.Fatalf(`unable to parse resourceTag configuration "%s": %v"`, Opts.Azure.ResourceTags, err.Error())
 	}
 }
 
@@ -168,10 +169,10 @@ func startHttpServer() {
 	})
 
 	srv := &http.Server{
-		Addr:         opts.Server.Bind,
+		Addr:         Opts.Server.Bind,
 		Handler:      mux,
-		ReadTimeout:  opts.Server.ReadTimeout,
-		WriteTimeout: opts.Server.WriteTimeout,
+		ReadTimeout:  Opts.Server.ReadTimeout,
+		WriteTimeout: Opts.Server.WriteTimeout,
 	}
 	logger.Fatal(srv.ListenAndServe())
 }

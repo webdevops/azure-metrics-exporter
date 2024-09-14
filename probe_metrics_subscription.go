@@ -35,7 +35,7 @@ func probeMetricsSubscriptionHandler(w http.ResponseWriter, r *http.Request) {
 	r = r.WithContext(ctx)
 
 	var settings metrics.RequestMetricSettings
-	if settings, err = metrics.NewRequestMetricSettingsForAzureResourceApi(r, opts); err != nil {
+	if settings, err = metrics.NewRequestMetricSettingsForAzureResourceApi(r, Opts); err != nil {
 		contextLogger.Warnln(err)
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -47,7 +47,7 @@ func probeMetricsSubscriptionHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	prober := metrics.NewMetricProber(ctx, contextLogger, w, &settings, opts)
+	prober := metrics.NewMetricProber(ctx, contextLogger, w, &settings, Opts)
 	prober.SetUserAgent(UserAgent + gitTag)
 	prober.SetAzureClient(AzureClient)
 	prober.SetAzureResourceTagManager(AzureResourceTagManager)

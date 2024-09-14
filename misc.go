@@ -6,7 +6,23 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
+
+	stringsCommon "github.com/webdevops/go-common/strings"
+	"go.uber.org/zap"
 )
+
+func buildContextLoggerFromRequest(r *http.Request) *zap.SugaredLogger {
+	contextLogger := logger.With(zap.String("requestPath", r.URL.Path))
+
+	for name, value := range r.URL.Query() {
+		fieldName := fmt.Sprintf("param%s", stringsCommon.UppercaseFirst(name))
+		fieldValue := value
+
+		contextLogger = contextLogger.With(zap.Any(fieldName, fieldValue))
+	}
+
+	return contextLogger
+}
 
 func getPrometheusTimeout(r *http.Request, defaultTimeout float64) (timeout float64, err error) {
 	// If a timeout is configured via the Prometheus header, add it to the request.
