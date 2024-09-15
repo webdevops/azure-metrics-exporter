@@ -38,6 +38,10 @@ func (r *AzureInsightSubscriptionMetricsResult) SendMetricToChannel(channel chan
 								dimensionRowName := to.String(dimensionRow.Name.Value)
 								dimensionRowValue := to.String(dimensionRow.Value)
 
+								if r.prober.settings.DimensionLowercase {
+									dimensionRowValue = strings.ToLower(dimensionRowValue)
+								}
+
 								if strings.EqualFold(dimensionRowName, "microsoft.resourceid") {
 									resourceId = dimensionRowValue
 								} else {

@@ -33,7 +33,11 @@ func (r *AzureInsightMetricsResult) SendMetricToChannel(channel chan<- Prometheu
 						dimensions := map[string]string{}
 						if timeseries.Metadatavalues != nil {
 							for _, dimensionRow := range timeseries.Metadatavalues {
-								dimensions[to.String(dimensionRow.Name.Value)] = to.String(dimensionRow.Value)
+								dimensionValue := to.String(dimensionRow.Value)
+								if r.prober.settings.DimensionLowercase {
+									dimensionValue = strings.ToLower(dimensionValue)
+								}
+								dimensions[to.String(dimensionRow.Name.Value)] = dimensionValue
 							}
 						}
 

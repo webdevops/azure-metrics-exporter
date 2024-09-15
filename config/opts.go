@@ -25,8 +25,11 @@ type (
 		}
 
 		Metrics struct {
-			Template string `long:"metrics.template"               env:"METRIC_TEMPLATE"                            description:"Template for metric name"   default:"{name}"`
-			Help     string `long:"metrics.help"                   env:"METRIC_HELP"                                description:"Metric help (with template support)"   default:"Azure monitor insight metric"`
+			Template   string `long:"metrics.template"               env:"METRIC_TEMPLATE"                            description:"Template for metric name"   default:"{name}"`
+			Help       string `long:"metrics.help"                   env:"METRIC_HELP"                                description:"Metric help (with template support)"   default:"Azure monitor insight metric"`
+			Dimensions struct {
+				Lowercase bool `long:"metrics.dimensions.lowercase"   env:"METRIC_DIMENSIONS_LOWERCASE"             description:"Lowercase dimension values"`
+			}
 		}
 
 		// Prober settings

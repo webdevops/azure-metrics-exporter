@@ -39,6 +39,8 @@ type (
 		MetricTemplate string
 		HelpTemplate   string
 
+		DimensionLowercase bool
+
 		// cache
 		Cache *time.Duration
 	}
@@ -67,7 +69,11 @@ func NewRequestMetricSettingsForAzureResourceApi(r *http.Request, opts config.Op
 }
 
 func NewRequestMetricSettings(r *http.Request, opts config.Opts) (RequestMetricSettings, error) {
-	ret := RequestMetricSettings{}
+	ret := RequestMetricSettings{
+		// force lowercasing of dimensions
+		DimensionLowercase: opts.Metrics.Dimensions.Lowercase,
+	}
+
 	params := r.URL.Query()
 
 	// param name
