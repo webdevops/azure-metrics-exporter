@@ -9,7 +9,11 @@ import (
 	"net/http"
 	"os"
 	"runtime"
+	"strings"
 	"time"
+
+	azlog "github.com/Azure/azure-sdk-for-go/sdk/azcore/log"
+	"go.uber.org/zap"
 
 	"github.com/google/uuid"
 	"github.com/jessevdk/go-flags"
@@ -62,6 +66,7 @@ func main() {
 
 	logger.Infof("init Azure connection")
 	initAzureConnection()
+	initAzLogger()
 	initMetricCollector()
 
 	logger.Infof("starting http server on %s", Opts.Server.Bind)
@@ -204,4 +209,22 @@ func initMetricCollector() {
 		},
 	)
 	prometheus.MustRegister(prometheusMetricRequests)
+}
+
+func initAzLogger() {
+	if cls := os.Getenv("AZURE_SDK_GO_LOGGING"); cls != "all" {
+		azlog.SetEvents(azlog.EventRetryPolicy)
+		azlog.SetListener(func(cls azlog.Event, msg string) {
+			if cls == azlog.EventRetryPolicy {
+				if strings.HasPrefix(msg, "response 2") ||
+					strings.HasPrefix(msg, "=====> Try=") ||
+					strings.HasPrefix(msg, "End Try") ||
+					msg == "exit due to non-retriable status code" {
+					return
+				}
+
+				logger.WithOptions(zap.AddCallerSkip(3)).Warnln(msg)
+			}
+		})
+	}
 }
