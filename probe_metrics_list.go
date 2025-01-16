@@ -12,6 +12,8 @@ import (
 
 	"github.com/webdevops/azure-metrics-exporter/config"
 	"github.com/webdevops/azure-metrics-exporter/metrics"
+
+	"go.uber.org/zap"
 )
 
 func probeMetricsListHandler(w http.ResponseWriter, r *http.Request) {
@@ -90,4 +92,11 @@ func probeMetricsListHandler(w http.ResponseWriter, r *http.Request) {
 
 	h := promhttp.HandlerFor(registry, promhttp.HandlerOpts{})
 	h.ServeHTTP(w, r)
+
+	latency := time.Since(startTime)
+	contextLogger.With(
+		zap.String("method", r.Method),
+		zap.Int("status", http.StatusOK),
+		zap.String("latency", latency.String()),
+	).Info("Request handled for /probe/metrics/list")
 }
