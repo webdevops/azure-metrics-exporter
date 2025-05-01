@@ -41,7 +41,7 @@ func (sd *AzureServiceDiscovery) fetchResourceList(subscriptionId, filter string
 	// nolint:gosec
 	cacheKey := fmt.Sprintf(
 		"%x",
-		string(sha1.New().Sum([]byte(fmt.Sprintf("%v:%v", subscriptionId, filter)))),
+		sha1.Sum([]byte(fmt.Sprintf("%v:%v", subscriptionId, filter))),
 	)
 
 	// try to fetch info from cache
