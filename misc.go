@@ -2,23 +2,25 @@ package main
 
 import (
 	"fmt"
+	"log/slog"
 	"net/http"
 	"net/url"
 	"strconv"
 	"strings"
 
 	stringsCommon "github.com/webdevops/go-common/strings"
-	"go.uber.org/zap"
+
+	"github.com/webdevops/go-common/log/slogger"
 )
 
-func buildContextLoggerFromRequest(r *http.Request) *zap.SugaredLogger {
-	contextLogger := logger.With(zap.String("requestPath", r.URL.Path))
+func buildContextLoggerFromRequest(r *http.Request) *slogger.Logger {
+	contextLogger := logger.With(slog.String("requestPath", r.URL.Path))
 
 	for name, value := range r.URL.Query() {
 		fieldName := fmt.Sprintf("param%s", stringsCommon.UppercaseFirst(name))
 		fieldValue := value
 
-		contextLogger = contextLogger.With(zap.Any(fieldName, fieldValue))
+		contextLogger = contextLogger.With(slog.Any(fieldName, fieldValue))
 	}
 
 	return contextLogger

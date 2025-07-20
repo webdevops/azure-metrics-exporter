@@ -3,6 +3,7 @@ package metrics
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"net/http"
 	"strings"
 	"time"
@@ -15,7 +16,6 @@ import (
 	"github.com/remeh/sizedwaitgroup"
 	"github.com/webdevops/go-common/azuresdk/armclient"
 	"github.com/webdevops/go-common/utils/to"
-	"go.uber.org/zap"
 
 	"github.com/webdevops/azure-metrics-exporter/config"
 )
@@ -39,7 +39,7 @@ type (
 
 		ctx context.Context
 
-		logger *zap.SugaredLogger
+		logger *slog.Logger
 
 		metricsCache struct {
 			cache         *cache.Cache
@@ -73,7 +73,7 @@ type (
 	}
 )
 
-func NewMetricProber(ctx context.Context, logger *zap.SugaredLogger, w http.ResponseWriter, settings *RequestMetricSettings, conf config.Opts) *MetricProber {
+func NewMetricProber(ctx context.Context, logger *slog.Logger, w http.ResponseWriter, settings *RequestMetricSettings, conf config.Opts) *MetricProber {
 	prober := MetricProber{}
 	prober.ctx = ctx
 	prober.response = w
@@ -125,7 +125,7 @@ func (p *MetricProber) AddTarget(targets ...MetricProbeTarget) {
 	for _, target := range targets {
 		resourceInfo, err := azure.ParseResourceID(target.ResourceId)
 		if err != nil {
-			p.logger.Warnf("unable to parse resource id: %s", err.Error())
+			p.logger.Warn("unable to parse resource id", slog.Any("error", err.Error()))
 			continue
 		}
 
@@ -184,18 +184,18 @@ func (p *MetricProber) collectMetricsFromSubscriptions() {
 	go func() {
 		regions, err := p.discoverResourceRegions()
 		if err != nil {
-			p.logger.Error(fmt.Errorf("error getting subscription locations: %w", err))
+			p.logger.Error("error getting subscription locations", slog.Any("error", err))
 			return
 		}
 
-		err = subscriptionIterator.ForEachAsync(p.logger, func(subscription *armsubscriptions.Subscription, logger *zap.SugaredLogger) {
+		err = subscriptionIterator.ForEachAsync(p.logger, func(subscription *armsubscriptions.Subscription, logger *slog.Logger) {
 			subscriptionRegions := regions[*subscription.SubscriptionID]
 
 			for _, region := range subscriptionRegions {
 				client, err := p.MetricsClient(*subscription.SubscriptionID)
 				if err != nil {
 					// FIXME: find a better way to report errors
-					p.logger.Error(err)
+					p.logger.Error(err.Error())
 					return
 				}
 
@@ -239,7 +239,7 @@ func (p *MetricProber) collectMetricsFromSubscriptions() {
 					response, err := client.ListAtSubscriptionScope(p.ctx, region, &opts)
 					if err != nil {
 						// FIXME: find a better way to report errors
-						p.logger.Error(err)
+						p.logger.Error(err.Error())
 						return
 					}
 
@@ -259,7 +259,7 @@ func (p *MetricProber) collectMetricsFromSubscriptions() {
 		})
 		if err != nil {
 			// FIXME: find a better way to report errors
-			p.logger.Error(err)
+			p.logger.Error(err.Error())
 		}
 
 		close(metricsChannel)
@@ -325,7 +325,7 @@ func (p *MetricProber) collectMetricsFromTargets() {
 				client, err := p.MetricsClient(subscriptionId)
 				if err != nil {
 					// FIXME: find a better way to report errors
-					p.logger.Error(err)
+					p.logger.Error(err.Error())
 					return
 				}
 
@@ -345,7 +345,7 @@ func (p *MetricProber) collectMetricsFromTargets() {
 							if result, err := p.FetchMetricsFromTarget(client, target, metricList, target.Aggregations); err == nil {
 								result.SendMetricToChannel(metricsChannel)
 							} else {
-								p.logger.With(zap.String("resourceID", target.ResourceId)).Warn(err)
+								p.logger.With(slog.String("resourceID", target.ResourceId)).Warn(err.Error())
 							}
 						}
 					}(target)

@@ -5,12 +5,12 @@ import (
 	"crypto/sha1" // #nosec G505
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"strings"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resourcegraph/armresourcegraph"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armresources"
 	"github.com/webdevops/go-common/utils/to"
-	"go.uber.org/zap"
 )
 
 const (
@@ -84,7 +84,7 @@ func (sd *AzureServiceDiscovery) fetchResourceList(subscriptionId, filter string
 		// store to cache (if enabled)
 		sd.saveToCache(cacheKey, resourceList)
 	} else {
-		sd.prober.logger.Debugf("using servicediscovery from cache")
+		sd.prober.logger.Debug("using servicediscovery from cache")
 		resourceList = cachedResourceList
 	}
 
@@ -120,7 +120,7 @@ func (sd *AzureServiceDiscovery) saveToCache(cacheKey string, resourceList []Azu
 		contextLogger.Debug("saving servicedisccovery to cache")
 		if cacheData, err := json.Marshal(resourceList); err == nil {
 			cache.Set(cacheKey, cacheData, *cacheDuration)
-			contextLogger.Debugf("saved servicediscovery to cache for %s", cacheDuration.String())
+			contextLogger.Debug("saved servicediscovery to cache", slog.Duration("cacheDuration", *cacheDuration))
 		}
 	}
 }
@@ -141,7 +141,7 @@ func (sd *AzureServiceDiscovery) FindSubscriptionResources(subscriptionId, filte
 			)
 		}
 	} else {
-		sd.prober.logger.Error(err)
+		sd.prober.logger.Error(err.Error())
 		return
 	}
 
@@ -168,7 +168,7 @@ func (sd *AzureServiceDiscovery) FindSubscriptionResourcesWithScrapeTags(ctx con
 			}
 		}
 	} else {
-		sd.prober.logger.Error(err)
+		sd.prober.logger.Error(err.Error())
 		return
 	}
 
@@ -195,7 +195,7 @@ func (sd *AzureServiceDiscovery) FindResourceGraph(ctx context.Context, subscrip
 		filter,
 	))
 
-	sd.prober.logger.With(zap.String("query", query)).Debugf("using Kusto query")
+	sd.prober.logger.With(slog.String("query", query)).Debug("using Kusto query")
 
 	queryFormat := armresourcegraph.ResultFormatObjectArray
 	queryTop := int32(ResourceGraphQueryTop)

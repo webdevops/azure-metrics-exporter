@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/sha1" // #nosec G505
 	"fmt"
+	"log/slog"
 	"net/http"
 	"time"
 
@@ -12,8 +13,6 @@ import (
 
 	"github.com/webdevops/azure-metrics-exporter/config"
 	"github.com/webdevops/azure-metrics-exporter/metrics"
-
-	"go.uber.org/zap"
 )
 
 func probeMetricsResourceGraphHandler(w http.ResponseWriter, r *http.Request) {
@@ -27,7 +26,7 @@ func probeMetricsResourceGraphHandler(w http.ResponseWriter, r *http.Request) {
 	// If a timeout is configured via the Prometheus header, add it to the request.
 	timeoutSeconds, err = getPrometheusTimeout(r, config.ProbeMetricsResourceGraphTimeoutDefault)
 	if err != nil {
-		contextLogger.Warnln(err)
+		contextLogger.Warn(err.Error())
 		http.Error(w, fmt.Sprintf("failed to parse timeout from Prometheus header: %s", err), http.StatusBadRequest)
 		return
 	}
@@ -38,25 +37,25 @@ func probeMetricsResourceGraphHandler(w http.ResponseWriter, r *http.Request) {
 
 	var settings metrics.RequestMetricSettings
 	if settings, err = metrics.NewRequestMetricSettings(r, Opts); err != nil {
-		contextLogger.Warnln(err)
+		contextLogger.Warn(err.Error())
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
 	if _, err = paramsGetListRequired(r.URL.Query(), "subscription"); err != nil {
-		contextLogger.Warnln(err)
+		contextLogger.Warn(err.Error())
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
 	resourceType, err := paramsGetRequired(r.URL.Query(), "resourceType")
 	if err != nil {
-		contextLogger.Warnln(err)
+		contextLogger.Warn(err.Error())
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	prober := metrics.NewMetricProber(ctx, contextLogger, w, &settings, Opts)
+	prober := metrics.NewMetricProber(ctx, contextLogger.Logger, w, &settings, Opts)
 	prober.SetUserAgent(UserAgent + gitTag)
 	prober.SetAzureClient(AzureClient)
 	prober.SetAzureResourceTagManager(AzureResourceTagManager)
@@ -73,7 +72,7 @@ func probeMetricsResourceGraphHandler(w http.ResponseWriter, r *http.Request) {
 	if !prober.FetchFromCache() {
 		err := prober.ServiceDiscovery.FindResourceGraph(ctx, settings.Subscriptions, resourceType, settings.Filter)
 		if err != nil {
-			contextLogger.Errorln(err)
+			contextLogger.Error(err.Error())
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
@@ -105,8 +104,8 @@ func probeMetricsResourceGraphHandler(w http.ResponseWriter, r *http.Request) {
 
 	latency := time.Since(startTime)
 	contextLogger.With(
-		zap.String("method", r.Method),
-		zap.Int("status", http.StatusOK),
-		zap.String("latency", latency.String()),
-	).Info("Request handled for /probe/metrics/resourcegraph")
+		slog.String("method", r.Method),
+		slog.Int("status", http.StatusOK),
+		slog.Duration("latency", latency),
+	).Info("request handled")
 }

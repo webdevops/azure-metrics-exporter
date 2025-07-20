@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"html/template"
+	"log/slog"
 	"net/http"
 	"os"
 	"runtime"
@@ -54,17 +55,17 @@ func main() {
 	initArgparser()
 	initLogger()
 
-	logger.Infof("starting azure-metrics-exporter v%s (%s; %s; by %v)", gitTag, gitCommit, runtime.Version(), Author)
+	logger.Info(fmt.Sprintf("starting azure-metrics-exporter v%s (%s; %s; by %v)", gitTag, gitCommit, runtime.Version(), Author))
 	logger.Info(string(Opts.GetJson()))
 	initSystem()
 	metricsCache = cache.New(1*time.Minute, 1*time.Minute)
 	azureCache = cache.New(1*time.Minute, 1*time.Minute)
 
-	logger.Infof("init Azure connection")
+	logger.Info("init Azure connection")
 	initAzureConnection()
 	initMetricCollector()
 
-	logger.Infof("starting http server on %s", Opts.Server.Bind)
+	logger.Info("starting http server", slog.String("bind", Opts.Server.Bind))
 	startHttpServer()
 }
 
@@ -90,11 +91,11 @@ func initAzureConnection() {
 
 	if Opts.Azure.Environment != nil {
 		if err := os.Setenv(azidentity.EnvAzureEnvironment, *Opts.Azure.Environment); err != nil {
-			logger.Warnf(`unable to set envvar "%s": %v`, azidentity.EnvAzureEnvironment, err.Error())
+			logger.Warn(`unable to set environment variable`, slog.String("envVar", azidentity.EnvAzureEnvironment), slog.Any("error", err.Error()))
 		}
 	}
 
-	AzureClient, err = armclient.NewArmClientFromEnvironment(logger)
+	AzureClient, err = armclient.NewArmClientFromEnvironment(logger.Logger)
 	if err != nil {
 		logger.Fatal(err.Error())
 	}
@@ -106,7 +107,7 @@ func initAzureConnection() {
 
 	AzureResourceTagManager, err = AzureClient.TagManager.ParseTagConfig(Opts.Azure.ResourceTags)
 	if err != nil {
-		logger.Fatalf(`unable to parse resourceTag configuration "%s": %v"`, Opts.Azure.ResourceTags, err.Error())
+		logger.Fatal(`unable to parse resourceTag configuration`, slog.Any("resourceTags", Opts.Azure.ResourceTags), slog.Any("error", err.Error()))
 	}
 }
 
@@ -117,14 +118,14 @@ func startHttpServer() {
 	// healthz
 	mux.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
 		if _, err := fmt.Fprint(w, "Ok"); err != nil {
-			logger.Error(err)
+			logger.Error(err.Error())
 		}
 	})
 
 	// readyz
 	mux.HandleFunc("/readyz", func(w http.ResponseWriter, r *http.Request) {
 		if _, err := fmt.Fprint(w, "Ok"); err != nil {
-			logger.Error(err)
+			logger.Error(err.Error())
 		}
 	})
 
@@ -164,7 +165,7 @@ func startHttpServer() {
 		}
 
 		if err := tmpl.ExecuteTemplate(w, "query.html", templatePayload); err != nil {
-			logger.Error(err)
+			logger.Error(err.Error())
 		}
 	})
 
@@ -174,7 +175,9 @@ func startHttpServer() {
 		ReadTimeout:  Opts.Server.ReadTimeout,
 		WriteTimeout: Opts.Server.WriteTimeout,
 	}
-	logger.Fatal(srv.ListenAndServe())
+	if err := srv.ListenAndServe(); err != nil {
+		logger.Fatal(err.Error())
+	}
 }
 
 func initMetricCollector() {
