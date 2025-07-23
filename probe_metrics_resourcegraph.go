@@ -107,5 +107,5 @@ func probeMetricsResourceGraphHandler(w http.ResponseWriter, r *http.Request) {
 		slog.String("method", r.Method),
 		slog.Int("status", http.StatusOK),
 		slog.Duration("latency", latency),
-	).Info("request handled")
+	).Debug("request handled")
 }

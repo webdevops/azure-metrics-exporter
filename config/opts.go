@@ -9,9 +9,11 @@ type (
 	Opts struct {
 		// logger
 		Logger struct {
-			Debug       bool `long:"log.debug"    env:"LOG_DEBUG"  description:"debug mode"`
-			Development bool `long:"log.devel"    env:"LOG_DEVEL"  description:"development mode"`
-			Json        bool `long:"log.json"     env:"LOG_JSON"   description:"Switch log output to json format"`
+			Level  string `long:"log.level"    env:"LOG_LEVEL"   description:"Log level" choice:"trace" choice:"debug" choice:"info" choice:"warning" choice:"error" default:"info"`
+			Format string `long:"log.format"   env:"LOG_FORMAT"  description:"Log format" choice:"text" choice:"json" default:"text"`
+			Source string `long:"log.source"   env:"LOG_SOURCE"  description:"Show source for every log message (useful for debugging and bug reports)" choice:"off" choice:"short" choice:"file" choice:"full" default:"off"`
+			Time   bool   `long:"log.time"     env:"LOG_TIME"    description:"Show time"`
+			Json   bool   `long:"log.json"     env:"LOG_JSON"    description:"Switch log output to json format"`
 		}
 
 		// azure

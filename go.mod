@@ -17,7 +17,7 @@ require (
 	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/prometheus/client_golang v1.22.0
 	github.com/remeh/sizedwaitgroup v1.0.0
-	github.com/webdevops/go-common v0.0.0-20250720220738-a468ce107f36
+	github.com/webdevops/go-common v0.0.0-20250723211346-409b62d063f4
 )
 
 require (
