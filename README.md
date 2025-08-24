@@ -8,7 +8,7 @@
 Prometheus exporter for Azure Monitor metrics.
 Supports metrics fetching from all resource with one scrape (automatic service discovery), custom metric names with template system, full dimensions support and caching.
 
-Configuration (except Azure connection) of this exporter is made entirely in Prometheus instead of a seperate configuration file, see examples below.
+Configuration (except Azure connection) of this exporter is made entirely in Prometheus instead of a separate configuration file, see examples below.
 
 TOC:
 * [Features](#Features)
