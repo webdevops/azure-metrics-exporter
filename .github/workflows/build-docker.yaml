@@ -11,7 +11,7 @@ jobs:
   lint:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Set Swap Space
         uses: pierotofy/set-swap-space@49819abfb41bd9b44fb781159c033dba90353a7c
@@ -25,7 +25,7 @@ jobs:
           echo "version=$GO_VERSION" >> "$GITHUB_OUTPUT"
           echo "$GO_VERSION"
 
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@v6
         with:
           go-version: ${{ steps.toolchain.outputs.version }}
           cache-dependency-path: "go.sum"
@@ -51,7 +51,7 @@ jobs:
 
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Set Swap Space
         uses: pierotofy/set-swap-space@49819abfb41bd9b44fb781159c033dba90353a7c
@@ -65,7 +65,7 @@ jobs:
           echo "version=$GO_VERSION" >> "$GITHUB_OUTPUT"
           echo "$GO_VERSION"
 
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@v6
         with:
           go-version: ${{ steps.toolchain.outputs.version }}
           cache-dependency-path: "go.sum"
