@@ -2,7 +2,7 @@ package main
 
 import (
 	"context"
-	"crypto/sha1" // #nosec G505
+	"crypto/sha256"
 	"fmt"
 	"log/slog"
 	"net/http"
@@ -54,7 +54,7 @@ func probeMetricsResourceHandler(w http.ResponseWriter, r *http.Request) {
 	prober.SetAzureResourceTagManager(AzureResourceTagManager)
 	prober.SetPrometheusRegistry(registry)
 	if settings.Cache != nil {
-		cacheKey := fmt.Sprintf("resource:%x", sha1.Sum([]byte(r.URL.String()))) // #nosec G401
+		cacheKey := fmt.Sprintf("resource:%x", sha256.Sum256([]byte(r.URL.String())))
 		prober.EnableMetricsCache(metricsCache, cacheKey, settings.CacheDuration(startTime))
 	}
 
