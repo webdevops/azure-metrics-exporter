@@ -33,6 +33,7 @@ type (
 		MetricTop     *int32
 		MetricFilter  string
 		MetricOrderBy string
+		MetricSegment string
 
 		ValidateDimensions bool
 
@@ -145,6 +146,9 @@ func NewRequestMetricSettings(r *http.Request, opts config.Opts) (RequestMetricS
 
 	// param metricOrderBy
 	ret.MetricOrderBy = paramsGetWithDefault(params, "metricOrderBy", "")
+
+	// param metricSegment (for dimension splitting)
+	ret.MetricSegment = paramsGetWithDefault(params, "segment", "")
 
 	// param template
 	ret.MetricTemplate = paramsGetWithDefault(params, "template", opts.Metrics.Template)

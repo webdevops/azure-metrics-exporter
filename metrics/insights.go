@@ -70,6 +70,18 @@ func (p *MetricProber) FetchMetricsFromTarget(client *armmonitor.MetricsClient, 
 		opts.Orderby = to.StringPtr(p.settings.MetricOrderBy)
 	}
 
+	// Apply segment parameter for dimension splitting
+	if len(p.settings.MetricSegment) >= 1 {
+		segmentClause := fmt.Sprintf("$segment=%s", p.settings.MetricSegment)
+		if len(p.settings.MetricFilter) >= 1 {
+			// Combine existing filter with segment
+			opts.Filter = to.StringPtr(p.settings.MetricFilter + " and " + segmentClause)
+		} else {
+			// Use segment only
+			opts.Filter = to.StringPtr(segmentClause)
+		}
+	}
+
 	resourceURI := target.ResourceId
 	if strings.HasPrefix(strings.ToLower(p.settings.MetricNamespace), "microsoft.storage/storageaccounts/") {
 		splitNamespace := strings.Split(p.settings.MetricNamespace, "/")
