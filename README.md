@@ -100,6 +100,144 @@ the right settings for your configuration.
 
 webui is available under url `/query`
 
+## Dimension Support
+
+Azure Monitor metrics support dimensions, which allow you to filter and segment your metrics by specific dimension values (e.g., by API name, response code, or connection name).
+
+### Dimension Parameters
+
+All probe endpoints (`/probe/metrics/*`) support the following dimension-related parameters:
+
+| Parameter            | Type    | Description                                                                                                                                              |
+|----------------------|---------|----------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `metricFilter`       | string  | Filter metrics by dimension values. Supports wildcards (`*`) and multiple filters separated by `and`. Example: `ConnectionName eq 'tunnel1'`            |
+| `metricTop`          | integer | Limit the number of dimension values returned (e.g., top 10 connections). Useful for high-cardinality dimensions.                                        |
+| `metricOrderBy`      | string  | Order dimension results by metric value. Example: `Average desc` to sort by average value in descending order.                                           |
+| `validateDimensions` | boolean | When set to `false`, invalid dimension filter values will be ignored instead of causing errors. Default: `true`                                          |
+
+### Dimension Filtering Syntax
+
+The `metricFilter` parameter uses OData filter syntax:
+
+**Basic filtering:**
+- `ConnectionName eq 'tunnel1'` - exact match
+- `ConnectionName eq '*'` - match all values (useful for splitting metrics by dimension)
+- `ApiName eq 'GetBlob' and ResponseType eq 'Success'` - multiple conditions
+
+**Operators:**
+- `eq` - equals
+- `ne` - not equals
+- `*` - wildcard (matches any value)
+
+### Examples
+
+**Example 1: VirtualNetworkGateway metrics by connection**
+```yaml
+- job_name: azure-metrics-vpn-connections
+  scrape_interval: 1m
+  metrics_path: /probe/metrics/list
+  params:
+    name: ["azure_vpn_bandwidth"]
+    subscription: ["xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"]
+    resourceType: ["Microsoft.Network/virtualNetworkGateways"]
+    metric: ["TunnelAverageBandwidth", "TunnelEgressBytes", "TunnelIngressBytes"]
+    interval: ["PT5M"]
+    timespan: ["PT5M"]
+    aggregation: ["average", "total"]
+    # Split metrics by connection name
+    metricFilter: ["ConnectionName eq '*'"]
+    metricTop: ["10"]
+  static_configs:
+  - targets: ["azure-metrics:8080"]
+```
+
+**Example 2: Storage Account blob metrics by blob type**
+```yaml
+- job_name: azure-metrics-storage-blobs
+  scrape_interval: 1h
+  metrics_path: /probe/metrics/list
+  params:
+    name: ["azure_storage_blob_capacity"]
+    subscription: ["xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"]
+    resourceType: ["Microsoft.Storage/storageAccounts"]
+    metricNamespace: ["Microsoft.Storage/storageAccounts/blobServices"]
+    metric: ["BlobCapacity"]
+    interval: ["PT1H"]
+    timespan: ["PT1H"]
+    aggregation: ["average"]
+    # Split by blob type dimension
+    metricFilter: ["BlobType eq '*'"]
+    metricTop: ["10"]
+  static_configs:
+  - targets: ["azure-metrics:8080"]
+```
+
+**Example 3: API Management metrics by API and response type**
+```yaml
+- job_name: azure-metrics-apim-requests
+  scrape_interval: 1m
+  metrics_path: /probe/metrics/list
+  params:
+    name: ["azure_apim_requests"]
+    subscription: ["xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"]
+    resourceType: ["Microsoft.ApiManagement/service"]
+    metric: ["Requests"]
+    interval: ["PT1M"]
+    timespan: ["PT1M"]
+    aggregation: ["total"]
+    # Filter for specific API and response type
+    metricFilter: ["ApiId eq 'my-api' and BackendResponseCode eq '200'"]
+  static_configs:
+  - targets: ["azure-metrics:8080"]
+```
+
+**Example 4: Application Gateway metrics with top backend pools**
+```yaml
+- job_name: azure-metrics-appgw-backend
+  scrape_interval: 1m
+  metrics_path: /probe/metrics/list
+  params:
+    name: ["azure_appgw_backend_response_time"]
+    subscription: ["xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"]
+    resourceType: ["Microsoft.Network/applicationGateways"]
+    metric: ["BackendResponseTime"]
+    interval: ["PT1M"]
+    timespan: ["PT1M"]
+    aggregation: ["average"]
+    # Get top 5 backend pools by average response time
+    metricFilter: ["BackendPool eq '*'"]
+    metricTop: ["5"]
+    metricOrderBy: ["Average desc"]
+  static_configs:
+  - targets: ["azure-metrics:8080"]
+```
+
+### Metric Label Format
+
+When dimensions are used, the dimension values appear as labels in the exported Prometheus metrics:
+
+```
+azure_vpn_bandwidth{
+  aggregation="average",
+  dimension="tunnel1",          # dimension value
+  interval="PT5M",
+  metric="TunnelAverageBandwidth",
+  resourceID="/subscriptions/.../Microsoft.Network/virtualNetworkGateways/my-gateway",
+  timespan="PT5M",
+  unit="BytesPerSecond"
+} 1234567.89
+```
+
+### Configuration Options
+
+**Lowercase dimension values:**
+Set the environment variable to automatically lowercase all dimension values:
+```bash
+METRIC_DIMENSIONS_LOWERCASE=true
+```
+
+This is useful for normalizing dimension values that may have inconsistent casing.
+
 ## Metrics
 
 | Metric                                   | Description                                                                                     |
