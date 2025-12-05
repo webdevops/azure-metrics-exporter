@@ -89,6 +89,11 @@ func initArgparser() {
 func initAzureConnection() {
 	var err error
 
+	if v := os.Getenv("SKIP_AZURE_AUTH"); v == "true" {
+        logger.Info("SKIP_AZURE_AUTH set — skipping Azure authentication for test mode")
+        return
+    }
+
 	if Opts.Azure.Environment != nil {
 		if err := os.Setenv(azidentity.EnvAzureEnvironment, *Opts.Azure.Environment); err != nil {
 			logger.Warn(`unable to set environment variable`, slog.String("envVar", azidentity.EnvAzureEnvironment), slog.Any("error", err.Error()))
