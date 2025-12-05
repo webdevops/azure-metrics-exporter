@@ -2,7 +2,7 @@ package metrics
 
 import (
 	"context"
-	"crypto/sha1" // #nosec G505
+	"crypto/sha256"
 	"encoding/json"
 	"fmt"
 	"log/slog"
@@ -41,7 +41,7 @@ func (sd *AzureServiceDiscovery) fetchResourceList(subscriptionId, filter string
 	// nolint:gosec
 	cacheKey := fmt.Sprintf(
 		"%x",
-		sha1.Sum([]byte(fmt.Sprintf("%v:%v", subscriptionId, filter))),
+		sha256.Sum256([]byte(fmt.Sprintf("%v:%v", subscriptionId, filter))),
 	)
 
 	// try to fetch info from cache
