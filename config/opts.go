@@ -9,11 +9,11 @@ type (
 	Opts struct {
 		// logger
 		Logger struct {
-			Level  string `long:"log.level"    env:"LOG_LEVEL"   description:"Log level" choice:"trace" choice:"debug" choice:"info" choice:"warning" choice:"error" default:"info"`                                           // nolint:staticcheck // multiple choices are ok
-			Format string `long:"log.format"   env:"LOG_FORMAT"  description:"Log format" choice:"text" choice:"json" default:"text"`                                                                                          // nolint:staticcheck // multiple choices are ok
-			Source string `long:"log.source"   env:"LOG_SOURCE"  description:"Show source for every log message (useful for debugging and bug reports)" choice:"off" choice:"short" choice:"file" choice:"full" default:"off"` // nolint:staticcheck // multiple choices are ok
-			Time   bool   `long:"log.time"     env:"LOG_TIME"    description:"Show time"`
-			Json   bool   `long:"log.json"     env:"LOG_JSON"    description:"Switch log output to json format"`
+			Level  string `long:"log.level"    env:"LOG_LEVEL"   description:"Log level" choice:"trace" choice:"debug" choice:"info" choice:"warning" choice:"error" default:"info"`                          // nolint:staticcheck // multiple choices are ok
+			Format string `long:"log.format"   env:"LOG_FORMAT"  description:"Log format" choice:"logfmt" choice:"json" default:"logfmt"`                                                                     // nolint:staticcheck // multiple choices are ok
+			Source string `long:"log.source"   env:"LOG_SOURCE"  description:"Show source for every log message (useful for debugging and bug reports)" choice:"" choice:"short" choice:"file" choice:"full"` // nolint:staticcheck // multiple choices are ok
+			Color  string `long:"log.color"    env:"LOG_COLOR"   description:"Enable color for logs" choice:"" choice:"auto" choice:"yes" choice:"no"`                                                        // nolint:staticcheck // multiple choices are ok
+			Time   bool   `long:"log.time"     env:"LOG_TIME"    description:"Show log time"`
 		}
 
 		// azure

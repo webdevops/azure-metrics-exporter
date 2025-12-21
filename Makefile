@@ -1,7 +1,8 @@
 PROJECT_NAME		:= $(shell basename $(CURDIR))
 GIT_TAG				:= $(shell git describe --dirty --tags --always)
 GIT_COMMIT			:= $(shell git rev-parse --short HEAD)
-LDFLAGS				:= -X "main.gitTag=$(GIT_TAG)" -X "main.gitCommit=$(GIT_COMMIT)" -extldflags "-static" -s -w
+BUILD_DATE          := $(shell TZ=UTC date '+%Y-%m-%dT%H:%M:%SZ')
+LDFLAGS				:= -X "main.gitTag=$(GIT_TAG)" -X "main.gitCommit=$(GIT_COMMIT)" -X "main.buildDate=$(BUILD_DATE)" -extldflags "-static" -s -w
 BUILDFLAGS          := -trimpath
 
 FIRST_GOPATH			:= $(firstword $(subst :, ,$(shell go env GOPATH)))

@@ -49,13 +49,14 @@ var (
 	// Git version information
 	gitCommit = "<unknown>"
 	gitTag    = "<unknown>"
+	buildDate = "<unknown>"
 )
 
 func main() {
 	initArgparser()
 	initLogger()
 
-	logger.Info(fmt.Sprintf("starting azure-metrics-exporter v%s (%s; %s; by %v)", gitTag, gitCommit, runtime.Version(), Author))
+	logger.Info(fmt.Sprintf("starting azure-metrics-exporter v%s (%s; %s; by %v at %v)", gitTag, gitCommit, runtime.Version(), Author, buildDate))
 	logger.Info(string(Opts.GetJson()))
 	initSystem()
 	metricsCache = cache.New(1*time.Minute, 1*time.Minute)
@@ -90,9 +91,9 @@ func initAzureConnection() {
 	var err error
 
 	if v := os.Getenv("SKIP_AZURE_AUTH"); v == "true" {
-        logger.Info("SKIP_AZURE_AUTH set — skipping Azure authentication for test mode")
-        return
-    }
+		logger.Info("SKIP_AZURE_AUTH set — skipping Azure authentication for test mode")
+		return
+	}
 
 	if Opts.Azure.Environment != nil {
 		if err := os.Setenv(azidentity.EnvAzureEnvironment, *Opts.Azure.Environment); err != nil {
