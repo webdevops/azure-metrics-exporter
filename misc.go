@@ -8,20 +8,23 @@ import (
 	"strconv"
 	"strings"
 
-	stringsCommon "github.com/webdevops/go-common/strings"
-
 	"github.com/webdevops/go-common/log/slogger"
 )
 
 func buildContextLoggerFromRequest(r *http.Request) *slogger.Logger {
-	contextLogger := logger.With(slog.String("requestPath", r.URL.Path))
+	var logParams = []any{}
 
 	for name, value := range r.URL.Query() {
-		fieldName := fmt.Sprintf("param%s", stringsCommon.UppercaseFirst(name))
-		fieldValue := value
-
-		contextLogger = contextLogger.With(slog.Any(fieldName, fieldValue))
+		logParams = append(logParams, slog.Any(name, value))
 	}
+
+	contextLogger := logger.With(
+		slog.Group(
+			"request",
+			slog.String("path", r.URL.Path),
+			slog.Group("param", logParams...),
+		),
+	)
 
 	return contextLogger
 }
