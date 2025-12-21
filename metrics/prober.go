@@ -10,7 +10,6 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/monitor/armmonitor"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armsubscriptions"
-	"github.com/Azure/go-autorest/autorest/azure"
 	"github.com/patrickmn/go-cache"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/remeh/sizedwaitgroup"
@@ -123,13 +122,13 @@ func (p *MetricProber) EnableServiceDiscoveryCache(cache *cache.Cache, cacheDura
 
 func (p *MetricProber) AddTarget(targets ...MetricProbeTarget) {
 	for _, target := range targets {
-		resourceInfo, err := azure.ParseResourceID(target.ResourceId)
+		resourceInfo, err := armclient.ParseResourceId(target.ResourceId)
 		if err != nil {
 			p.logger.Warn("unable to parse resource id", slog.Any("error", err.Error()))
 			continue
 		}
 
-		subscriptionId := resourceInfo.SubscriptionID
+		subscriptionId := resourceInfo.Subscription
 		if _, exists := p.targets[subscriptionId]; !exists {
 			p.targets[subscriptionId] = []MetricProbeTarget{}
 		}
