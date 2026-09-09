@@ -36,6 +36,7 @@ var (
 
 	AzureClient             *armclient.ArmClient
 	AzureResourceTagManager *armclient.ResourceTagManager
+	AzureAppExporter        *AppRegistrationExporter
 
 	prometheusCollectTime    *prometheus.SummaryVec
 	prometheusMetricRequests *prometheus.CounterVec
@@ -65,12 +66,17 @@ func main() {
 	logger.Info("init Azure connection")
 	initAzureConnection()
 	initMetricCollector()
+	initAppRegistrationExporter()
 
 	logger.Info("starting http server", slog.String("bind", Opts.Server.Bind))
 	startHttpServer()
 }
 
 func initArgparser() {
+	// Keep azure-app-exporter environment variables working for existing deployments.
+	setEnvFallback("AZURE_APP_ENABLED", "AZURE_ENABLED")
+	setEnvFallback("AZURE_APP_FILTER_TAGS", "FILTER_TAGS")
+
 	argparser = flags.NewParser(&Opts, flags.Default)
 	_, err := argparser.Parse()
 
@@ -83,6 +89,17 @@ func initArgparser() {
 			fmt.Println()
 			argparser.WriteHelp(os.Stdout)
 			os.Exit(1)
+		}
+	}
+}
+
+func setEnvFallback(target, fallback string) {
+	if _, configured := os.LookupEnv(target); configured {
+		return
+	}
+	if value, found := os.LookupEnv(fallback); found {
+		if err := os.Setenv(target, value); err != nil {
+			fmt.Fprintf(os.Stderr, "unable to map %s to %s: %v\n", fallback, target, err)
 		}
 	}
 }
@@ -146,6 +163,12 @@ func startHttpServer() {
 	mux.HandleFunc(config.ProbeMetricsScrapeUrl, probeMetricsScrapeHandler)
 
 	mux.HandleFunc(config.ProbeMetricsResourceGraphUrl, probeMetricsResourceGraphHandler)
+
+	if AzureAppExporter != nil {
+		appHandler := newAppRegistrationsHandler(AzureAppExporter)
+		mux.HandleFunc(config.AppRegistrationsURL, appHandler)
+		mux.HandleFunc(config.AppRegistrationURLPrefix, appHandler)
+	}
 
 	// report
 	tmpl := template.Must(template.ParseFS(templates, "templates/*.html"))

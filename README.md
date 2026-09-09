@@ -49,6 +49,7 @@ TOC:
 - Available via Docker Hub and Quay (see badges on top)
 - Can run non-root and with readonly root filesystem, doesn't need any capabilities (you can safely use `drop: ["All"]`)
 - Publishes Azure API rate limit metrics (when exporter sends Azure API requests, available via `/metrics`)
+- Optionally exports Azure app registration and service principal credential expiry from Microsoft Graph
 
 useful with additional exporters:
 
@@ -73,6 +74,12 @@ Application Options:
       --log.time                                   Show log time [$LOG_TIME]
       --azure-environment=                         Azure environment name (default: AZUREPUBLICCLOUD) [$AZURE_ENVIRONMENT]
       --azure-ad-resource-url=                     Specifies the AAD resource ID to use. If not set, it defaults to ResourceManagerEndpoint for operations with Azure Resource Manager [$AZURE_AD_RESOURCE]
+      --azure.app-registration.enabled             Enable Azure app registration credential expiry metrics [$AZURE_APP_ENABLED]
+      --azure.app-registration.filter-tag=         Only include app registrations having at least one of these tags (comma delimiter) [$AZURE_APP_FILTER_TAGS]
+      --azure.app-registration.graph-url=          Microsoft Graph API base URL (default: https://graph.microsoft.com/v1.0) [$AZURE_APP_GRAPH_URL]
+      --azure.app-registration.graph-scope=        Microsoft Graph token scope (default: https://graph.microsoft.com/.default) [$AZURE_APP_GRAPH_SCOPE]
+      --azure.app-registration.refresh-interval=   Background refresh interval for app registration credentials (default: 1h) [$AZURE_APP_REFRESH_INTERVAL]
+      --azure.app-registration.request-timeout=    Timeout for each Microsoft Graph request (default: 30s) [$AZURE_APP_REQUEST_TIMEOUT]
       --azure.servicediscovery.cache=              Duration for caching Azure ServiceDiscovery of workspaces to reduce API calls (time.Duration) (default: 30m) [$AZURE_SERVICEDISCOVERY_CACHE]
       --azure.resource-tag=                        Azure Resource tags (space delimiter) (default: owner) [$AZURE_RESOURCE_TAG]
       --metrics.template=                          Template for metric name (default: {name}) [$METRIC_TEMPLATE]
@@ -93,6 +100,14 @@ for Azure API authentication (using ENV vars) see following documentations:
 - https://github.com/webdevops/go-common/blob/main/azuresdk/README.md
 - https://docs.microsoft.com/en-us/azure/developer/go/azure-sdk-authentication
 
+### Azure app registration credential expiry
+
+Set `AZURE_APP_ENABLED=true` to add app registration credential expiry metrics to the existing `/metrics` endpoint. The legacy azure-app-exporter setting `AZURE_ENABLED=true` is also accepted when `AZURE_APP_ENABLED` is unset. The exporter reuses its existing Azure credential and requires Microsoft Graph application permission `Application.Read.All` with admin consent. It reads credentials from both app registrations and their service principals.
+
+App registration data is refreshed immediately in the background and every hour by default, so Prometheus and API requests do not wait for Microsoft Graph. `GET /api/apps` returns all selected registrations from the latest successful refresh; `GET /api/apps/{appId}` returns one selected registration. `AZURE_APP_FILTER_TAGS=tag-a,tag-b` includes registrations having at least one configured tag. The legacy `FILTER_TAGS` variable is also accepted when `AZURE_APP_FILTER_TAGS` is unset.
+
+For sovereign clouds, set both `AZURE_APP_GRAPH_URL` and `AZURE_APP_GRAPH_SCOPE` to the appropriate Microsoft Graph endpoint and scope.
+
 ## How to test
 
 Enable the webui (`--development.webui`) to get a basic web frontend to query the exporter which helps you to find
@@ -109,6 +124,10 @@ webui is available under url `/query`
 | `azurerm_resource_metric` (customizable) | Resource metrics exported by probes (can be changed using `name` parameter and template system) |
 | `azurerm_api_ratelimit`                  | Azure ratelimit metrics (only on /metrics, resets after query)                                  |
 | `azurerm_api_request_*`                  | Azure request count and latency as histogram                                                    |
+| `azure_app_earliest_expiry`              | Earliest credential expiry per app registration as a Unix timestamp                             |
+| `azure_app_credential_expiry`            | Expiry of each app/service-principal credential as a Unix timestamp                              |
+| `azure_app_exporter_refresh_success`      | Whether the last Microsoft Graph refresh succeeded                                               |
+| `azure_app_exporter_last_refresh_timestamp_seconds` | Unix timestamp of the last successful Microsoft Graph refresh                         |
 
 ### ResourceTags handling
 
@@ -296,6 +315,8 @@ azurerm_ratelimit{scope="subscription",subscriptionID="...",type="read"} 11999
 | `/probe/metrics/list`          | Probe metrics for list of resources (sone query per resource; see `azurerm_resource_metric`)                                       |
 | `/probe/metrics/scrape`        | Probe metrics for list of resources and config on resource by tag name (one query per resource; see `azurerm_resource_metric`)     |
 | `/probe/metrics/resourcegraph` | Probe metrics for list of resources based on a kusto query and the resource graph API (one query per resource)                     |
+| `/api/apps`                   | Return cached app registrations and their credentials (when `AZURE_APP_ENABLED=true`)                                             |
+| `/api/apps/{appId}`           | Return one app registration and its credentials (when `AZURE_APP_ENABLED=true`)                                                    |
 
 ### /probe/metrics parameters
 

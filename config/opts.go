@@ -6,6 +6,15 @@ import (
 )
 
 type (
+	AzureAppRegistrationOpts struct {
+		Enabled         bool          `long:"azure.app-registration.enabled"          env:"AZURE_APP_ENABLED"          description:"Enable Azure app registration credential expiry metrics"`
+		FilterTags      []string      `long:"azure.app-registration.filter-tag"       env:"AZURE_APP_FILTER_TAGS"      env-delim:"," description:"Only include app registrations having at least one of these tags (comma delimiter)"`
+		GraphURL        string        `long:"azure.app-registration.graph-url"        env:"AZURE_APP_GRAPH_URL"        description:"Microsoft Graph API base URL" default:"https://graph.microsoft.com/v1.0"`
+		GraphScope      string        `long:"azure.app-registration.graph-scope"      env:"AZURE_APP_GRAPH_SCOPE"      description:"Microsoft Graph token scope" default:"https://graph.microsoft.com/.default"`
+		RefreshInterval time.Duration `long:"azure.app-registration.refresh-interval" env:"AZURE_APP_REFRESH_INTERVAL" description:"Background refresh interval for app registration credentials" default:"1h"`
+		RequestTimeout  time.Duration `long:"azure.app-registration.request-timeout"  env:"AZURE_APP_REQUEST_TIMEOUT"  description:"Timeout for each Microsoft Graph request" default:"30s"`
+	}
+
 	Opts struct {
 		// logger
 		Logger struct {
@@ -20,6 +29,7 @@ type (
 		Azure struct {
 			Environment      *string `long:"azure-environment"            env:"AZURE_ENVIRONMENT"                description:"Azure environment name" default:"AZUREPUBLICCLOUD"`
 			AdResourceUrl    *string `long:"azure-ad-resource-url"        env:"AZURE_AD_RESOURCE"                description:"Specifies the AAD resource ID to use. If not set, it defaults to ResourceManagerEndpoint for operations with Azure Resource Manager"`
+			AppRegistration  AzureAppRegistrationOpts
 			ServiceDiscovery struct {
 				CacheDuration *time.Duration `long:"azure.servicediscovery.cache"            env:"AZURE_SERVICEDISCOVERY_CACHE"                description:"Duration for caching Azure ServiceDiscovery of workspaces to reduce API calls (time.Duration)" default:"30m"`
 			}
