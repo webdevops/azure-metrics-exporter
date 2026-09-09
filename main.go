@@ -73,14 +73,9 @@ func main() {
 }
 
 func initArgparser() {
-	// Keep the azure-app-exporter enable switch working for existing deployments.
-	if _, configured := os.LookupEnv("AZURE_APP_ENABLED"); !configured {
-		if legacyValue, found := os.LookupEnv("AZURE_ENABLED"); found {
-			if err := os.Setenv("AZURE_APP_ENABLED", legacyValue); err != nil {
-				fmt.Fprintf(os.Stderr, "unable to map AZURE_ENABLED to AZURE_APP_ENABLED: %v\n", err)
-			}
-		}
-	}
+	// Keep azure-app-exporter environment variables working for existing deployments.
+	setEnvFallback("AZURE_APP_ENABLED", "AZURE_ENABLED")
+	setEnvFallback("AZURE_APP_FILTER_TAGS", "FILTER_TAGS")
 
 	argparser = flags.NewParser(&Opts, flags.Default)
 	_, err := argparser.Parse()
@@ -94,6 +89,17 @@ func initArgparser() {
 			fmt.Println()
 			argparser.WriteHelp(os.Stdout)
 			os.Exit(1)
+		}
+	}
+}
+
+func setEnvFallback(target, fallback string) {
+	if _, configured := os.LookupEnv(target); configured {
+		return
+	}
+	if value, found := os.LookupEnv(fallback); found {
+		if err := os.Setenv(target, value); err != nil {
+			fmt.Fprintf(os.Stderr, "unable to map %s to %s: %v\n", fallback, target, err)
 		}
 	}
 }
@@ -159,8 +165,9 @@ func startHttpServer() {
 	mux.HandleFunc(config.ProbeMetricsResourceGraphUrl, probeMetricsResourceGraphHandler)
 
 	if AzureAppExporter != nil {
-		mux.HandleFunc(config.AppRegistrationsURL, appRegistrationsHandler)
-		mux.HandleFunc(config.AppRegistrationURLPrefix, appRegistrationsHandler)
+		appHandler := newAppRegistrationsHandler(AzureAppExporter)
+		mux.HandleFunc(config.AppRegistrationsURL, appHandler)
+		mux.HandleFunc(config.AppRegistrationURLPrefix, appHandler)
 	}
 
 	// report

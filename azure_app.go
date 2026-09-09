@@ -16,13 +16,17 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/policy"
-	sdkazidentity "github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	"github.com/prometheus/client_golang/prometheus"
 
 	"github.com/webdevops/azure-metrics-exporter/config"
 )
 
-const graphResponseBodyLimit = 4096
+const (
+	graphResponseBodyLimit             = 4096
+	graphSelectParameter               = "$select"
+	graphApplicationsSelectFields      = "appId,displayName,tags,passwordCredentials,keyCredentials"
+	graphServicePrincipalsSelectFields = "appId,keyCredentials,passwordCredentials"
+)
 
 type (
 	AppRegistrationCredential struct {
@@ -59,12 +63,22 @@ type (
 	}
 
 	graphServicePrincipal struct {
+		AppID               string            `json:"appId"`
 		PasswordCredentials []graphCredential `json:"passwordCredentials"`
 		KeyCredentials      []graphCredential `json:"keyCredentials"`
 	}
 
 	graphServicePrincipalsResponse struct {
-		Value []graphServicePrincipal `json:"value"`
+		Value    []graphServicePrincipal `json:"value"`
+		NextLink string                  `json:"@odata.nextLink"`
+	}
+
+	AppRegistrationExporterOptions struct {
+		GraphURL        string
+		GraphScope      string
+		FilterTags      []string
+		RefreshInterval time.Duration
+		RequestTimeout  time.Duration
 	}
 
 	AppRegistrationExporter struct {
@@ -95,19 +109,21 @@ func initAppRegistrationExporter() {
 		return
 	}
 
-	credential, err := sdkazidentity.NewDefaultAzureCredential(nil)
-	if err != nil {
-		logger.Fatal("unable to initialize Azure credential for app registrations", slog.Any("error", err))
+	if AzureClient == nil {
+		logger.Fatal("Azure client is required for app registration monitoring")
 	}
 
+	var err error
 	AzureAppExporter, err = NewAppRegistrationExporter(
-		credential,
+		AzureClient.GetCred(),
 		&http.Client{},
-		Opts.Azure.AppRegistration.GraphURL,
-		Opts.Azure.AppRegistration.GraphScope,
-		Opts.Azure.AppRegistration.FilterTags,
-		Opts.Azure.AppRegistration.RefreshInterval,
-		Opts.Azure.AppRegistration.RequestTimeout,
+		AppRegistrationExporterOptions{
+			GraphURL:        Opts.Azure.AppRegistration.GraphURL,
+			GraphScope:      Opts.Azure.AppRegistration.GraphScope,
+			FilterTags:      Opts.Azure.AppRegistration.FilterTags,
+			RefreshInterval: Opts.Azure.AppRegistration.RefreshInterval,
+			RequestTimeout:  Opts.Azure.AppRegistration.RequestTimeout,
+		},
 		logger.Logger,
 	)
 	if err != nil {
@@ -121,11 +137,7 @@ func initAppRegistrationExporter() {
 func NewAppRegistrationExporter(
 	credential azcore.TokenCredential,
 	httpClient *http.Client,
-	graphURL string,
-	graphScope string,
-	filterTags []string,
-	refreshInterval time.Duration,
-	requestTimeout time.Duration,
+	options AppRegistrationExporterOptions,
 	logger *slog.Logger,
 ) (*AppRegistrationExporter, error) {
 	if credential == nil {
@@ -135,25 +147,25 @@ func NewAppRegistrationExporter(
 		return nil, errors.New("HTTP client is required")
 	}
 
-	parsedGraphURL, err := url.Parse(strings.TrimRight(graphURL, "/"))
+	parsedGraphURL, err := url.Parse(strings.TrimRight(options.GraphURL, "/"))
 	if err != nil || parsedGraphURL.Scheme == "" || parsedGraphURL.Host == "" {
-		return nil, fmt.Errorf("invalid Microsoft Graph URL %q", graphURL)
+		return nil, fmt.Errorf("invalid Microsoft Graph URL %q", options.GraphURL)
 	}
-	if graphScope == "" {
+	if options.GraphScope == "" {
 		return nil, errors.New("Microsoft Graph scope is required")
 	}
-	if refreshInterval <= 0 {
+	if options.RefreshInterval <= 0 {
 		return nil, errors.New("app registration refresh interval must be positive")
 	}
-	if requestTimeout <= 0 {
+	if options.RequestTimeout <= 0 {
 		return nil, errors.New("app registration request timeout must be positive")
 	}
 	if logger == nil {
 		logger = slog.Default()
 	}
 
-	configuredTags := make(map[string]struct{}, len(filterTags))
-	for _, tag := range filterTags {
+	configuredTags := make(map[string]struct{}, len(options.FilterTags))
+	for _, tag := range options.FilterTags {
 		if tag = strings.TrimSpace(tag); tag != "" {
 			configuredTags[tag] = struct{}{}
 		}
@@ -163,10 +175,10 @@ func NewAppRegistrationExporter(
 		credential:      credential,
 		httpClient:      httpClient,
 		graphURL:        parsedGraphURL,
-		graphScope:      graphScope,
+		graphScope:      options.GraphScope,
 		filterTags:      configuredTags,
-		refreshInterval: refreshInterval,
-		requestTimeout:  requestTimeout,
+		refreshInterval: options.RefreshInterval,
+		requestTimeout:  options.RequestTimeout,
 		logger:          logger,
 		earliestExpiryDesc: prometheus.NewDesc(
 			"azure_app_earliest_expiry",
@@ -202,42 +214,41 @@ func (e *AppRegistrationExporter) Collect(ch chan<- prometheus.Metric) {
 	apps, lastRun, lastErr := e.snapshot()
 
 	for _, app := range apps {
-		var earliest *time.Time
-		for _, credential := range app.Credentials {
-			if credential.Expires == nil {
-				continue
-			}
-			if earliest == nil || credential.Expires.Before(*earliest) {
-				expiry := *credential.Expires
-				earliest = &expiry
-			}
-
-			credentialID := credential.ID
-			if credentialID == "" {
-				credentialID = "unknown"
-			}
-			credentialName := credential.Name
-			if credentialName == "" {
-				credentialName = "unnamed"
-			}
-
-			ch <- prometheus.MustNewConstMetric(
-				e.credentialDesc,
-				prometheus.GaugeValue,
-				float64(credential.Expires.Unix()),
-				app.ID, app.Name, credentialID, credentialName,
-			)
-		}
-		if earliest != nil {
-			ch <- prometheus.MustNewConstMetric(
-				e.earliestExpiryDesc,
-				prometheus.GaugeValue,
-				float64(earliest.Unix()),
-				app.ID, app.Name,
-			)
-		}
+		e.collectApplicationMetrics(ch, app)
 	}
+	e.collectRefreshMetrics(ch, lastRun, lastErr)
+}
 
+func (e *AppRegistrationExporter) collectApplicationMetrics(ch chan<- prometheus.Metric, app AppRegistration) {
+	var earliest *time.Time
+	for _, credential := range app.Credentials {
+		if credential.Expires == nil {
+			continue
+		}
+		if earliest == nil || credential.Expires.Before(*earliest) {
+			expiry := *credential.Expires
+			earliest = &expiry
+		}
+
+		credentialID, credentialName := credentialMetricLabels(credential)
+		ch <- prometheus.MustNewConstMetric(
+			e.credentialDesc,
+			prometheus.GaugeValue,
+			float64(credential.Expires.Unix()),
+			app.ID, app.Name, credentialID, credentialName,
+		)
+	}
+	if earliest != nil {
+		ch <- prometheus.MustNewConstMetric(
+			e.earliestExpiryDesc,
+			prometheus.GaugeValue,
+			float64(earliest.Unix()),
+			app.ID, app.Name,
+		)
+	}
+}
+
+func (e *AppRegistrationExporter) collectRefreshMetrics(ch chan<- prometheus.Metric, lastRun time.Time, lastErr error) {
 	success := 1.0
 	if lastErr != nil || lastRun.IsZero() {
 		success = 0
@@ -246,6 +257,18 @@ func (e *AppRegistrationExporter) Collect(ch chan<- prometheus.Metric) {
 	if !lastRun.IsZero() {
 		ch <- prometheus.MustNewConstMetric(e.lastRefreshDesc, prometheus.GaugeValue, float64(lastRun.Unix()))
 	}
+}
+
+func credentialMetricLabels(credential AppRegistrationCredential) (string, string) {
+	credentialID := credential.ID
+	if credentialID == "" {
+		credentialID = "unknown"
+	}
+	credentialName := credential.Name
+	if credentialName == "" {
+		credentialName = "unnamed"
+	}
+	return credentialID, credentialName
 }
 
 func (e *AppRegistrationExporter) Start(ctx context.Context) {
@@ -297,28 +320,47 @@ func (e *AppRegistrationExporter) Applications() []AppRegistration {
 	return apps
 }
 
-func (e *AppRegistrationExporter) Get(ctx context.Context, appID string) (AppRegistration, error) {
-	query := url.Values{}
-	query.Set("$filter", fmt.Sprintf("appId eq '%s'", strings.ReplaceAll(appID, "'", "''")))
-	query.Set("$select", "appId,displayName,tags,passwordCredentials,keyCredentials")
-	query.Set("$top", "1")
-
-	var response graphApplicationsResponse
-	if err := e.getJSON(ctx, e.graphEndpoint("applications", query), &response); err != nil {
-		return AppRegistration{}, err
+func (e *AppRegistrationExporter) Application(appID string) (AppRegistration, bool) {
+	apps, _, _ := e.snapshot()
+	for _, app := range apps {
+		if app.ID == appID {
+			return app, true
+		}
 	}
-	if len(response.Value) == 0 {
-		return AppRegistration{}, fmt.Errorf("application with app id %q not found", appID)
-	}
-	return e.mapApplication(ctx, response.Value[0])
+	return AppRegistration{}, false
 }
 
 func (e *AppRegistrationExporter) fetchAll(ctx context.Context) ([]AppRegistration, error) {
+	applications, err := e.fetchApplications(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if len(applications) == 0 {
+		return []AppRegistration{}, nil
+	}
+	servicePrincipalCredentials, err := e.fetchAllServicePrincipalCredentials(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	apps := make([]AppRegistration, 0, len(applications))
+	for _, application := range applications {
+		mapped, err := mapApplication(application, servicePrincipalCredentials[application.ID])
+		if err != nil {
+			return nil, err
+		}
+		apps = append(apps, mapped)
+	}
+	sort.Slice(apps, func(i, j int) bool { return apps[i].ID < apps[j].ID })
+	return apps, nil
+}
+
+func (e *AppRegistrationExporter) fetchApplications(ctx context.Context) ([]graphApplication, error) {
 	query := url.Values{}
-	query.Set("$select", "appId,displayName,tags,passwordCredentials,keyCredentials")
+	query.Set(graphSelectParameter, graphApplicationsSelectFields)
 	query.Set("$top", "999")
 	nextURL := e.graphEndpoint("applications", query)
-	apps := make([]AppRegistration, 0)
+	applications := make([]graphApplication, 0)
 
 	for nextURL != "" {
 		if err := e.validateGraphURL(nextURL); err != nil {
@@ -330,28 +372,16 @@ func (e *AppRegistrationExporter) fetchAll(ctx context.Context) ([]AppRegistrati
 			return nil, err
 		}
 		for _, application := range response.Value {
-			if !e.matchesTagFilter(application.Tags) {
-				continue
+			if e.matchesTagFilter(application.Tags) {
+				applications = append(applications, application)
 			}
-			mapped, err := e.mapApplication(ctx, application)
-			if err != nil {
-				return nil, err
-			}
-			apps = append(apps, mapped)
 		}
 		nextURL = response.NextLink
 	}
-
-	sort.Slice(apps, func(i, j int) bool { return apps[i].ID < apps[j].ID })
-	return apps, nil
+	return applications, nil
 }
 
-func (e *AppRegistrationExporter) mapApplication(ctx context.Context, application graphApplication) (AppRegistration, error) {
-	servicePrincipalCredentials, err := e.fetchServicePrincipalCredentials(ctx, application.ID)
-	if err != nil {
-		return AppRegistration{}, fmt.Errorf("fetch service principal credentials for app %q: %w", application.ID, err)
-	}
-
+func mapApplication(application graphApplication, servicePrincipalCredentials []graphCredential) (AppRegistration, error) {
 	credentials := make([]graphCredential, 0, len(application.PasswordCredentials)+len(application.KeyCredentials)+len(servicePrincipalCredentials))
 	credentials = append(credentials, application.PasswordCredentials...)
 	credentials = append(credentials, application.KeyCredentials...)
@@ -392,28 +422,31 @@ func (e *AppRegistrationExporter) mapApplication(ctx context.Context, applicatio
 	}, nil
 }
 
-func (e *AppRegistrationExporter) fetchServicePrincipalCredentials(ctx context.Context, appID string) ([]graphCredential, error) {
-	if appID == "" {
-		return nil, nil
-	}
-
+func (e *AppRegistrationExporter) fetchAllServicePrincipalCredentials(ctx context.Context) (map[string][]graphCredential, error) {
 	query := url.Values{}
-	query.Set("$filter", fmt.Sprintf("appId eq '%s'", strings.ReplaceAll(appID, "'", "''")))
-	query.Set("$select", "keyCredentials,passwordCredentials")
-	query.Set("$top", "1")
+	query.Set(graphSelectParameter, graphServicePrincipalsSelectFields)
+	query.Set("$top", "999")
+	nextURL := e.graphEndpoint("servicePrincipals", query)
+	credentialsByAppID := make(map[string][]graphCredential)
 
-	var response graphServicePrincipalsResponse
-	if err := e.getJSON(ctx, e.graphEndpoint("servicePrincipals", query), &response); err != nil {
-		return nil, err
-	}
-	if len(response.Value) == 0 {
-		return nil, nil
-	}
+	for nextURL != "" {
+		if err := e.validateGraphURL(nextURL); err != nil {
+			return nil, err
+		}
 
-	credentials := make([]graphCredential, 0, len(response.Value[0].KeyCredentials)+len(response.Value[0].PasswordCredentials))
-	credentials = append(credentials, response.Value[0].KeyCredentials...)
-	credentials = append(credentials, response.Value[0].PasswordCredentials...)
-	return credentials, nil
+		var response graphServicePrincipalsResponse
+		if err := e.getJSON(ctx, nextURL, &response); err != nil {
+			return nil, err
+		}
+		for _, servicePrincipal := range response.Value {
+			credentials := credentialsByAppID[servicePrincipal.AppID]
+			credentials = append(credentials, servicePrincipal.KeyCredentials...)
+			credentials = append(credentials, servicePrincipal.PasswordCredentials...)
+			credentialsByAppID[servicePrincipal.AppID] = credentials
+		}
+		nextURL = response.NextLink
+	}
+	return credentialsByAppID, nil
 }
 
 func (e *AppRegistrationExporter) getJSON(ctx context.Context, requestURL string, destination any) error {
@@ -493,7 +526,8 @@ func cloneAppRegistrations(apps []AppRegistration) []AppRegistration {
 	cloned := make([]AppRegistration, len(apps))
 	for index, app := range apps {
 		cloned[index] = app
-		cloned[index].Credentials = append([]AppRegistrationCredential(nil), app.Credentials...)
+		cloned[index].Credentials = make([]AppRegistrationCredential, len(app.Credentials))
+		copy(cloned[index].Credentials, app.Credentials)
 	}
 	return cloned
 }
@@ -509,42 +543,36 @@ func parseGraphTime(value string) (*time.Time, error) {
 	return &parsed, nil
 }
 
-func appRegistrationsHandler(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodGet {
-		w.Header().Set("Allow", http.MethodGet)
-		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
-		return
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	encoder := json.NewEncoder(w)
-
-	if r.URL.Path == config.AppRegistrationsURL {
-		if err := AzureAppExporter.Refresh(r.Context()); err != nil {
-			http.Error(w, err.Error(), http.StatusBadGateway)
+func newAppRegistrationsHandler(exporter *AppRegistrationExporter) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			w.Header().Set("Allow", http.MethodGet)
+			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 			return
 		}
-		if err := encoder.Encode(AzureAppExporter.Applications()); err != nil {
-			logger.Error("unable to encode Azure app registrations", slog.Any("error", err))
-		}
-		return
-	}
 
-	appID, err := url.PathUnescape(strings.TrimPrefix(r.URL.Path, config.AppRegistrationURLPrefix))
-	if err != nil || appID == "" || strings.Contains(appID, "/") {
-		http.Error(w, "invalid app id", http.StatusBadRequest)
-		return
-	}
-	application, err := AzureAppExporter.Get(r.Context(), appID)
-	if err != nil {
-		status := http.StatusBadGateway
-		if strings.Contains(err.Error(), "not found") {
-			status = http.StatusNotFound
+		if r.URL.Path == config.AppRegistrationsURL {
+			writeAppRegistrationJSON(w, exporter.Applications())
+			return
 		}
-		http.Error(w, err.Error(), status)
-		return
+
+		appID, err := url.PathUnescape(strings.TrimPrefix(r.URL.Path, config.AppRegistrationURLPrefix))
+		if err != nil || appID == "" || strings.Contains(appID, "/") {
+			http.Error(w, "invalid app id", http.StatusBadRequest)
+			return
+		}
+		application, found := exporter.Application(appID)
+		if !found {
+			http.Error(w, fmt.Sprintf("application with app id %q not found", appID), http.StatusNotFound)
+			return
+		}
+		writeAppRegistrationJSON(w, application)
 	}
-	if err := encoder.Encode(application); err != nil {
-		logger.Error("unable to encode Azure app registration", slog.Any("error", err))
+}
+
+func writeAppRegistrationJSON(w http.ResponseWriter, value any) {
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(value); err != nil {
+		logger.Error("unable to encode Azure app registration response", slog.Any("error", err))
 	}
 }

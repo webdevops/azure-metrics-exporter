@@ -75,7 +75,7 @@ Application Options:
       --azure-environment=                         Azure environment name (default: AZUREPUBLICCLOUD) [$AZURE_ENVIRONMENT]
       --azure-ad-resource-url=                     Specifies the AAD resource ID to use. If not set, it defaults to ResourceManagerEndpoint for operations with Azure Resource Manager [$AZURE_AD_RESOURCE]
       --azure.app-registration.enabled             Enable Azure app registration credential expiry metrics [$AZURE_APP_ENABLED]
-      --azure.app-registration.filter-tag=         Only include app registrations having at least one of these tags (comma delimiter) [$FILTER_TAGS]
+      --azure.app-registration.filter-tag=         Only include app registrations having at least one of these tags (comma delimiter) [$AZURE_APP_FILTER_TAGS]
       --azure.app-registration.graph-url=          Microsoft Graph API base URL (default: https://graph.microsoft.com/v1.0) [$AZURE_APP_GRAPH_URL]
       --azure.app-registration.graph-scope=        Microsoft Graph token scope (default: https://graph.microsoft.com/.default) [$AZURE_APP_GRAPH_SCOPE]
       --azure.app-registration.refresh-interval=   Background refresh interval for app registration credentials (default: 1h) [$AZURE_APP_REFRESH_INTERVAL]
@@ -102,9 +102,9 @@ for Azure API authentication (using ENV vars) see following documentations:
 
 ### Azure app registration credential expiry
 
-Set `AZURE_APP_ENABLED=true` to add app registration credential expiry metrics to the existing `/metrics` endpoint. The legacy azure-app-exporter setting `AZURE_ENABLED=true` is also accepted when `AZURE_APP_ENABLED` is unset. The exporter uses the same Azure SDK default credential chain and requires Microsoft Graph application permission `Application.Read.All` with admin consent. It reads credentials from both app registrations and their service principals.
+Set `AZURE_APP_ENABLED=true` to add app registration credential expiry metrics to the existing `/metrics` endpoint. The legacy azure-app-exporter setting `AZURE_ENABLED=true` is also accepted when `AZURE_APP_ENABLED` is unset. The exporter reuses its existing Azure credential and requires Microsoft Graph application permission `Application.Read.All` with admin consent. It reads credentials from both app registrations and their service principals.
 
-App registration data is refreshed immediately in the background and every hour by default, so Prometheus scrapes do not wait for Microsoft Graph. `GET /api/apps` forces a refresh and returns all selected registrations; `GET /api/apps/{appId}` returns one registration. `FILTER_TAGS=tag-a,tag-b` includes registrations having at least one configured tag.
+App registration data is refreshed immediately in the background and every hour by default, so Prometheus and API requests do not wait for Microsoft Graph. `GET /api/apps` returns all selected registrations from the latest successful refresh; `GET /api/apps/{appId}` returns one selected registration. `AZURE_APP_FILTER_TAGS=tag-a,tag-b` includes registrations having at least one configured tag. The legacy `FILTER_TAGS` variable is also accepted when `AZURE_APP_FILTER_TAGS` is unset.
 
 For sovereign clouds, set both `AZURE_APP_GRAPH_URL` and `AZURE_APP_GRAPH_SCOPE` to the appropriate Microsoft Graph endpoint and scope.
 
@@ -315,7 +315,7 @@ azurerm_ratelimit{scope="subscription",subscriptionID="...",type="read"} 11999
 | `/probe/metrics/list`          | Probe metrics for list of resources (sone query per resource; see `azurerm_resource_metric`)                                       |
 | `/probe/metrics/scrape`        | Probe metrics for list of resources and config on resource by tag name (one query per resource; see `azurerm_resource_metric`)     |
 | `/probe/metrics/resourcegraph` | Probe metrics for list of resources based on a kusto query and the resource graph API (one query per resource)                     |
-| `/api/apps`                   | Refresh and return app registrations and their credentials (when `AZURE_APP_ENABLED=true`)                                        |
+| `/api/apps`                   | Return cached app registrations and their credentials (when `AZURE_APP_ENABLED=true`)                                             |
 | `/api/apps/{appId}`           | Return one app registration and its credentials (when `AZURE_APP_ENABLED=true`)                                                    |
 
 ### /probe/metrics parameters
