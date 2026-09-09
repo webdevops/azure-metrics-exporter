@@ -1,7 +1,9 @@
 package config
 
 const (
-	MetricsUrl = "/metrics"
+	MetricsUrl               = "/metrics"
+	AppRegistrationsURL      = "/api/apps"
+	AppRegistrationURLPrefix = "/api/apps/"
 
 	ProbeMetricsResourceUrl            = "/probe/metrics/resource"
 	ProbeMetricsResourceTimeoutDefault = 10

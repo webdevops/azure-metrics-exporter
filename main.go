@@ -36,6 +36,7 @@ var (
 
 	AzureClient             *armclient.ArmClient
 	AzureResourceTagManager *armclient.ResourceTagManager
+	AzureAppExporter        *AppRegistrationExporter
 
 	prometheusCollectTime    *prometheus.SummaryVec
 	prometheusMetricRequests *prometheus.CounterVec
@@ -65,12 +66,22 @@ func main() {
 	logger.Info("init Azure connection")
 	initAzureConnection()
 	initMetricCollector()
+	initAppRegistrationExporter()
 
 	logger.Info("starting http server", slog.String("bind", Opts.Server.Bind))
 	startHttpServer()
 }
 
 func initArgparser() {
+	// Keep the azure-app-exporter enable switch working for existing deployments.
+	if _, configured := os.LookupEnv("AZURE_APP_ENABLED"); !configured {
+		if legacyValue, found := os.LookupEnv("AZURE_ENABLED"); found {
+			if err := os.Setenv("AZURE_APP_ENABLED", legacyValue); err != nil {
+				fmt.Fprintf(os.Stderr, "unable to map AZURE_ENABLED to AZURE_APP_ENABLED: %v\n", err)
+			}
+		}
+	}
+
 	argparser = flags.NewParser(&Opts, flags.Default)
 	_, err := argparser.Parse()
 
@@ -146,6 +157,11 @@ func startHttpServer() {
 	mux.HandleFunc(config.ProbeMetricsScrapeUrl, probeMetricsScrapeHandler)
 
 	mux.HandleFunc(config.ProbeMetricsResourceGraphUrl, probeMetricsResourceGraphHandler)
+
+	if AzureAppExporter != nil {
+		mux.HandleFunc(config.AppRegistrationsURL, appRegistrationsHandler)
+		mux.HandleFunc(config.AppRegistrationURLPrefix, appRegistrationsHandler)
+	}
 
 	// report
 	tmpl := template.Must(template.ParseFS(templates, "templates/*.html"))
