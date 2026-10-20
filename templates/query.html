@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
 
-    <link rel="stylesheet" nonce="{{ .Nonce }}" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.8/css/bootstrap.min.css" integrity="sha512-2bBQCjcnw658Lho4nlXJcc6WkV/UxpE/sAokbXPxQNGqmNdQrWqtw26Ns9kFF/yG792pKR1Sx8/Y1Lf1XN4GKA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <link rel="stylesheet" nonce="{{ .Nonce }}" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.8/css/bootstrap.min.css" integrity="sha512-2bBQCjcnw658Lho4nlXJcc6WkV/UxpE/sAokbXPxQNGqmNdQrWqtw26Ns9kFF/yG792pKR1Sx8/Y1Lf1XN4GKA==" crossorigin="anonymous" referrerpolicy="no-referrer">
 
     <style nonce="{{ .Nonce }}">
         div.row.hidden {
@@ -366,10 +366,10 @@ count</textarea>
 
 </main>
 
-<script nonce="{{ .Nonce }}" src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js" integrity="sha512-v2CJ7UaYy4JwqLDIrZUI/4hqeoQieOmAZNXBeQyjo21dadnwR+8ZaIJVT8EE2iyI61OV8e6M8PP2/4hpQINQ/g==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<script nonce="{{ .Nonce }}" src="https://cdnjs.cloudflare.com/ajax/libs/jquery/4.0.0/jquery.min.js" integrity="sha512-8LENNbXmzI/Gbj+OwXmqR6V4QaUAw0/porPzy1+dQoJqC0JPHedWoe0DDOTL2uHA5XXJyIsPtiMHH86pVlay6A==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 <script nonce="{{ .Nonce }}" src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/2.11.8/umd/popper-base.min.js" integrity="sha512-MG6xxu/pbWXEl2Wi6YWNZsGedyJMYvT55wTMEqVxbbTq6saY1EdgSx15AsESIwuvZel0lXhvnC47PspiDtXOfA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 <script nonce="{{ .Nonce }}" src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.8/js/bootstrap.min.js" integrity="sha512-nKXmKvJyiGQy343jatQlzDprflyB5c+tKCzGP3Uq67v+lmzfnZUi/ZT+fc6ITZfSC5HhaBKUIvr/nTLCV+7F+Q==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-<script nonce="{{ .Nonce }}" src="https://cdnjs.cloudflare.com/ajax/libs/js-yaml/4.1.0/js-yaml.min.js" integrity="sha512-CSBhVREyzHAjAFfBlIBakjoRUKp5h7VSweP0InR/pAJyptH7peuhCsqAI/snV+TwZmXZqoUklpXp6R6wMnYf5Q==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<script nonce="{{ .Nonce }}" src="https://cdnjs.cloudflare.com/ajax/libs/js-yaml/4.1.1/js-yaml.min.js" integrity="sha512-Ccva9tZjPfyRDMMosATBaEnAKvX+eBbDfHMnr+0LhTa+NMqKRxUAoDGPotb8biwzQ6xnf4IYuDaPiXw10DYaNA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 
 <script nonce="{{ .Nonce }}">
     $( document ).ready(function() {
@@ -394,14 +394,14 @@ count</textarea>
             try {
                 if (window.location.hash && window.location.hash.length >= 2) {
                     let hashString = window.location.hash.substring(1);
-                    let formData = jQuery.parseJSON(atob(hashString));
+                    let formData = JSON.parse(atob(hashString));
 
                     $("form :input").val("");
                     Object.keys(formData).forEach((fieldName) => {
                         $("#" + fieldName + ":input").val(formData[fieldName]);
                     });
                 }
-            } catch(e) {}
+            } catch(e) {console.log(e)}
 
             formSetVisibility();
         };
